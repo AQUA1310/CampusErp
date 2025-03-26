@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,7 +28,7 @@ export default function StudentDashboard() {
   const studentName = user?.name || "Student";
   const studentAttendance = attendanceSummary.find(
     (a) => a.studentId === "1"
-  ); // For the demo, we use the fixed student (Dhruv)
+  );
 
   const pendingAssignments = assignments.filter(
     (a) => !a.submissions?.some((s) => s.studentId === "1")
@@ -39,7 +38,6 @@ export default function StudentDashboard() {
     .filter((n) => new Date(n.date) > new Date())
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  // Get current day and time for timetable
   const [currentDay, setCurrentDay] = useState("");
   const [currentTime, setCurrentTime] = useState("");
   const [currentClass, setCurrentClass] = useState<any>(null);
@@ -56,11 +54,9 @@ export default function StudentDashboard() {
       setCurrentDay(day);
       setCurrentTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
       
-      // Find current and next classes
       if (day !== "Sunday" && day !== "Saturday") {
         const daySchedule = timetable.slots.filter(slot => slot.day === day);
         
-        // Find current class
         const currentClassFound = daySchedule.find(slot => {
           const [startTime, endTime] = slot.time.split(' - ');
           const [startHour, startMinute] = startTime.split(':').map(Number);
@@ -75,12 +71,10 @@ export default function StudentDashboard() {
         
         setCurrentClass(currentClassFound || null);
         
-        // Find next class
         if (currentClassFound) {
           const currentIndex = daySchedule.indexOf(currentClassFound);
           setNextClass(currentIndex < daySchedule.length - 1 ? daySchedule[currentIndex + 1] : null);
         } else {
-          // If no current class, find the next upcoming class
           const upcoming = daySchedule.find(slot => {
             const [startTime] = slot.time.split(' - ');
             const [startHour, startMinute] = startTime.split(':').map(Number);
@@ -96,7 +90,7 @@ export default function StudentDashboard() {
     };
     
     updateCurrentTime();
-    const intervalId = setInterval(updateCurrentTime, 60000); // Update every minute
+    const intervalId = setInterval(updateCurrentTime, 60000);
     
     return () => clearInterval(intervalId);
   }, [timetable.slots]);
@@ -107,9 +101,7 @@ export default function StudentDashboard() {
       subtitle="Your academic dashboard"
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left column */}
         <div className="col-span-2 space-y-6">
-          {/* Class Schedule */}
           <Card className="shadow-md hover:shadow-lg transition-shadow border border-oliveGreen-100">
             <CardHeader className="flex flex-row items-center justify-between bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
               <div>
@@ -177,7 +169,6 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
 
-          {/* Assignments Section */}
           <Card className="shadow-md hover:shadow-lg transition-shadow border border-oliveGreen-100">
             <CardHeader className="flex flex-row items-center justify-between bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
               <div>
@@ -232,9 +223,7 @@ export default function StudentDashboard() {
           </Card>
         </div>
 
-        {/* Right column */}
         <div className="space-y-6">
-          {/* Attendance Card */}
           <Card className="shadow-md hover:shadow-lg transition-shadow border border-oliveGreen-100">
             <CardHeader className="flex flex-row items-center justify-between bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
               <div>
@@ -300,11 +289,6 @@ export default function StudentDashboard() {
                           subject.percentage >= 85 ? "bg-warning-100" : 
                           "bg-danger-100"
                         }`}
-                        indicatorClassName={`${
-                          subject.percentage >= 90 ? "bg-success-500" : 
-                          subject.percentage >= 85 ? "bg-warning-500" : 
-                          "bg-danger-500"
-                        }`}
                       />
                     </div>
                   ))}
@@ -323,7 +307,6 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
 
-          {/* Upcoming Events */}
           <Card className="shadow-md hover:shadow-lg transition-shadow border border-oliveGreen-100">
             <CardHeader className="flex flex-row items-center justify-between bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
               <div>
@@ -370,7 +353,6 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
 
-          {/* AI Chatbot Button */}
           <Button 
             className="w-full bg-oliveGreen-600 hover:bg-oliveGreen-700 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 py-6"
             onClick={() => setShowChatbot(prev => !prev)}
@@ -381,7 +363,6 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* AI Chatbot Modal */}
       {showChatbot && (
         <div className="fixed bottom-4 right-4 w-96 h-[500px] bg-white shadow-2xl rounded-xl border border-oliveGreen-200 overflow-hidden animate-scale-in z-50">
           <ChatBot onClose={() => setShowChatbot(false)} />

@@ -1,370 +1,430 @@
 
-import { useState, useRef, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import React, { useState, useEffect, useRef } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Send, UserCircle, Users } from "lucide-react";
-import { useData, Message } from "@/contexts/DataContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { 
+  Send, 
+  Search, 
+  User, 
+  Users, 
+  Clock, 
+  CheckCheck 
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useData } from "@/contexts/DataContext";
 import DashboardLayout from "@/components/shared/DashboardLayout";
-import { toast } from "sonner";
 
 export default function StudentChat() {
   const { user } = useAuth();
-  const { teachers, students, messages, sendMessage, markMessageAsRead } = useData();
-  const [messageText, setMessageText] = useState("");
-  const [selectedTeacher, setSelectedTeacher] = useState<string | null>(null);
-  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"teachers" | "students">("teachers");
+  const { messages, teachers, students, sendMessage, markMessageAsRead } = useData();
+  const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [newMessage, setNewMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeChatTab, setActiveChatTab] = useState<"teachers" | "students">("teachers");
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Scroll to bottom whenever messages change
+  
+  // Get all messages for the current student
+  const myMessages = messages.filter(msg => 
+    (msg.senderId === "1" || msg.receiverId === "1")
+  );
+  
+  // Get unique contacts (teachers and students) from messages
+  const teacherContacts = teachers.map(teacher => {
+    const unreadCount = myMessages.filter(
+      msg => msg.senderId === teacher.id && !msg.read
+    ).length;
+    
+    const lastMessage = myMessages
+      .filter(msg => 
+        (msg.senderId === teacher.id && msg.receiverId === "1") || 
+        (msg.senderId === "1" && msg.receiverId === teacher.id)
+      )
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+    
+    return {
+      id: teacher.id,
+      name: teacher.name,
+      email: teacher.email,
+      type: "teacher",
+      department: teacher.department,
+      unreadCount,
+      lastMessage,
+      lastActivity: lastMessage ? new Date(lastMessage.timestamp).getTime() : 0
+    };
+  });
+  
+  const studentContacts = students
+    .filter(student => student.id !== "1") // Exclude self
+    .map(student => {
+      const unreadCount = myMessages.filter(
+        msg => msg.senderId === student.id && !msg.read
+      ).length;
+      
+      const lastMessage = myMessages
+        .filter(msg => 
+          (msg.senderId === student.id && msg.receiverId === "1") || 
+          (msg.senderId === "1" && msg.receiverId === student.id)
+        )
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+      
+      return {
+        id: student.id,
+        name: student.name,
+        email: student.email,
+        rollNumber: student.rollNumber,
+        type: "student",
+        unreadCount,
+        lastMessage,
+        lastActivity: lastMessage ? new Date(lastMessage.timestamp).getTime() : 0
+      };
+    });
+  
+  // Filter contacts based on search term
+  const filteredTeacherContacts = teacherContacts
+    .filter(contact => 
+      contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.email.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => b.lastActivity - a.lastActivity);
+  
+  const filteredStudentContacts = studentContacts
+    .filter(contact => 
+      contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.rollNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => b.lastActivity - a.lastActivity);
+  
+  // Get conversation messages with selected contact
+  const conversationMessages = selectedContact 
+    ? myMessages
+        .filter(msg => 
+          (msg.senderId === selectedContact.id && msg.receiverId === "1") || 
+          (msg.senderId === "1" && msg.receiverId === selectedContact.id)
+        )
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+    : [];
+  
+  // Mark unread messages as read
+  useEffect(() => {
+    if (selectedContact) {
+      conversationMessages.forEach(msg => {
+        if (msg.senderId === selectedContact.id && !msg.read) {
+          markMessageAsRead(msg.id);
+        }
+      });
+    }
+  }, [selectedContact, conversationMessages]);
+  
+  // Scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, selectedTeacher, selectedStudent]);
-
-  // Mark messages as read when selecting a conversation
-  useEffect(() => {
-    if (selectedTeacher) {
-      const unreadMessages = messages.filter(
-        (msg) =>
-          msg.senderId === selectedTeacher &&
-          msg.receiverId === "1" &&
-          !msg.read
-      );
-      
-      unreadMessages.forEach((msg) => markMessageAsRead(msg.id));
-    }
-    
-    if (selectedStudent) {
-      const unreadMessages = messages.filter(
-        (msg) =>
-          msg.senderId === selectedStudent &&
-          msg.receiverId === "1" &&
-          !msg.read
-      );
-      
-      unreadMessages.forEach((msg) => markMessageAsRead(msg.id));
-    }
-  }, [selectedTeacher, selectedStudent, messages, markMessageAsRead]);
-
+  }, [conversationMessages]);
+  
+  const handleContactSelect = (contact: any) => {
+    setSelectedContact(contact);
+  };
+  
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!messageText.trim()) return;
+    if (!newMessage.trim() || !selectedContact || !user) return;
     
-    if (activeTab === "teachers" && selectedTeacher) {
-      const teacher = teachers.find((t) => t.id === selectedTeacher);
-      if (!teacher) return;
-      
-      sendMessage({
-        senderId: "1",
-        senderName: user?.name || "Student",
-        senderType: "student",
-        receiverId: selectedTeacher,
-        receiverName: teacher.name,
-        receiverType: "teacher",
-        content: messageText,
-      });
-    } else if (activeTab === "students" && selectedStudent) {
-      const student = students.find((s) => s.id === selectedStudent);
-      if (!student) return;
-      
-      sendMessage({
-        senderId: "1",
-        senderName: user?.name || "Student",
-        senderType: "student",
-        receiverId: selectedStudent,
-        receiverName: student.name,
-        receiverType: "student",
-        content: messageText,
-      });
-    } else {
-      toast.error("Please select a recipient first");
-      return;
-    }
+    sendMessage({
+      senderId: "1",
+      senderName: user.name,
+      senderType: "student",
+      receiverId: selectedContact.id,
+      receiverName: selectedContact.name,
+      receiverType: selectedContact.type,
+      content: newMessage
+    });
     
-    setMessageText("");
+    setNewMessage("");
   };
-
-  const getConversationMessages = () => {
-    if (activeTab === "teachers" && selectedTeacher) {
-      return messages.filter(
-        (msg) =>
-          (msg.senderId === "1" && msg.receiverId === selectedTeacher) ||
-          (msg.senderId === selectedTeacher && msg.receiverId === "1")
-      ).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-    } else if (activeTab === "students" && selectedStudent) {
-      return messages.filter(
-        (msg) =>
-          (msg.senderId === "1" && msg.receiverId === selectedStudent) ||
-          (msg.senderId === selectedStudent && msg.receiverId === "1")
-      ).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-    }
-    return [];
-  };
-
-  const getUnreadMessageCount = (contactId: string, contactType: "teacher" | "student") => {
-    return messages.filter(
-      (msg) =>
-        msg.senderId === contactId &&
-        msg.receiverId === "1" &&
-        !msg.read &&
-        (contactType === "teacher" ? msg.senderType === "teacher" : msg.senderType === "student")
-    ).length;
-  };
-
-  const formatTimestamp = (timestamp: string) => {
+  
+  const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+  
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase();
   };
 
   return (
-    <DashboardLayout title="Messages" subtitle="Chat with teachers and classmates">
+    <DashboardLayout title="Messages" subtitle="Chat with teachers and fellow students">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-13rem)]">
-        {/* Contacts List */}
-        <Card className="shadow-md md:col-span-1 border border-oliveGreen-100 flex flex-col h-full">
-          <CardHeader className="pb-3 bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg flex-shrink-0">
-            <CardTitle className="text-oliveGreen-800">Contacts</CardTitle>
-            <CardDescription className="text-oliveGreen-600">
-              Select a contact to start chatting
-            </CardDescription>
+        {/* Contact List */}
+        <Card className="shadow-md border border-oliveGreen-100 overflow-hidden md:col-span-1">
+          <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 space-y-2 px-4 py-3">
+            <div className="flex items-center space-x-2">
+              <Search className="h-4 w-4 text-oliveGreen-500" />
+              <Input
+                placeholder="Search contacts..."
+                className="flex-1 h-9"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex border rounded-md overflow-hidden">
+              <button
+                className={`flex-1 py-1 px-3 text-sm font-medium ${
+                  activeChatTab === "teachers" 
+                    ? "bg-oliveGreen-600 text-white" 
+                    : "bg-oliveGreen-50 text-oliveGreen-600 hover:bg-oliveGreen-100"
+                }`}
+                onClick={() => setActiveChatTab("teachers")}
+              >
+                <User className="h-4 w-4 inline-block mr-1" />
+                Teachers
+              </button>
+              <button
+                className={`flex-1 py-1 px-3 text-sm font-medium ${
+                  activeChatTab === "students" 
+                    ? "bg-oliveGreen-600 text-white" 
+                    : "bg-oliveGreen-50 text-oliveGreen-600 hover:bg-oliveGreen-100"
+                }`}
+                onClick={() => setActiveChatTab("students")}
+              >
+                <Users className="h-4 w-4 inline-block mr-1" />
+                Students
+              </button>
+            </div>
           </CardHeader>
-          <CardContent className="pt-4 flex-1 flex flex-col overflow-hidden">
-            <Tabs
-              defaultValue="teachers"
-              className="flex-1 flex flex-col"
-              onValueChange={(value) => {
-                setActiveTab(value as "teachers" | "students");
-                setSelectedTeacher(null);
-                setSelectedStudent(null);
-              }}
-            >
-              <TabsList className="grid grid-cols-2">
-                <TabsTrigger value="teachers" className="flex gap-2 items-center">
-                  <UserCircle className="h-4 w-4" />
-                  <span>Teachers</span>
-                </TabsTrigger>
-                <TabsTrigger value="students" className="flex gap-2 items-center">
-                  <Users className="h-4 w-4" />
-                  <span>Students</span>
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="teachers" className="flex-1 overflow-hidden flex flex-col mt-0">
-                <div className="space-y-1 overflow-y-auto flex-1 pr-1">
-                  {teachers.map((teacher) => {
-                    const unreadCount = getUnreadMessageCount(teacher.id, "teacher");
-                    
-                    return (
-                      <div
-                        key={teacher.id}
-                        className={`
-                          flex items-center gap-3 p-2 rounded-lg cursor-pointer
-                          ${selectedTeacher === teacher.id 
-                            ? "bg-oliveGreen-100" 
-                            : "hover:bg-oliveGreen-50"}
-                        `}
-                        onClick={() => setSelectedTeacher(teacher.id)}
-                      >
-                        <Avatar>
-                          <AvatarImage src="/placeholder.svg" />
-                          <AvatarFallback className="bg-oliveGreen-200 text-oliveGreen-800">
-                            {teacher.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
+          <CardContent className="p-0 h-[calc(100vh-16rem)] overflow-y-auto">
+            {activeChatTab === "teachers" ? (
+              filteredTeacherContacts.length > 0 ? (
+                <div className="divide-y divide-oliveGreen-100">
+                  {filteredTeacherContacts.map((contact) => (
+                    <div
+                      key={contact.id}
+                      className={`p-3 hover:bg-oliveGreen-50 cursor-pointer transition-colors ${
+                        selectedContact?.id === contact.id ? "bg-oliveGreen-50" : ""
+                      }`}
+                      onClick={() => handleContactSelect(contact)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="h-10 w-10 border border-oliveGreen-200">
+                          <AvatarFallback className="bg-oliveGreen-100 text-oliveGreen-800">
+                            {getInitials(contact.name)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-center">
-                            <h4 className="font-medium text-oliveGreen-900 truncate">
-                              Prof. {teacher.name}
-                            </h4>
-                            {unreadCount > 0 && (
-                              <Badge className="bg-oliveGreen-600 ml-2">
-                                {unreadCount}
-                              </Badge>
+                          <div className="flex justify-between">
+                            <p className="text-sm font-medium text-oliveGreen-900 truncate">
+                              Prof. {contact.name}
+                            </p>
+                            {contact.lastMessage && (
+                              <span className="text-xs text-oliveGreen-500">
+                                {formatTime(contact.lastMessage.timestamp)}
+                              </span>
                             )}
                           </div>
-                          <p className="text-xs text-oliveGreen-600">
-                            {teacher.department}
+                          <p className="text-xs text-oliveGreen-600 truncate">
+                            {contact.department}
                           </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="students" className="flex-1 overflow-hidden flex flex-col mt-0">
-                <div className="space-y-1 overflow-y-auto flex-1 pr-1">
-                  {students
-                    .filter((student) => student.id !== "1") // Don't show current user
-                    .map((student) => {
-                      const unreadCount = getUnreadMessageCount(student.id, "student");
-                      
-                      return (
-                        <div
-                          key={student.id}
-                          className={`
-                            flex items-center gap-3 p-2 rounded-lg cursor-pointer
-                            ${selectedStudent === student.id 
-                              ? "bg-oliveGreen-100" 
-                              : "hover:bg-oliveGreen-50"}
-                          `}
-                          onClick={() => setSelectedStudent(student.id)}
-                        >
-                          <Avatar>
-                            <AvatarImage src="/placeholder.svg" />
-                            <AvatarFallback className="bg-oliveGreen-100 text-oliveGreen-800">
-                              {student.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-center">
-                              <h4 className="font-medium text-oliveGreen-900 truncate">
-                                {student.name}
-                              </h4>
-                              {unreadCount > 0 && (
-                                <Badge className="bg-oliveGreen-600 ml-2">
-                                  {unreadCount}
-                                </Badge>
+                          {contact.lastMessage && (
+                            <p className="text-xs text-oliveGreen-500 truncate mt-1">
+                              {contact.lastMessage.senderId === "1" && (
+                                <span className="text-oliveGreen-400 mr-1">You:</span>
                               )}
-                            </div>
-                            <p className="text-xs text-oliveGreen-600">
-                              {student.rollNumber}
+                              {contact.lastMessage.content}
                             </p>
-                          </div>
+                          )}
                         </div>
-                      );
-                    })}
+                        {contact.unreadCount > 0 && (
+                          <Badge className="bg-oliveGreen-600">
+                            {contact.unreadCount}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </TabsContent>
-            </Tabs>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center p-6">
+                  <User className="h-12 w-12 text-oliveGreen-300 mb-2" />
+                  <h3 className="font-medium text-oliveGreen-800">No Teachers Found</h3>
+                  <p className="text-sm text-oliveGreen-600 mt-1">
+                    {searchTerm 
+                      ? "No teachers match your search" 
+                      : "Start a conversation with a teacher"}
+                  </p>
+                </div>
+              )
+            ) : (
+              filteredStudentContacts.length > 0 ? (
+                <div className="divide-y divide-oliveGreen-100">
+                  {filteredStudentContacts.map((contact) => (
+                    <div
+                      key={contact.id}
+                      className={`p-3 hover:bg-oliveGreen-50 cursor-pointer transition-colors ${
+                        selectedContact?.id === contact.id ? "bg-oliveGreen-50" : ""
+                      }`}
+                      onClick={() => handleContactSelect(contact)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="h-10 w-10 border border-oliveGreen-200">
+                          <AvatarFallback className="bg-oliveGreen-100 text-oliveGreen-800">
+                            {getInitials(contact.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between">
+                            <p className="text-sm font-medium text-oliveGreen-900 truncate">
+                              {contact.name}
+                            </p>
+                            {contact.lastMessage && (
+                              <span className="text-xs text-oliveGreen-500">
+                                {formatTime(contact.lastMessage.timestamp)}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-oliveGreen-600 truncate">
+                            {contact.rollNumber}
+                          </p>
+                          {contact.lastMessage && (
+                            <p className="text-xs text-oliveGreen-500 truncate mt-1">
+                              {contact.lastMessage.senderId === "1" && (
+                                <span className="text-oliveGreen-400 mr-1">You:</span>
+                              )}
+                              {contact.lastMessage.content}
+                            </p>
+                          )}
+                        </div>
+                        {contact.unreadCount > 0 && (
+                          <Badge className="bg-oliveGreen-600">
+                            {contact.unreadCount}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center p-6">
+                  <Users className="h-12 w-12 text-oliveGreen-300 mb-2" />
+                  <h3 className="font-medium text-oliveGreen-800">No Students Found</h3>
+                  <p className="text-sm text-oliveGreen-600 mt-1">
+                    {searchTerm 
+                      ? "No students match your search" 
+                      : "Start a conversation with a fellow student"}
+                  </p>
+                </div>
+              )
+            )}
           </CardContent>
         </Card>
 
         {/* Chat Area */}
-        <Card className="shadow-md md:col-span-2 border border-oliveGreen-100 flex flex-col h-full">
-          <CardHeader className="pb-3 bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg flex-shrink-0">
-            {activeTab === "teachers" && selectedTeacher ? (
-              <>
-                <CardTitle className="text-oliveGreen-800">
-                  {teachers.find((t) => t.id === selectedTeacher)?.name || "Teacher"}
-                </CardTitle>
-                <CardDescription className="text-oliveGreen-600">
-                  {teachers.find((t) => t.id === selectedTeacher)?.department || ""}
-                </CardDescription>
-              </>
-            ) : activeTab === "students" && selectedStudent ? (
-              <>
-                <CardTitle className="text-oliveGreen-800">
-                  {students.find((s) => s.id === selectedStudent)?.name || "Student"}
-                </CardTitle>
-                <CardDescription className="text-oliveGreen-600">
-                  {students.find((s) => s.id === selectedStudent)?.rollNumber || ""}
-                </CardDescription>
-              </>
-            ) : (
-              <>
-                <CardTitle className="text-oliveGreen-800">Chat</CardTitle>
-                <CardDescription className="text-oliveGreen-600">
-                  Select a contact to start chatting
-                </CardDescription>
-              </>
-            )}
-          </CardHeader>
-
-          <CardContent className="p-0 flex-1 flex flex-col overflow-hidden">
-            {(selectedTeacher || selectedStudent) ? (
-              <>
-                {/* Messages Area */}
-                <div className="flex-1 overflow-y-auto p-4">
-                  {getConversationMessages().length > 0 ? (
-                    getConversationMessages().map((message: Message) => (
-                      <div
-                        key={message.id}
-                        className={`flex mb-4 ${
-                          message.senderId === "1" ? "justify-end" : "justify-start"
-                        }`}
+        <Card className="shadow-md border border-oliveGreen-100 overflow-hidden md:col-span-2 flex flex-col">
+          {selectedContact ? (
+            <>
+              <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 p-3 flex-shrink-0">
+                <div className="flex items-center space-x-3">
+                  <Avatar className="h-10 w-10 border border-oliveGreen-200">
+                    <AvatarFallback className="bg-oliveGreen-100 text-oliveGreen-800">
+                      {getInitials(selectedContact.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <CardTitle className="text-oliveGreen-800 text-base">
+                      {selectedContact.type === "teacher" ? "Prof. " : ""}{selectedContact.name}
+                    </CardTitle>
+                    <CardDescription className="text-oliveGreen-600 text-xs">
+                      {selectedContact.type === "teacher" 
+                        ? selectedContact.department 
+                        : selectedContact.rollNumber}
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="p-4 flex-grow overflow-y-auto flex flex-col space-y-3 h-[calc(100vh-24rem)]">
+                {conversationMessages.length > 0 ? (
+                  conversationMessages.map((msg) => {
+                    const isMe = msg.senderId === "1";
+                    
+                    return (
+                      <div 
+                        key={msg.id} 
+                        className={`flex ${isMe ? "justify-end" : "justify-start"}`}
                       >
-                        <div
-                          className={`max-w-[80%] rounded-lg p-3 ${
-                            message.senderId === "1"
-                              ? "bg-oliveGreen-600 text-white"
-                              : "bg-gray-100"
-                          }`}
-                        >
-                          <p>{message.content}</p>
-                          <div
-                            className={`text-right text-xs mt-1 ${
-                              message.senderId === "1"
-                                ? "text-oliveGreen-200"
-                                : "text-gray-500"
+                        <div className={`max-w-[80%] ${isMe ? "order-2" : "order-1"}`}>
+                          <div 
+                            className={`py-2 px-3 rounded-lg ${
+                              isMe 
+                                ? "bg-oliveGreen-600 text-white rounded-br-none" 
+                                : "bg-gray-100 text-gray-800 rounded-bl-none"
                             }`}
                           >
-                            {formatTimestamp(message.timestamp)}
+                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                          </div>
+                          <div className={`flex items-center text-xs mt-1 ${isMe ? "justify-end" : "justify-start"}`}>
+                            <Clock className="h-3 w-3 mr-1 text-oliveGreen-400" />
+                            <span className="text-oliveGreen-500">
+                              {formatTime(msg.timestamp)}
+                            </span>
+                            {isMe && (
+                              <CheckCheck className={`h-3 w-3 ml-1 ${msg.read ? "text-oliveGreen-600" : "text-oliveGreen-400"}`} />
+                            )}
                           </div>
                         </div>
                       </div>
-                    ))
-                  ) : (
-                    <div className="h-full flex items-center justify-center">
-                      <div className="text-center text-muted-foreground">
-                        <p>No messages yet</p>
-                        <p className="text-sm">Send a message to start the conversation</p>
-                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="flex flex-col items-center justify-center flex-grow text-center">
+                    <div className="w-16 h-16 bg-oliveGreen-50 rounded-full flex items-center justify-center mb-4">
+                      <Send className="h-8 w-8 text-oliveGreen-300" />
                     </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Message Input */}
-                <div className="p-4 border-t border-gray-200">
-                  <form onSubmit={handleSendMessage} className="flex gap-2">
-                    <Input
-                      value={messageText}
-                      onChange={(e) => setMessageText(e.target.value)}
-                      placeholder="Type your message..."
-                      className="flex-1"
-                    />
-                    <Button
-                      type="submit"
-                      className="bg-oliveGreen-600 hover:bg-oliveGreen-700"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </form>
-                </div>
-              </>
-            ) : (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto text-oliveGreen-300" />
-                  <h3 className="mt-4 text-xl font-medium text-oliveGreen-700">
-                    Select a contact
-                  </h3>
-                  <p className="mt-2">
-                    Choose a teacher or student to start a conversation
-                  </p>
-                </div>
+                    <h3 className="font-medium text-oliveGreen-800">No Messages Yet</h3>
+                    <p className="text-sm text-oliveGreen-600 mt-1">
+                      Send a message to start the conversation
+                    </p>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </CardContent>
+              
+              <div className="border-t border-oliveGreen-100 p-3 bg-white">
+                <form onSubmit={handleSendMessage} className="flex space-x-2">
+                  <Input
+                    placeholder="Type a message..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="submit" 
+                    className="bg-oliveGreen-600 hover:bg-oliveGreen-700"
+                    disabled={!newMessage.trim()}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </form>
               </div>
-            )}
-          </CardContent>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-center p-6">
+              <div className="w-24 h-24 bg-oliveGreen-50 rounded-full flex items-center justify-center mb-6">
+                <Send className="h-12 w-12 text-oliveGreen-300" />
+              </div>
+              <h3 className="text-xl font-medium text-oliveGreen-800">Select a Contact</h3>
+              <p className="text-oliveGreen-600 mt-2 max-w-md">
+                Choose a teacher or student from the list to start a conversation
+              </p>
+            </div>
+          )}
         </Card>
       </div>
     </DashboardLayout>

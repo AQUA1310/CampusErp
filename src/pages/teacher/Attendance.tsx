@@ -1,30 +1,9 @@
 
 import { useState } from "react";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  Badge,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  RadioGroup,
-  RadioGroupItem,
-  Label
-} from "@/components/ui";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -33,358 +12,301 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
-  Calendar, 
-  Check, 
-  X, 
-  UserCheck,
-  Users,
-  Search
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Calendar, Users, Check, X, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 import { useData } from "@/contexts/DataContext";
 import DashboardLayout from "@/components/shared/DashboardLayout";
-import { toast } from "sonner";
 
 export default function TeacherAttendance() {
   const { students, subjects, attendance, markAttendance } = useData();
-  const [selectedSubject, setSelectedSubject] = useState(subjects[0]?.id || "");
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  );
-  const [searchTerm, setSearchTerm] = useState("");
   
-  // Initialize studentAttendance with all students marked as present
-  const [studentAttendance, setStudentAttendance] = useState<Record<string, boolean>>(
-    students.reduce((acc, student) => {
-      acc[student.id] = true;
-      return acc;
-    }, {} as Record<string, boolean>)
+  const [selectedSubject, setSelectedSubject] = useState(subjects[0]?.id || "");
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [studentAttendance, setStudentAttendance] = useState<{ studentId: string; present: boolean }[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Sort students by roll number
+  const sortedStudents = [...students].sort((a, b) => 
+    a.rollNumber.localeCompare(b.rollNumber)
   );
-
-  const handleAttendanceChange = (studentId: string, present: boolean) => {
-    setStudentAttendance((prev) => ({
-      ...prev,
-      [studentId]: present,
-    }));
-  };
-
-  const handleMarkAllAs = (present: boolean) => {
-    setStudentAttendance(
-      students.reduce((acc, student) => {
-        acc[student.id] = present;
-        return acc;
-      }, {} as Record<string, boolean>)
-    );
-  };
-
-  const handleSubmitAttendance = () => {
-    if (!selectedSubject || !selectedDate) {
-      toast.error("Please select subject and date");
-      return;
-    }
-
-    const attendanceData = Object.entries(studentAttendance).map(
-      ([studentId, present]) => ({
-        studentId,
-        present,
-      })
-    );
-
-    markAttendance(selectedSubject, selectedDate, attendanceData);
-    
-    toast.success("Attendance marked successfully");
-  };
-
-  const filteredStudents = students.filter((student) => {
-    const searchTermLower = searchTerm.toLowerCase();
-    return (
-      student.name.toLowerCase().includes(searchTermLower) ||
-      student.rollNumber.toLowerCase().includes(searchTermLower)
-    );
-  }).sort((a, b) => a.rollNumber.localeCompare(b.rollNumber));
-
-  const getExistingAttendance = () => {
-    return attendance.find(
-      (a) => a.subjectId === selectedSubject && a.date === selectedDate
-    );
-  };
-
-  const existingAttendance = getExistingAttendance();
-
-  // Update student attendance from existing records if available
+  
+  // Initialize student attendance when subject or date changes
   useState(() => {
+    const existingAttendance = attendance.find(
+      a => a.subjectId === selectedSubject && a.date === selectedDate
+    );
+    
     if (existingAttendance) {
-      const newAttendance = { ...studentAttendance };
-      existingAttendance.students.forEach((student) => {
-        newAttendance[student.studentId] = student.present;
-      });
-      setStudentAttendance(newAttendance);
+      setStudentAttendance(
+        existingAttendance.students.map(s => ({
+          studentId: s.studentId,
+          present: s.present
+        }))
+      );
+    } else {
+      setStudentAttendance(
+        sortedStudents.map(student => ({
+          studentId: student.id,
+          present: true
+        }))
+      );
     }
   });
+  
+  const toggleAttendance = (studentId: string) => {
+    setStudentAttendance(prev => 
+      prev.map(item => 
+        item.studentId === studentId 
+          ? { ...item, present: !item.present } 
+          : item
+      )
+    );
+  };
+  
+  const markAllPresent = () => {
+    setStudentAttendance(prev => 
+      prev.map(item => ({ ...item, present: true }))
+    );
+    toast.success("Marked all students present");
+  };
+  
+  const markAllAbsent = () => {
+    setStudentAttendance(prev => 
+      prev.map(item => ({ ...item, present: false }))
+    );
+    toast.success("Marked all students absent");
+  };
+  
+  const handleSubmit = () => {
+    setIsSubmitting(true);
+    
+    setTimeout(() => {
+      markAttendance(selectedSubject, selectedDate, studentAttendance);
+      setIsSubmitting(false);
+    }, 1000);
+  };
+  
+  const getAttendancePercentage = (studentId: string) => {
+    const studentAttendances = attendance.filter(a => 
+      a.subjectId === selectedSubject && 
+      a.students.some(s => s.studentId === studentId)
+    );
+    
+    if (studentAttendances.length === 0) return 0;
+    
+    const totalClasses = studentAttendances.length;
+    const attendedClasses = studentAttendances.filter(a => 
+      a.students.find(s => s.studentId === studentId)?.present
+    ).length;
+    
+    return (attendedClasses / totalClasses) * 100;
+  };
+  
+  const getAttendanceColor = (percentage: number) => {
+    if (percentage >= 90) return "bg-success-500";
+    if (percentage >= 85) return "bg-warning-500";
+    return "bg-danger-500";
+  };
+  
+  const getAttendanceBgColor = (percentage: number) => {
+    if (percentage >= 90) return "bg-success-100";
+    if (percentage >= 85) return "bg-warning-100";
+    return "bg-danger-100";
+  };
 
   return (
     <DashboardLayout title="Attendance" subtitle="Mark and manage student attendance">
-      <Tabs defaultValue="mark" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger 
-            value="mark" 
-            className="data-[state=active]:bg-oliveGreen-100 data-[state=active]:text-oliveGreen-900"
-          >
-            Mark Attendance
-          </TabsTrigger>
-          <TabsTrigger 
-            value="history" 
-            className="data-[state=active]:bg-oliveGreen-100 data-[state=active]:text-oliveGreen-900"
-          >
-            Attendance History
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Mark Attendance */}
-        <TabsContent value="mark" className="mt-0">
-          <Card className="shadow-md">
-            <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
+      <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="shadow-sm">
+          <CardContent className="p-4 flex flex-col gap-2">
+            <label htmlFor="subject" className="text-sm font-medium text-oliveGreen-800">
+              Select Subject
+            </label>
+            <select
+              id="subject"
+              value={selectedSubject}
+              onChange={(e) => setSelectedSubject(e.target.value)}
+              className="w-full h-10 rounded-md border border-oliveGreen-200 bg-background px-3 py-2 text-sm focus:outline-oliveGreen-500"
+            >
+              {subjects.map((subject) => (
+                <option key={subject.id} value={subject.id}>
+                  {subject.name}
+                </option>
+              ))}
+            </select>
+          </CardContent>
+        </Card>
+        
+        <Card className="shadow-sm">
+          <CardContent className="p-4 flex flex-col gap-2">
+            <label htmlFor="date" className="text-sm font-medium text-oliveGreen-800">
+              Select Date
+            </label>
+            <input
+              id="date"
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-full h-10 rounded-md border border-oliveGreen-200 bg-background px-3 py-2 text-sm focus:outline-oliveGreen-500"
+            />
+          </CardContent>
+        </Card>
+        
+        <Card className="shadow-sm">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-oliveGreen-800">Quick Actions</h3>
+              <p className="text-xs text-oliveGreen-600">Mark all students at once</p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                size="sm"
+                variant="outline" 
+                className="border-success-300 text-success-700 hover:bg-success-50"
+                onClick={markAllPresent}
+              >
+                <Check className="h-4 w-4 mr-1" />
+                All Present
+              </Button>
+              <Button 
+                size="sm"
+                variant="outline" 
+                className="border-danger-300 text-danger-700 hover:bg-danger-50"
+                onClick={markAllAbsent}
+              >
+                <X className="h-4 w-4 mr-1" />
+                All Absent
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <Card className="shadow-md">
+        <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
+          <div className="flex justify-between items-center">
+            <div>
               <CardTitle className="text-oliveGreen-800">Mark Attendance</CardTitle>
               <CardDescription className="text-oliveGreen-600">
-                Record student attendance for classes
+                {new Date(selectedDate).toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
               </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div className="space-y-2">
-                  <label htmlFor="subject" className="text-sm font-medium">
-                    Select Subject *
-                  </label>
-                  <Select
-                    value={selectedSubject}
-                    onValueChange={setSelectedSubject}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {subjects.map((subject) => (
-                        <SelectItem key={subject.id} value={subject.id}>
-                          {subject.name} ({subject.code})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            </div>
+            <Badge className="bg-oliveGreen-100 text-oliveGreen-800 hover:bg-oliveGreen-200 flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              {students.length} Students
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Alert className="m-4 bg-blue-50 text-blue-800 border-blue-200">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Attendance Instructions</AlertTitle>
+            <AlertDescription className="text-blue-700">
+              Mark each student as present or absent. Make sure to check attendance carefully and submit when complete.
+            </AlertDescription>
+          </Alert>
+          
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-oliveGreen-50/50">
+                <TableHead className="w-[100px]">Roll No</TableHead>
+                <TableHead>Student Name</TableHead>
+                <TableHead className="text-center">Attendance</TableHead>
+                <TableHead className="text-right">Subject Attendance</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedStudents.map((student) => {
+                const studentAttendanceRecord = studentAttendance.find(
+                  sa => sa.studentId === student.id
+                );
+                const isPresent = studentAttendanceRecord?.present ?? true;
+                const attendancePercentage = getAttendancePercentage(student.id);
                 
-                <div className="space-y-2">
-                  <label htmlFor="date" className="text-sm font-medium">
-                    Select Date *
-                  </label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <div className="w-full md:w-64">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-oliveGreen-500" />
-                    <Input
-                      placeholder="Search students..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    className="border-success-200 text-success-700 hover:bg-success-50 hover:text-success-800"
-                    onClick={() => handleMarkAllAs(true)}
-                  >
-                    <Check className="h-4 w-4 mr-2" />
-                    <span>Mark All Present</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="border-danger-200 text-danger-700 hover:bg-danger-50 hover:text-danger-800"
-                    onClick={() => handleMarkAllAs(false)}
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    <span>Mark All Absent</span>
-                  </Button>
-                </div>
-              </div>
-
-              <div className="border rounded-lg overflow-hidden mb-6">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[100px]">Roll No.</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead className="text-center">Attendance</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredStudents.length > 0 ? (
-                      filteredStudents.map((student) => (
-                        <TableRow key={student.id}>
-                          <TableCell className="font-medium">
-                            {student.rollNumber}
-                          </TableCell>
-                          <TableCell>{student.name}</TableCell>
-                          <TableCell>
-                            <RadioGroup 
-                              className="flex justify-center"
-                              value={studentAttendance[student.id] ? "present" : "absent"}
-                              onValueChange={(value) => handleAttendanceChange(student.id, value === "present")}
-                            >
-                              <div className="flex items-center space-x-6">
-                                <div className="flex items-center space-x-2">
-                                  <RadioGroupItem value="present" id={`present-${student.id}`} className="text-success-600" />
-                                  <Label htmlFor={`present-${student.id}`} className="text-success-700">Present</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <RadioGroupItem value="absent" id={`absent-${student.id}`} className="text-danger-600" />
-                                  <Label htmlFor={`absent-${student.id}`} className="text-danger-700">Absent</Label>
-                                </div>
-                              </div>
-                            </RadioGroup>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center text-muted-foreground py-6">
-                          No students found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-
-              <div className="flex justify-end">
-                <Button 
-                  className="bg-oliveGreen-600 hover:bg-oliveGreen-700"
-                  onClick={handleSubmitAttendance}
-                >
-                  {existingAttendance ? "Update Attendance" : "Submit Attendance"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Attendance History */}
-        <TabsContent value="history" className="mt-0">
-          <Card className="shadow-md">
-            <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
-              <CardTitle className="text-oliveGreen-800">Attendance History</CardTitle>
-              <CardDescription className="text-oliveGreen-600">
-                Past attendance records
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="flex justify-between items-center gap-4 mb-6">
-                <div className="w-full md:w-64">
-                  <Select
-                    value={selectedSubject}
-                    onValueChange={setSelectedSubject}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Filter by subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">All Subjects</SelectItem>
-                      {subjects.map((subject) => (
-                        <SelectItem key={subject.id} value={subject.id}>
-                          {subject.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Subject</TableHead>
-                      <TableHead className="text-center">Present</TableHead>
-                      <TableHead className="text-center">Absent</TableHead>
-                      <TableHead className="text-center">Attendance %</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {attendance
-                      .filter((record) => !selectedSubject || record.subjectId === selectedSubject)
-                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                      .map((record) => {
-                        const presentCount = record.students.filter((s) => s.present).length;
-                        const absentCount = record.students.filter((s) => !s.present).length;
-                        const totalCount = record.students.length;
-                        const attendancePercentage = (presentCount / totalCount) * 100;
+                return (
+                  <TableRow key={student.id}>
+                    <TableCell className="font-medium">{student.rollNumber}</TableCell>
+                    <TableCell>{student.name}</TableCell>
+                    <TableCell>
+                      <div className="flex justify-center gap-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={`border ${
+                            isPresent 
+                              ? "bg-success-100 border-success-300 text-success-700" 
+                              : "bg-white border-success-200 text-success-400"
+                          } hover:bg-success-50 hover:text-success-700`}
+                          onClick={() => toggleAttendance(student.id)}
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Present
+                        </Button>
                         
-                        return (
-                          <TableRow key={record.id}>
-                            <TableCell className="font-medium">
-                              <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4 text-oliveGreen-500" />
-                                {new Date(record.date).toLocaleDateString()}
-                              </div>
-                            </TableCell>
-                            <TableCell>{record.subjectName}</TableCell>
-                            <TableCell className="text-center">
-                              <div className="flex items-center justify-center gap-1 text-success-700">
-                                <UserCheck className="h-4 w-4" />
-                                <span>{presentCount}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <div className="flex items-center justify-center gap-1 text-danger-700">
-                                <Users className="h-4 w-4" />
-                                <span>{absentCount}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Badge className={`
-                                ${attendancePercentage >= 90 
-                                  ? "bg-success-100 text-success-700" 
-                                  : attendancePercentage >= 75 
-                                  ? "bg-oliveGreen-100 text-oliveGreen-700"
-                                  : attendancePercentage >= 60
-                                  ? "bg-warning-100 text-warning-700" 
-                                  : "bg-danger-100 text-danger-700"
-                                }
-                              `}>
-                                {attendancePercentage.toFixed(1)}%
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    {attendance.filter((record) => !selectedSubject || record.subjectId === selectedSubject).length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
-                          <Calendar className="mx-auto h-12 w-12 text-oliveGreen-300" />
-                          <h3 className="mt-2 text-lg font-medium text-oliveGreen-900">No attendance records</h3>
-                          <p className="mt-1 text-sm text-oliveGreen-500">No attendance has been marked yet.</p>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={`border ${
+                            !isPresent 
+                              ? "bg-danger-100 border-danger-300 text-danger-700" 
+                              : "bg-white border-danger-200 text-danger-400"
+                          } hover:bg-danger-50 hover:text-danger-700`}
+                          onClick={() => toggleAttendance(student.id)}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Absent
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <div className="w-24">
+                          <div className="text-xs text-right mb-1">
+                            {attendancePercentage.toFixed(1)}%
+                          </div>
+                          <Progress 
+                            value={attendancePercentage} 
+                            className={`h-2 ${getAttendanceBgColor(attendancePercentage)}`}
+                          />
+                        </div>
+                        <Badge 
+                          variant="outline" 
+                          className={`
+                            ${attendancePercentage >= 90 
+                              ? "bg-success-50 text-success-700 border-success-200" 
+                              : attendancePercentage >= 85 
+                              ? "bg-warning-50 text-warning-700 border-warning-200"
+                              : "bg-danger-50 text-danger-700 border-danger-200"
+                            }
+                          `}
+                        >
+                          {attendancePercentage.toFixed(0)}%
+                        </Badge>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+          
+          <div className="p-4 border-t border-oliveGreen-100 bg-oliveGreen-50/30 flex justify-end">
+            <Button
+              className="bg-oliveGreen-600 hover:bg-oliveGreen-700 min-w-32"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Submit Attendance"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </DashboardLayout>
   );
 }
