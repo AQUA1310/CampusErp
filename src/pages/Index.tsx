@@ -35,29 +35,36 @@ export default function Index() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-oliveGreen-50 to-white">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary-50 to-white">
       <div className="container max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-oliveGreen-800">ARC Portal</h1>
-          <p className="text-oliveGreen-600">
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/lovable-uploads/f0db7aa5-f112-4e07-b137-5f66d3368625.png" 
+              alt="NIT Warangal" 
+              className="h-28"
+            />
+          </div>
+          <h1 className="text-3xl font-bold text-primary-800">ARC Portal</h1>
+          <p className="text-primary-600">
             Mathematics Department, NIT Warangal
           </p>
         </div>
 
-        <Card className="shadow-xl border-oliveGreen-100">
-          <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
-            <CardTitle className="text-oliveGreen-800 text-xl text-center">Login</CardTitle>
-            <CardDescription className="text-center text-oliveGreen-600">
+        <Card className="shadow-xl border-primary-100">
+          <CardHeader className="bg-primary-50 border-b border-primary-100 rounded-t-lg">
+            <CardTitle className="text-primary-800 text-xl text-center">Login</CardTitle>
+            <CardDescription className="text-center text-primary-600">
               Sign in to access your dashboard
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <Tabs defaultValue="student" className="w-full">
               <TabsList className="w-full rounded-none grid grid-cols-2">
-                <TabsTrigger value="student" className="data-[state=active]:bg-oliveGreen-100 data-[state=active]:text-oliveGreen-900">
+                <TabsTrigger value="student" className="data-[state=active]:bg-primary-100 data-[state=active]:text-primary-900">
                   Student
                 </TabsTrigger>
-                <TabsTrigger value="teacher" className="data-[state=active]:bg-oliveGreen-100 data-[state=active]:text-oliveGreen-900">
+                <TabsTrigger value="teacher" className="data-[state=active]:bg-primary-100 data-[state=active]:text-primary-900">
                   Teacher
                 </TabsTrigger>
               </TabsList>
@@ -78,7 +85,7 @@ export default function Index() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="student-password">Password</Label>
-                      <a href="#" className="text-xs text-oliveGreen-600 hover:underline">
+                      <a href="#" className="text-xs text-primary-600 hover:underline">
                         Forgot password?
                       </a>
                     </div>
@@ -92,7 +99,7 @@ export default function Index() {
                   </div>
                   <Button 
                     type="submit" 
-                    className="w-full bg-oliveGreen-600 hover:bg-oliveGreen-700"
+                    className="w-full bg-primary hover:bg-primary-700"
                     disabled={isLoading}
                   >
                     {isLoading ? "Signing in..." : "Sign In"}
@@ -116,7 +123,7 @@ export default function Index() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="teacher-password">Password</Label>
-                      <a href="#" className="text-xs text-oliveGreen-600 hover:underline">
+                      <a href="#" className="text-xs text-primary-600 hover:underline">
                         Forgot password?
                       </a>
                     </div>
@@ -130,7 +137,7 @@ export default function Index() {
                   </div>
                   <Button 
                     type="submit" 
-                    className="w-full bg-oliveGreen-600 hover:bg-oliveGreen-700"
+                    className="w-full bg-primary hover:bg-primary-700"
                     disabled={isLoading}
                   >
                     {isLoading ? "Signing in..." : "Sign In"}
@@ -139,8 +146,8 @@ export default function Index() {
               </TabsContent>
             </Tabs>
           </CardContent>
-          <CardFooter className="bg-oliveGreen-50 border-t border-oliveGreen-100 rounded-b-lg py-3">
-            <p className="text-xs text-center w-full text-oliveGreen-600">
+          <CardFooter className="bg-primary-50 border-t border-primary-100 rounded-b-lg py-3">
+            <p className="text-xs text-center w-full text-primary-600">
               © 2023 NIT Warangal, Mathematics Department. All rights reserved.
             </p>
           </CardFooter>
