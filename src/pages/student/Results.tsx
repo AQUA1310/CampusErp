@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import DashboardLayout from "@/components/shared/DashboardLayout";
 import { useData } from "@/contexts/DataContext";
@@ -46,6 +45,18 @@ export default function Results() {
     result.examType === minorExamType && 
     (selectedSubject ? result.subjectId === selectedSubject : true)
   );
+
+  // Convert minor marks to be out of 15
+  const normalizeMinorMarks = (result: MinorResult) => {
+    // Scale marks to be out of 15
+    const normalizedMax = 15;
+    const normalizedObtained = (result.obtainedMarks / result.maxMarks) * normalizedMax;
+    return {
+      ...result,
+      maxMarks: normalizedMax,
+      obtainedMarks: parseFloat(normalizedObtained.toFixed(2)),
+    };
+  };
 
   return (
     <DashboardLayout title="Academic Results" subtitle="View your semester and minor exam results">
@@ -211,26 +222,29 @@ export default function Results() {
                     </TableHeader>
                     <TableBody>
                       {filteredMinorResults.length > 0 ? (
-                        filteredMinorResults.map((result, index) => (
-                          <TableRow key={index}>
-                            <TableCell className="font-medium">{result.subjectCode}</TableCell>
-                            <TableCell>{result.subjectName}</TableCell>
-                            <TableCell className="text-center">{result.maxMarks}</TableCell>
-                            <TableCell className="text-center">{result.obtainedMarks}</TableCell>
-                            <TableCell className="text-center">
-                              <span className={`px-2 py-1 rounded-md text-white ${
-                                (result.obtainedMarks/result.maxMarks*100) >= 90 ? 'bg-green-600' :
-                                (result.obtainedMarks/result.maxMarks*100) >= 80 ? 'bg-blue-600' :
-                                (result.obtainedMarks/result.maxMarks*100) >= 70 ? 'bg-yellow-600' :
-                                (result.obtainedMarks/result.maxMarks*100) >= 60 ? 'bg-orange-600' :
-                                'bg-red-600'
-                              }`}>
-                                {((result.obtainedMarks / result.maxMarks) * 100).toFixed(2)}%
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-center">{new Date(result.examDate).toLocaleDateString()}</TableCell>
-                          </TableRow>
-                        ))
+                        filteredMinorResults.map((result, index) => {
+                          const normalizedResult = normalizeMinorMarks(result);
+                          return (
+                            <TableRow key={index}>
+                              <TableCell className="font-medium">{result.subjectCode}</TableCell>
+                              <TableCell>{result.subjectName}</TableCell>
+                              <TableCell className="text-center">{normalizedResult.maxMarks}</TableCell>
+                              <TableCell className="text-center">{normalizedResult.obtainedMarks}</TableCell>
+                              <TableCell className="text-center">
+                                <span className={`px-2 py-1 rounded-md text-white ${
+                                  (normalizedResult.obtainedMarks/normalizedResult.maxMarks*100) >= 90 ? 'bg-green-600' :
+                                  (normalizedResult.obtainedMarks/normalizedResult.maxMarks*100) >= 80 ? 'bg-blue-600' :
+                                  (normalizedResult.obtainedMarks/normalizedResult.maxMarks*100) >= 70 ? 'bg-yellow-600' :
+                                  (normalizedResult.obtainedMarks/normalizedResult.maxMarks*100) >= 60 ? 'bg-orange-600' :
+                                  'bg-red-600'
+                                }`}>
+                                  {((normalizedResult.obtainedMarks / normalizedResult.maxMarks) * 100).toFixed(2)}%
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-center">{new Date(result.examDate).toLocaleDateString()}</TableCell>
+                            </TableRow>
+                          );
+                        })
                       ) : (
                         <TableRow>
                           <TableCell colSpan={6} className="text-center py-4">
