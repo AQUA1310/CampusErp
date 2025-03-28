@@ -36,15 +36,17 @@ import {
   DialogTitle 
 } from "@/components/ui/dialog";
 import { useData } from "@/contexts/DataContext";
+import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/shared/DashboardLayout";
 
 export default function StudentAttendance() {
   const { attendanceSummary, attendance, subjects } = useData();
+  const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<any>(null);
 
-  // We're only showing data for the current student (Dhruv)
-  const studentData = attendanceSummary.find(a => a.studentId === "1");
+  // Get data for the currently logged-in student
+  const studentData = attendanceSummary.find(a => a.studentId === user?.id);
   
   if (!studentData) {
     return (
@@ -53,8 +55,8 @@ export default function StudentAttendance() {
           <div className="mx-auto w-16 h-16 bg-danger-100 rounded-full flex items-center justify-center mb-4">
             <Users className="h-8 w-8 text-danger-500" />
           </div>
-          <h3 className="text-xl font-medium text-oliveGreen-800">No Attendance Data</h3>
-          <p className="text-oliveGreen-600 mt-2">
+          <h3 className="text-xl font-medium text-navy-800">No Attendance Data</h3>
+          <p className="text-navy-600 mt-2">
             Your attendance records have not been uploaded yet.
           </p>
         </div>
@@ -100,17 +102,17 @@ export default function StudentAttendance() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .map(a => ({
         ...a,
-        status: a.students.find(s => s.studentId === "1")?.present
+        status: a.students.find(s => s.studentId === user?.id)?.present
       }));
   };
   
   return (
     <DashboardLayout title="Attendance" subtitle="Your attendance records">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <Card className="shadow-md hover:shadow-lg transition-shadow border border-oliveGreen-100 col-span-1">
-          <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
-            <CardTitle className="text-oliveGreen-800">Overall Attendance</CardTitle>
-            <CardDescription className="text-oliveGreen-600">
+        <Card className="shadow-md hover:shadow-lg transition-shadow border border-navy-100 col-span-1">
+          <CardHeader className="bg-navy-50 border-b border-navy-100 rounded-t-lg">
+            <CardTitle className="text-navy-800">Overall Attendance</CardTitle>
+            <CardDescription className="text-navy-600">
               Your current attendance status
             </CardDescription>
           </CardHeader>
@@ -135,23 +137,23 @@ export default function StudentAttendance() {
               </div>
               
               <div className="mt-6 text-center">
-                <p className="text-lg text-oliveGreen-800">
+                <p className="text-lg text-navy-800">
                   <span className="font-bold">{studentData.overall.attended}</span> / {studentData.overall.totalClasses} classes attended
                 </p>
-                <p className="text-sm text-oliveGreen-600 mt-1">
+                <p className="text-sm text-navy-600 mt-1">
                   Across all subjects
                 </p>
               </div>
               
-              <div className="w-full border-t border-oliveGreen-100 mt-6 pt-4">
+              <div className="w-full border-t border-navy-100 mt-6 pt-4">
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="text-center p-3 bg-oliveGreen-50 rounded-lg">
-                    <p className="text-sm text-oliveGreen-600">Subjects</p>
-                    <p className="text-xl font-bold text-oliveGreen-800">{studentData.subjects.length}</p>
+                  <div className="text-center p-3 bg-navy-50 rounded-lg">
+                    <p className="text-sm text-navy-600">Subjects</p>
+                    <p className="text-xl font-bold text-navy-800">{studentData.subjects.length}</p>
                   </div>
-                  <div className="text-center p-3 bg-oliveGreen-50 rounded-lg">
-                    <p className="text-sm text-oliveGreen-600">Total Classes</p>
-                    <p className="text-xl font-bold text-oliveGreen-800">{studentData.overall.totalClasses}</p>
+                  <div className="text-center p-3 bg-navy-50 rounded-lg">
+                    <p className="text-sm text-navy-600">Total Classes</p>
+                    <p className="text-xl font-bold text-navy-800">{studentData.overall.totalClasses}</p>
                   </div>
                 </div>
               </div>
@@ -159,10 +161,10 @@ export default function StudentAttendance() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-md hover:shadow-lg transition-shadow border border-oliveGreen-100 col-span-2">
-          <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
-            <CardTitle className="text-oliveGreen-800">Subject-wise Attendance</CardTitle>
-            <CardDescription className="text-oliveGreen-600">
+        <Card className="shadow-md hover:shadow-lg transition-shadow border border-navy-100 col-span-2">
+          <CardHeader className="bg-navy-50 border-b border-navy-100 rounded-t-lg">
+            <CardTitle className="text-navy-800">Subject-wise Attendance</CardTitle>
+            <CardDescription className="text-navy-600">
               Attendance breakdown by subject
             </CardDescription>
           </CardHeader>
@@ -171,11 +173,11 @@ export default function StudentAttendance() {
               {studentData.subjects.map((subject) => (
                 <div 
                   key={subject.subjectId} 
-                  className="p-3 border border-oliveGreen-100 rounded-lg hover:bg-oliveGreen-50 cursor-pointer transition-colors"
+                  className="p-3 border border-navy-100 rounded-lg hover:bg-navy-50 cursor-pointer transition-colors"
                   onClick={() => openSubjectModal(subject.subjectId)}
                 >
                   <div className="flex justify-between mb-2">
-                    <h3 className="font-medium text-oliveGreen-900">{subject.subjectName}</h3>
+                    <h3 className="font-medium text-navy-900">{subject.subjectName}</h3>
                     <Badge 
                       className={`
                         ${subject.percentage >= 90 
@@ -192,7 +194,7 @@ export default function StudentAttendance() {
                   <div className="flex items-center gap-4">
                     <div className="flex-1">
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-oliveGreen-600">
+                        <span className="text-navy-600">
                           {subject.attended} / {subject.totalClasses} classes
                         </span>
                         <span className={`
@@ -216,10 +218,10 @@ export default function StudentAttendance() {
         </Card>
       </div>
 
-      <Card className="shadow-md hover:shadow-lg transition-shadow border border-oliveGreen-100">
-        <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
-          <CardTitle className="text-oliveGreen-800">Attendance Log</CardTitle>
-          <CardDescription className="text-oliveGreen-600">
+      <Card className="shadow-md hover:shadow-lg transition-shadow border border-navy-100">
+        <CardHeader className="bg-navy-50 border-b border-navy-100 rounded-t-lg">
+          <CardTitle className="text-navy-800">Attendance Log</CardTitle>
+          <CardDescription className="text-navy-600">
             Recent attendance records across all subjects
           </CardDescription>
         </CardHeader>
@@ -227,10 +229,10 @@ export default function StudentAttendance() {
           <Tabs defaultValue="all" className="w-full">
             <div className="px-4 pt-4">
               <TabsList className="w-full grid grid-cols-2">
-                <TabsTrigger value="all" className="data-[state=active]:bg-oliveGreen-100 data-[state=active]:text-oliveGreen-900">
+                <TabsTrigger value="all" className="data-[state=active]:bg-navy-100 data-[state=active]:text-navy-900">
                   All Records
                 </TabsTrigger>
-                <TabsTrigger value="absent" className="data-[state=active]:bg-oliveGreen-100 data-[state=active]:text-oliveGreen-900">
+                <TabsTrigger value="absent" className="data-[state=active]:bg-navy-100 data-[state=active]:text-navy-900">
                   Absent Days
                 </TabsTrigger>
               </TabsList>
@@ -239,7 +241,7 @@ export default function StudentAttendance() {
             <TabsContent value="all" className="mt-4">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-oliveGreen-50/50">
+                  <TableRow className="bg-navy-50/50">
                     <TableHead>Date</TableHead>
                     <TableHead>Subject</TableHead>
                     <TableHead className="text-center">Status</TableHead>
@@ -250,7 +252,7 @@ export default function StudentAttendance() {
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                     .slice(0, 10)
                     .map((record) => {
-                      const studentRecord = record.students.find(s => s.studentId === "1");
+                      const studentRecord = record.students.find(s => s.studentId === user?.id);
                       if (!studentRecord) return null;
                       
                       return (
@@ -286,7 +288,7 @@ export default function StudentAttendance() {
             <TabsContent value="absent" className="mt-4">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-oliveGreen-50/50">
+                  <TableRow className="bg-navy-50/50">
                     <TableHead>Date</TableHead>
                     <TableHead>Subject</TableHead>
                     <TableHead className="text-center">Status</TableHead>
@@ -295,12 +297,12 @@ export default function StudentAttendance() {
                 <TableBody>
                   {attendance
                     .filter(record => {
-                      const studentRecord = record.students.find(s => s.studentId === "1");
+                      const studentRecord = record.students.find(s => s.studentId === user?.id);
                       return studentRecord && !studentRecord.present;
                     })
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                     .map((record) => {
-                      const studentRecord = record.students.find(s => s.studentId === "1");
+                      const studentRecord = record.students.find(s => s.studentId === user?.id);
                       if (!studentRecord) return null;
                       
                       return (
@@ -341,37 +343,37 @@ export default function StudentAttendance() {
           {selectedSubject && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-oliveGreen-50 p-4 rounded-lg text-center">
-                  <p className="text-sm text-oliveGreen-600">Attendance Rate</p>
+                <div className="bg-navy-50 p-4 rounded-lg text-center">
+                  <p className="text-sm text-navy-600">Attendance Rate</p>
                   <p className={`text-2xl font-bold ${getAttendanceTextColor(selectedSubject.percentage)}`}>
                     {selectedSubject.percentage.toFixed(1)}%
                   </p>
                 </div>
                 
-                <div className="bg-oliveGreen-50 p-4 rounded-lg text-center">
-                  <p className="text-sm text-oliveGreen-600">Classes Attended</p>
-                  <p className="text-2xl font-bold text-oliveGreen-800">
+                <div className="bg-navy-50 p-4 rounded-lg text-center">
+                  <p className="text-sm text-navy-600">Classes Attended</p>
+                  <p className="text-2xl font-bold text-navy-800">
                     {selectedSubject.attended} / {selectedSubject.totalClasses}
                   </p>
                 </div>
                 
-                <div className="bg-oliveGreen-50 p-4 rounded-lg text-center">
-                  <p className="text-sm text-oliveGreen-600">Absences</p>
-                  <p className="text-2xl font-bold text-oliveGreen-800">
+                <div className="bg-navy-50 p-4 rounded-lg text-center">
+                  <p className="text-sm text-navy-600">Absences</p>
+                  <p className="text-2xl font-bold text-navy-800">
                     {selectedSubject.totalClasses - selectedSubject.attended}
                   </p>
                 </div>
               </div>
               
-              <div className="rounded-lg border border-oliveGreen-100 overflow-hidden">
-                <div className="bg-oliveGreen-50 px-4 py-3 border-b border-oliveGreen-100">
-                  <h3 className="font-medium text-oliveGreen-800">Attendance Log</h3>
+              <div className="rounded-lg border border-navy-100 overflow-hidden">
+                <div className="bg-navy-50 px-4 py-3 border-b border-navy-100">
+                  <h3 className="font-medium text-navy-800">Attendance Log</h3>
                 </div>
                 
                 <div className="max-h-60 overflow-y-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-oliveGreen-50/50">
+                      <TableRow className="bg-navy-50/50">
                         <TableHead>Date</TableHead>
                         <TableHead className="text-center">Status</TableHead>
                       </TableRow>

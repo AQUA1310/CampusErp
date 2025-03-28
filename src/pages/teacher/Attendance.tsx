@@ -16,10 +16,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Calendar, Users, Check, X, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useData } from "@/contexts/DataContext";
+import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/shared/DashboardLayout";
 
 export default function TeacherAttendance() {
   const { students, subjects, attendance, markAttendance } = useData();
+  const { user } = useAuth();
   
   const [selectedSubject, setSelectedSubject] = useState(subjects[0]?.id || "");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -84,6 +86,7 @@ export default function TeacherAttendance() {
     setTimeout(() => {
       markAttendance(selectedSubject, selectedDate, studentAttendance);
       setIsSubmitting(false);
+      toast.success("Attendance submitted successfully");
     }, 1000);
   };
   
@@ -120,14 +123,14 @@ export default function TeacherAttendance() {
       <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="shadow-sm">
           <CardContent className="p-4 flex flex-col gap-2">
-            <label htmlFor="subject" className="text-sm font-medium text-oliveGreen-800">
+            <label htmlFor="subject" className="text-sm font-medium text-navy-800">
               Select Subject
             </label>
             <select
               id="subject"
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full h-10 rounded-md border border-oliveGreen-200 bg-background px-3 py-2 text-sm focus:outline-oliveGreen-500"
+              className="w-full h-10 rounded-md border border-navy-200 bg-background px-3 py-2 text-sm focus:outline-primary"
             >
               {subjects.map((subject) => (
                 <option key={subject.id} value={subject.id}>
@@ -140,7 +143,7 @@ export default function TeacherAttendance() {
         
         <Card className="shadow-sm">
           <CardContent className="p-4 flex flex-col gap-2">
-            <label htmlFor="date" className="text-sm font-medium text-oliveGreen-800">
+            <label htmlFor="date" className="text-sm font-medium text-navy-800">
               Select Date
             </label>
             <input
@@ -148,7 +151,7 @@ export default function TeacherAttendance() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full h-10 rounded-md border border-oliveGreen-200 bg-background px-3 py-2 text-sm focus:outline-oliveGreen-500"
+              className="w-full h-10 rounded-md border border-navy-200 bg-background px-3 py-2 text-sm focus:outline-primary"
             />
           </CardContent>
         </Card>
@@ -156,8 +159,8 @@ export default function TeacherAttendance() {
         <Card className="shadow-sm">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-medium text-oliveGreen-800">Quick Actions</h3>
-              <p className="text-xs text-oliveGreen-600">Mark all students at once</p>
+              <h3 className="text-sm font-medium text-navy-800">Quick Actions</h3>
+              <p className="text-xs text-navy-600">Mark all students at once</p>
             </div>
             <div className="flex gap-2">
               <Button 
@@ -184,11 +187,11 @@ export default function TeacherAttendance() {
       </div>
       
       <Card className="shadow-md">
-        <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
+        <CardHeader className="bg-navy-50 border-b border-navy-100 rounded-t-lg">
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle className="text-oliveGreen-800">Mark Attendance</CardTitle>
-              <CardDescription className="text-oliveGreen-600">
+              <CardTitle className="text-navy-800">Mark Attendance</CardTitle>
+              <CardDescription className="text-navy-600">
                 {new Date(selectedDate).toLocaleDateString('en-US', { 
                   weekday: 'long', 
                   year: 'numeric', 
@@ -197,7 +200,7 @@ export default function TeacherAttendance() {
                 })}
               </CardDescription>
             </div>
-            <Badge className="bg-oliveGreen-100 text-oliveGreen-800 hover:bg-oliveGreen-200 flex items-center gap-1">
+            <Badge className="bg-navy-100 text-navy-800 hover:bg-navy-200 flex items-center gap-1">
               <Users className="h-3 w-3" />
               {students.length} Students
             </Badge>
@@ -214,7 +217,7 @@ export default function TeacherAttendance() {
           
           <Table>
             <TableHeader>
-              <TableRow className="bg-oliveGreen-50/50">
+              <TableRow className="bg-navy-50/50">
                 <TableHead className="w-[100px]">Roll No</TableHead>
                 <TableHead>Student Name</TableHead>
                 <TableHead className="text-center">Attendance</TableHead>
@@ -296,9 +299,9 @@ export default function TeacherAttendance() {
             </TableBody>
           </Table>
           
-          <div className="p-4 border-t border-oliveGreen-100 bg-oliveGreen-50/30 flex justify-end">
+          <div className="p-4 border-t border-navy-100 bg-navy-50/30 flex justify-end">
             <Button
-              className="bg-oliveGreen-600 hover:bg-oliveGreen-700 min-w-32"
+              className="min-w-32"
               onClick={handleSubmit}
               disabled={isSubmitting}
             >

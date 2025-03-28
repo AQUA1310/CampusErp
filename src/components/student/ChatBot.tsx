@@ -2,14 +2,18 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { BrainCircuit, Send, X } from "lucide-react";
+import { BrainCircuit, Send, X, User, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
+import { useData } from "@/contexts/DataContext";
 
 interface Message {
   id: string;
   content: string;
-  sender: "user" | "ai";
+  sender: "user" | "ai" | "teacher" | "student";
+  senderName?: string;
+  receiverId?: string;
   timestamp: Date;
 }
 
@@ -19,7 +23,10 @@ interface ChatBotProps {
 
 export default function ChatBot({ onClose }: ChatBotProps) {
   const { user } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([
+  const { teacherList, studentList, sendMessage, messages: appMessages } = useData();
+  const [activeTab, setActiveTab] = useState<string>("ai");
+  const [selectedRecipient, setSelectedRecipient] = useState<string>("");
+  const [aiMessages, setAiMessages] = useState<Message[]>([
     {
       id: "welcome",
       content: `Hello ${user?.name || "there"}! I'm your AI tutor. How can I help you with your studies today?`,
@@ -34,35 +41,45 @@ export default function ChatBot({ onClose }: ChatBotProps) {
   // Scroll to bottom whenever messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [aiMessages, appMessages]);
 
   const handleSendMessage = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!inputValue.trim()) return;
 
-    // Add user message
-    const userMessage: Message = {
-      id: `user-${Date.now()}`,
-      content: inputValue,
-      sender: "user",
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, userMessage]);
-    setInputValue("");
-    setIsTyping(true);
-
-    // Simulate AI response delay (1-2 seconds)
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(inputValue);
-      const aiMessage: Message = {
-        id: `ai-${Date.now()}`,
-        content: aiResponse,
-        sender: "ai",
+    if (activeTab === "ai") {
+      // Add user message to AI chat
+      const userMessage: Message = {
+        id: `user-${Date.now()}`,
+        content: inputValue,
+        sender: "user",
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsTyping(false);
-    }, Math.random() * 1000 + 1000);
+      setAiMessages((prev) => [...prev, userMessage]);
+      setInputValue("");
+      setIsTyping(true);
+
+      // Simulate AI response delay (1-2 seconds)
+      setTimeout(() => {
+        const aiResponse = generateAIResponse(inputValue);
+        const aiMessage: Message = {
+          id: `ai-${Date.now()}`,
+          content: aiResponse,
+          sender: "ai",
+          timestamp: new Date(),
+        };
+        setAiMessages((prev) => [...prev, aiMessage]);
+        setIsTyping(false);
+      }, Math.random() * 1000 + 1000);
+    } else if (activeTab === "teachers" && selectedRecipient) {
+      // Send message to teacher
+      sendMessage(user?.id || "", selectedRecipient, inputValue, user?.type === "student" ? "student" : "teacher");
+      setInputValue("");
+    } else if (activeTab === "students" && selectedRecipient) {
+      // Send message to student
+      sendMessage(user?.id || "", selectedRecipient, inputValue, user?.type === "teacher" ? "teacher" : "student");
+      setInputValue("");
+    }
   };
 
   const generateAIResponse = (userInput: string): string => {
@@ -104,118 +121,352 @@ export default function ChatBot({ onClose }: ChatBotProps) {
     return "That's an interesting question. I can help you understand mathematical and computing concepts, explain technical topics, solve problems, or provide study tips. Could you provide more details about what you're looking to learn?";
   };
 
+  // Filter messages for the selected recipient
+  const getMessagesForRecipient = (recipientId: string) => {
+    return appMessages.filter(
+      (msg) => 
+        (msg.senderId === user?.id && msg.receiverId === recipientId) || 
+        (msg.senderId === recipientId && msg.receiverId === user?.id)
+    ).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  };
+
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between bg-oliveGreen-600 text-white p-3">
+      <div className="flex items-center justify-between bg-primary text-white p-3">
         <div className="flex items-center gap-2">
           <BrainCircuit className="h-5 w-5" />
-          <h3 className="font-semibold">AI Tutor</h3>
+          <h3 className="font-semibold">ARC Chat</h3>
         </div>
         <Button
           variant="ghost"
           size="icon"
-          className="text-white hover:bg-oliveGreen-700"
+          className="text-white hover:bg-primary-700"
           onClick={onClose}
         >
           <X className="h-5 w-5" />
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 bg-oliveGreen-50">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${
-              message.sender === "user" ? "justify-end" : "justify-start"
-            } mb-4`}
-          >
-            <div
-              className={`max-w-[80%] rounded-lg p-3 ${
-                message.sender === "user"
-                  ? "bg-oliveGreen-600 text-white rounded-tr-none"
-                  : "bg-white border border-oliveGreen-200 rounded-tl-none"
-              }`}
-            >
-              {message.sender === "ai" && (
-                <div className="flex items-center gap-2 mb-1">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src="/placeholder.svg" />
-                    <AvatarFallback className="bg-oliveGreen-200 text-oliveGreen-800 text-xs">
-                      AI
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs font-medium text-oliveGreen-800">
-                    AI Tutor
-                  </span>
-                </div>
-              )}
-              <p
-                className={`text-sm ${
-                  message.sender === "user" ? "text-white" : "text-oliveGreen-800"
-                }`}
-              >
-                {message.content}
-              </p>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+        <TabsList className="grid grid-cols-3 m-2">
+          <TabsTrigger value="ai" className="flex items-center gap-1">
+            <BrainCircuit className="h-4 w-4" /> AI Tutor
+          </TabsTrigger>
+          <TabsTrigger value="teachers" className="flex items-center gap-1">
+            <User className="h-4 w-4" /> Teachers
+          </TabsTrigger>
+          <TabsTrigger value="students" className="flex items-center gap-1">
+            <Users className="h-4 w-4" /> Students
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="ai" className="flex-1 flex flex-col mb-0 mt-0">
+          <div className="flex-1 overflow-y-auto p-4 bg-navy-50">
+            {aiMessages.map((message) => (
               <div
-                className={`text-xs mt-1 ${
-                  message.sender === "user" ? "text-oliveGreen-200" : "text-oliveGreen-400"
-                } text-right`}
+                key={message.id}
+                className={`flex ${
+                  message.sender === "user" ? "justify-end" : "justify-start"
+                } mb-4`}
               >
-                {message.timestamp.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                <div
+                  className={`max-w-[80%] rounded-lg p-3 ${
+                    message.sender === "user"
+                      ? "bg-primary text-white rounded-tr-none"
+                      : "bg-white border border-navy-200 rounded-tl-none"
+                  }`}
+                >
+                  {message.sender === "ai" && (
+                    <div className="flex items-center gap-2 mb-1">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src="/placeholder.svg" />
+                        <AvatarFallback className="bg-navy-200 text-navy-800 text-xs">
+                          AI
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs font-medium text-navy-800">
+                        AI Tutor
+                      </span>
+                    </div>
+                  )}
+                  <p
+                    className={`text-sm ${
+                      message.sender === "user" ? "text-white" : "text-navy-800"
+                    }`}
+                  >
+                    {message.content}
+                  </p>
+                  <div
+                    className={`text-xs mt-1 ${
+                      message.sender === "user" ? "text-navy-200" : "text-navy-400"
+                    } text-right`}
+                  >
+                    {message.timestamp.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
+            ))}
 
-        {isTyping && (
-          <div className="flex justify-start mb-4">
-            <div className="bg-white border border-oliveGreen-200 rounded-lg rounded-tl-none p-3 max-w-[80%]">
-              <div className="flex items-center gap-2 mb-1">
-                <Avatar className="h-6 w-6">
-                  <AvatarImage src="/placeholder.svg" />
-                  <AvatarFallback className="bg-oliveGreen-200 text-oliveGreen-800 text-xs">
-                    AI
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-xs font-medium text-oliveGreen-800">
-                  AI Tutor
-                </span>
+            {isTyping && (
+              <div className="flex justify-start mb-4">
+                <div className="bg-white border border-navy-200 rounded-lg rounded-tl-none p-3 max-w-[80%]">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src="/placeholder.svg" />
+                      <AvatarFallback className="bg-navy-200 text-navy-800 text-xs">
+                        AI
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs font-medium text-navy-800">
+                      AI Tutor
+                    </span>
+                  </div>
+                  <div className="flex space-x-1">
+                    <div className="h-2 w-2 rounded-full bg-navy-300 animate-pulse"></div>
+                    <div className="h-2 w-2 rounded-full bg-navy-400 animate-pulse delay-150"></div>
+                    <div className="h-2 w-2 rounded-full bg-navy-500 animate-pulse delay-300"></div>
+                  </div>
+                </div>
               </div>
-              <div className="flex space-x-1">
-                <div className="h-2 w-2 rounded-full bg-oliveGreen-300 animate-pulse"></div>
-                <div className="h-2 w-2 rounded-full bg-oliveGreen-400 animate-pulse delay-150"></div>
-                <div className="h-2 w-2 rounded-full bg-oliveGreen-500 animate-pulse delay-300"></div>
-              </div>
-            </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
 
-      <form
-        onSubmit={handleSendMessage}
-        className="border-t border-oliveGreen-200 p-4 bg-white"
-      >
-        <div className="flex gap-2">
-          <Input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Type your question here..."
-            className="border-oliveGreen-200 focus-visible:ring-oliveGreen-500"
-          />
-          <Button
-            type="submit"
-            size="icon"
-            className="bg-oliveGreen-600 hover:bg-oliveGreen-700"
-            disabled={!inputValue.trim() || isTyping}
+          <form
+            onSubmit={handleSendMessage}
+            className="border-t border-navy-200 p-4 bg-white"
           >
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
-      </form>
+            <div className="flex gap-2">
+              <Input
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Type your question here..."
+                className="border-navy-200 focus-visible:ring-primary"
+              />
+              <Button
+                type="submit"
+                size="icon"
+                disabled={!inputValue.trim() || isTyping}
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </form>
+        </TabsContent>
+
+        <TabsContent value="teachers" className="flex-1 flex flex-col mb-0 mt-0">
+          <div className="border-b border-navy-200">
+            <select
+              className="w-full p-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              value={selectedRecipient}
+              onChange={(e) => setSelectedRecipient(e.target.value)}
+            >
+              <option value="">Select a teacher...</option>
+              {teacherList.map((teacher) => (
+                <option key={teacher.id} value={teacher.id}>
+                  {teacher.name} ({teacher.department})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedRecipient ? (
+            <>
+              <div className="flex-1 overflow-y-auto p-4 bg-navy-50">
+                {getMessagesForRecipient(selectedRecipient).map((message, index) => {
+                  const isFromUser = message.senderId === user?.id;
+                  const senderName = isFromUser 
+                    ? "You" 
+                    : teacherList.find(t => t.id === message.senderId)?.name || "Teacher";
+
+                  return (
+                    <div
+                      key={message.id || index}
+                      className={`flex ${isFromUser ? "justify-end" : "justify-start"} mb-4`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-lg p-3 ${
+                          isFromUser
+                            ? "bg-primary text-white rounded-tr-none"
+                            : "bg-white border border-navy-200 rounded-tl-none"
+                        }`}
+                      >
+                        {!isFromUser && (
+                          <div className="flex items-center gap-2 mb-1">
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage src="/placeholder.svg" />
+                              <AvatarFallback className="bg-navy-200 text-navy-800 text-xs">
+                                {senderName.split(' ').map(word => word[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-xs font-medium text-navy-800">
+                              {senderName}
+                            </span>
+                          </div>
+                        )}
+                        <p
+                          className={`text-sm ${
+                            isFromUser ? "text-white" : "text-navy-800"
+                          }`}
+                        >
+                          {message.content}
+                        </p>
+                        <div
+                          className={`text-xs mt-1 ${
+                            isFromUser ? "text-navy-200" : "text-navy-400"
+                          } text-right`}
+                        >
+                          {new Date(message.timestamp).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+
+              <form
+                onSubmit={handleSendMessage}
+                className="border-t border-navy-200 p-4 bg-white"
+              >
+                <div className="flex gap-2">
+                  <Input
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="Type your message here..."
+                    className="border-navy-200 focus-visible:ring-primary"
+                  />
+                  <Button
+                    type="submit"
+                    size="icon"
+                    disabled={!inputValue.trim()}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </form>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-4">
+              <div className="text-center">
+                <User className="h-12 w-12 text-navy-300 mx-auto" />
+                <p className="mt-2 text-navy-600">Select a teacher to start chatting</p>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="students" className="flex-1 flex flex-col mb-0 mt-0">
+          <div className="border-b border-navy-200">
+            <select
+              className="w-full p-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              value={selectedRecipient}
+              onChange={(e) => setSelectedRecipient(e.target.value)}
+            >
+              <option value="">Select a student...</option>
+              {studentList.map((student) => (
+                <option key={student.id} value={student.id}>
+                  {student.rollNumber} - {student.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedRecipient ? (
+            <>
+              <div className="flex-1 overflow-y-auto p-4 bg-navy-50">
+                {getMessagesForRecipient(selectedRecipient).map((message, index) => {
+                  const isFromUser = message.senderId === user?.id;
+                  const senderName = isFromUser 
+                    ? "You" 
+                    : studentList.find(s => s.id === message.senderId)?.name || "Student";
+
+                  return (
+                    <div
+                      key={message.id || index}
+                      className={`flex ${isFromUser ? "justify-end" : "justify-start"} mb-4`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-lg p-3 ${
+                          isFromUser
+                            ? "bg-primary text-white rounded-tr-none"
+                            : "bg-white border border-navy-200 rounded-tl-none"
+                        }`}
+                      >
+                        {!isFromUser && (
+                          <div className="flex items-center gap-2 mb-1">
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage src="/placeholder.svg" />
+                              <AvatarFallback className="bg-navy-200 text-navy-800 text-xs">
+                                {senderName.split(' ').map(word => word[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-xs font-medium text-navy-800">
+                              {senderName}
+                            </span>
+                          </div>
+                        )}
+                        <p
+                          className={`text-sm ${
+                            isFromUser ? "text-white" : "text-navy-800"
+                          }`}
+                        >
+                          {message.content}
+                        </p>
+                        <div
+                          className={`text-xs mt-1 ${
+                            isFromUser ? "text-navy-200" : "text-navy-400"
+                          } text-right`}
+                        >
+                          {new Date(message.timestamp).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+
+              <form
+                onSubmit={handleSendMessage}
+                className="border-t border-navy-200 p-4 bg-white"
+              >
+                <div className="flex gap-2">
+                  <Input
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="Type your message here..."
+                    className="border-navy-200 focus-visible:ring-primary"
+                  />
+                  <Button
+                    type="submit"
+                    size="icon"
+                    disabled={!inputValue.trim()}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </form>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-4">
+              <div className="text-center">
+                <Users className="h-12 w-12 text-navy-300 mx-auto" />
+                <p className="mt-2 text-navy-600">Select a student to start chatting</p>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

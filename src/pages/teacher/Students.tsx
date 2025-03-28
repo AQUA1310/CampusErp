@@ -123,20 +123,26 @@ export default function TeacherStudents() {
     setProfileOpen(true);
   };
 
+  // Ensure V Dhruv has CGPA 9.06 and is in top 3
+  const dhruvData = students.find(s => s.rollNumber === "24MAB0A41");
+  if (dhruvData && dhruvData.cgpa !== 9.06) {
+    dhruvData.cgpa = 9.06;
+  }
+
   return (
     <DashboardLayout title="Students" subtitle="Manage and view student information">
       <Card className="shadow-md">
-        <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
+        <CardHeader className="bg-navy-50 border-b border-navy-100 rounded-t-lg">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
-              <CardTitle className="text-oliveGreen-800">Student List</CardTitle>
-              <CardDescription className="text-oliveGreen-600">
+              <CardTitle className="text-navy-800">Student List</CardTitle>
+              <CardDescription className="text-navy-600">
                 All students in Mathematics & Computing department
               </CardDescription>
             </div>
             
             <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-oliveGreen-500" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-navy-500" />
               <Input
                 placeholder="Search students..."
                 value={searchTerm}
@@ -203,7 +209,7 @@ export default function TeacherStudents() {
                       <TableCell>{student.name}</TableCell>
                       <TableCell className="hidden md:table-cell">
                         <div className="flex items-center gap-1">
-                          <Mail className="h-4 w-4 text-oliveGreen-500" />
+                          <Mail className="h-4 w-4 text-navy-500" />
                           <span className="text-sm">{student.email}</span>
                         </div>
                       </TableCell>
@@ -212,7 +218,7 @@ export default function TeacherStudents() {
                           ${student.cgpa >= 9.0 
                             ? "bg-success-100 text-success-700" 
                             : student.cgpa >= 8.0 
-                            ? "bg-oliveGreen-100 text-oliveGreen-700"
+                            ? "bg-navy-100 text-navy-700"
                             : student.cgpa >= 7.0
                             ? "bg-warning-100 text-warning-700" 
                             : "bg-danger-100 text-danger-700"
@@ -225,7 +231,7 @@ export default function TeacherStudents() {
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="text-oliveGreen-700 hover:text-oliveGreen-900 hover:bg-oliveGreen-50"
+                          className="text-navy-700 hover:text-navy-900 hover:bg-navy-50"
                           onClick={() => handleViewProfile(student)}
                         >
                           View Profile
@@ -236,9 +242,9 @@ export default function TeacherStudents() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
-                      <User className="mx-auto h-12 w-12 text-oliveGreen-300" />
-                      <h3 className="mt-2 text-lg font-medium text-oliveGreen-900">No students found</h3>
-                      <p className="mt-1 text-sm text-oliveGreen-500">Try adjusting your search criteria</p>
+                      <User className="mx-auto h-12 w-12 text-navy-300" />
+                      <h3 className="mt-2 text-lg font-medium text-navy-900">No students found</h3>
+                      <p className="mt-1 text-sm text-navy-500">Try adjusting your search criteria</p>
                     </TableCell>
                   </TableRow>
                 )}
@@ -262,57 +268,57 @@ export default function TeacherStudents() {
             <div className="py-4">
               <div className="flex flex-col md:flex-row gap-6 mb-6">
                 <div className="flex-shrink-0 flex flex-col items-center">
-                  <div className="h-24 w-24 bg-oliveGreen-100 rounded-full flex items-center justify-center text-oliveGreen-700 text-2xl font-semibold">
+                  <div className="h-24 w-24 bg-navy-100 rounded-full flex items-center justify-center text-navy-700 text-2xl font-semibold">
                     {selectedStudent.name.split(" ").map(n => n[0]).join("")}
                   </div>
-                  <h3 className="mt-3 font-semibold text-lg text-oliveGreen-900">
+                  <h3 className="mt-3 font-semibold text-lg text-navy-900">
                     {selectedStudent.name}
                   </h3>
-                  <p className="text-oliveGreen-600 text-sm">
+                  <p className="text-navy-600 text-sm">
                     {selectedStudent.rollNumber}
                   </p>
-                  <Badge className="mt-2 bg-oliveGreen-600">
+                  <Badge className="mt-2 bg-primary">
                     CGPA: {selectedStudent.cgpa.toFixed(2)}
                   </Badge>
                 </div>
                 
                 <div className="flex-1 space-y-3">
                   <div>
-                    <p className="text-sm text-oliveGreen-600">Email</p>
+                    <p className="text-sm text-navy-600">Email</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <Mail className="h-4 w-4 text-oliveGreen-500" />
+                      <Mail className="h-4 w-4 text-navy-500" />
                       <p>{selectedStudent.email}</p>
                     </div>
                   </div>
                   
                   <div>
-                    <p className="text-sm text-oliveGreen-600">Phone</p>
+                    <p className="text-sm text-navy-600">Phone</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <Phone className="h-4 w-4 text-oliveGreen-500" />
+                      <Phone className="h-4 w-4 text-navy-500" />
                       <p>{selectedStudent.profile.phoneNumber}</p>
                     </div>
                   </div>
                   
                   <div>
-                    <p className="text-sm text-oliveGreen-600">Date of Birth</p>
+                    <p className="text-sm text-navy-600">Date of Birth</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <Calendar className="h-4 w-4 text-oliveGreen-500" />
+                      <Calendar className="h-4 w-4 text-navy-500" />
                       <p>{new Date(selectedStudent.profile.dateOfBirth).toLocaleDateString()}</p>
                     </div>
                   </div>
                   
                   <div>
-                    <p className="text-sm text-oliveGreen-600">Department</p>
+                    <p className="text-sm text-navy-600">Department</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <GraduationCap className="h-4 w-4 text-oliveGreen-500" />
+                      <GraduationCap className="h-4 w-4 text-navy-500" />
                       <p>{selectedStudent.profile.department}</p>
                     </div>
                   </div>
                   
                   <div>
-                    <p className="text-sm text-oliveGreen-600">Academic Year</p>
+                    <p className="text-sm text-navy-600">Academic Year</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <BookOpen className="h-4 w-4 text-oliveGreen-500" />
+                      <BookOpen className="h-4 w-4 text-navy-500" />
                       <p>Year {selectedStudent.profile.year}, Semester {selectedStudent.profile.semester} ({selectedStudent.profile.batch})</p>
                     </div>
                   </div>
@@ -320,7 +326,7 @@ export default function TeacherStudents() {
               </div>
               
               <div className="mt-6">
-                <h3 className="font-medium text-lg text-oliveGreen-900 mb-3">
+                <h3 className="font-medium text-lg text-navy-900 mb-3">
                   Assignment Submissions
                 </h3>
                 
@@ -339,7 +345,7 @@ export default function TeacherStudents() {
                           <TableRow key={submission.id}>
                             <TableCell className="font-medium">
                               {assignment.title}
-                              <p className="text-xs text-oliveGreen-500">{assignment.subjectName}</p>
+                              <p className="text-xs text-navy-500">{assignment.subjectName}</p>
                             </TableCell>
                             <TableCell>{new Date(submission.submittedAt).toLocaleDateString()}</TableCell>
                             <TableCell className="text-right">
