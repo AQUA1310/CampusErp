@@ -76,10 +76,10 @@ export default function ChatBot({ onClose }: ChatBotProps) {
       const messageObj = {
         senderId: user?.id || "",
         senderName: user?.name || "",
-        senderType: user?.type === "student" ? "student" : "teacher",
+        senderType: (user?.type || "student") as "student" | "teacher",
         receiverId: selectedRecipient,
         receiverName: teachers.find(t => t.id === selectedRecipient)?.name || "",
-        receiverType: "teacher",
+        receiverType: "teacher" as const,
         content: inputValue
       };
       
@@ -91,10 +91,10 @@ export default function ChatBot({ onClose }: ChatBotProps) {
       const messageObj = {
         senderId: user?.id || "",
         senderName: user?.name || "",
-        senderType: user?.type === "teacher" ? "teacher" : "student",
+        senderType: (user?.type || "student") as "student" | "teacher",
         receiverId: selectedRecipient,
         receiverName: students.find(s => s.id === selectedRecipient)?.name || "",
-        receiverType: "student",
+        receiverType: "student" as const,
         content: inputValue
       };
       
