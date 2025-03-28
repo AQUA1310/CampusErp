@@ -23,7 +23,7 @@ interface ChatBotProps {
 
 export default function ChatBot({ onClose }: ChatBotProps) {
   const { user } = useAuth();
-  const { teacherList, studentList, sendMessage, messages: appMessages } = useData();
+  const { teachers, students, messages: appMessages, sendMessage } = useData();
   const [activeTab, setActiveTab] = useState<string>("ai");
   const [selectedRecipient, setSelectedRecipient] = useState<string>("");
   const [aiMessages, setAiMessages] = useState<Message[]>([
@@ -72,12 +72,34 @@ export default function ChatBot({ onClose }: ChatBotProps) {
         setIsTyping(false);
       }, Math.random() * 1000 + 1000);
     } else if (activeTab === "teachers" && selectedRecipient) {
+      // Create message object for teacher
+      const messageObj = {
+        senderId: user?.id || "",
+        senderName: user?.name || "",
+        senderType: user?.type === "student" ? "student" : "teacher",
+        receiverId: selectedRecipient,
+        receiverName: teachers.find(t => t.id === selectedRecipient)?.name || "",
+        receiverType: "teacher",
+        content: inputValue
+      };
+      
       // Send message to teacher
-      sendMessage(user?.id || "", selectedRecipient, inputValue, user?.type === "student" ? "student" : "teacher");
+      sendMessage(messageObj);
       setInputValue("");
     } else if (activeTab === "students" && selectedRecipient) {
+      // Create message object for student
+      const messageObj = {
+        senderId: user?.id || "",
+        senderName: user?.name || "",
+        senderType: user?.type === "teacher" ? "teacher" : "student",
+        receiverId: selectedRecipient,
+        receiverName: students.find(s => s.id === selectedRecipient)?.name || "",
+        receiverType: "student",
+        content: inputValue
+      };
+      
       // Send message to student
-      sendMessage(user?.id || "", selectedRecipient, inputValue, user?.type === "teacher" ? "teacher" : "student");
+      sendMessage(messageObj);
       setInputValue("");
     }
   };
@@ -265,7 +287,7 @@ export default function ChatBot({ onClose }: ChatBotProps) {
               onChange={(e) => setSelectedRecipient(e.target.value)}
             >
               <option value="">Select a teacher...</option>
-              {teacherList.map((teacher) => (
+              {teachers.map((teacher) => (
                 <option key={teacher.id} value={teacher.id}>
                   {teacher.name} ({teacher.department})
                 </option>
@@ -280,7 +302,7 @@ export default function ChatBot({ onClose }: ChatBotProps) {
                   const isFromUser = message.senderId === user?.id;
                   const senderName = isFromUser 
                     ? "You" 
-                    : teacherList.find(t => t.id === message.senderId)?.name || "Teacher";
+                    : teachers.find(t => t.id === message.senderId)?.name || "Teacher";
 
                   return (
                     <div
@@ -370,7 +392,7 @@ export default function ChatBot({ onClose }: ChatBotProps) {
               onChange={(e) => setSelectedRecipient(e.target.value)}
             >
               <option value="">Select a student...</option>
-              {studentList.map((student) => (
+              {students.map((student) => (
                 <option key={student.id} value={student.id}>
                   {student.rollNumber} - {student.name}
                 </option>
@@ -385,7 +407,7 @@ export default function ChatBot({ onClose }: ChatBotProps) {
                   const isFromUser = message.senderId === user?.id;
                   const senderName = isFromUser 
                     ? "You" 
-                    : studentList.find(s => s.id === message.senderId)?.name || "Student";
+                    : students.find(s => s.id === message.senderId)?.name || "Student";
 
                   return (
                     <div
