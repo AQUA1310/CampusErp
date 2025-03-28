@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -128,6 +127,38 @@ export interface TimeTable {
   slots: TimeSlot[];
 }
 
+export interface ExamResult {
+  subjectCode: string;
+  subjectName: string;
+  credit: number;
+  grade: string;
+  marks?: number;
+}
+
+export interface MinorResult {
+  subjectId: string;
+  subjectCode: string;
+  subjectName: string;
+  maxMarks: number;
+  obtainedMarks: number;
+  examDate: string;
+  examType: "Minor1" | "Minor2";
+}
+
+export interface SemesterResult {
+  studentId: string;
+  studentName: string;
+  rollNumber: string;
+  department: string;
+  specialization: string;
+  year: number;
+  semester: number;
+  academicYear: string;
+  results: ExamResult[];
+  sgpa: number;
+  cgpa: number;
+}
+
 // Create the context
 interface DataContextType {
   students: Student[];
@@ -140,6 +171,8 @@ interface DataContextType {
   messages: Message[];
   notifications: Notification[];
   timetable: TimeTable;
+  semesterResults: SemesterResult[];
+  minorResults: MinorResult[];
 
   // Actions for students
   submitAssignment: (assignmentId: string, studentId: string, fileUrl: string) => void;
@@ -165,6 +198,8 @@ const DataContext = createContext<DataContextType>({
   messages: [],
   notifications: [],
   timetable: { slots: [] },
+  semesterResults: [],
+  minorResults: [],
 
   submitAssignment: () => {},
   sendMessage: () => {},
@@ -684,6 +719,140 @@ const mockTimetable: TimeTable = {
   ],
 };
 
+const mockSemesterResults: SemesterResult[] = [
+  {
+    studentId: "1",
+    studentName: "Vaghela Dhruv Sudhirbhai",
+    rollNumber: "24MAB0A41",
+    department: "Department of Mathematics [MATHS]",
+    specialization: "Mathematics and Computing [MC2024]",
+    year: 1,
+    semester: 1,
+    academicYear: "2024-2025",
+    results: [
+      {
+        subjectCode: "BT1161",
+        subjectName: "Biology for Engineers",
+        credit: 2,
+        grade: "B"
+      },
+      {
+        subjectCode: "MA1101",
+        subjectName: "Calculus",
+        credit: 3,
+        grade: "A"
+      },
+      {
+        subjectCode: "PH1161",
+        subjectName: "Engineering Physics",
+        credit: 4,
+        grade: "S"
+      },
+      {
+        subjectCode: "HS1161",
+        subjectName: "English for Technical Communication",
+        credit: 3,
+        grade: "B"
+      },
+      {
+        subjectCode: "IC1101",
+        subjectName: "Extra Academic Activity - I",
+        credit: 0,
+        grade: "P"
+      },
+      {
+        subjectCode: "MA1103",
+        subjectName: "Programming and Data Structures",
+        credit: 3,
+        grade: "A"
+      },
+      {
+        subjectCode: "MA1105",
+        subjectName: "Programming and Data Structures Lab",
+        credit: 2,
+        grade: "S"
+      }
+    ],
+    sgpa: 9.06,
+    cgpa: 9.06
+  }
+];
+
+const mockMinorResults: MinorResult[] = [
+  {
+    subjectId: "1",
+    subjectCode: "MA1102",
+    subjectName: "Design Thinking",
+    maxMarks: 30,
+    obtainedMarks: 26,
+    examDate: "2023-09-15",
+    examType: "Minor1"
+  },
+  {
+    subjectId: "2",
+    subjectCode: "MA1104",
+    subjectName: "Ordinary Differential Equations",
+    maxMarks: 30,
+    obtainedMarks: 28,
+    examDate: "2023-09-16",
+    examType: "Minor1"
+  },
+  {
+    subjectId: "3",
+    subjectCode: "MA1106",
+    subjectName: "Data Structures and Algorithms",
+    maxMarks: 30,
+    obtainedMarks: 25,
+    examDate: "2023-09-17",
+    examType: "Minor1"
+  },
+  {
+    subjectId: "4",
+    subjectCode: "EE1162",
+    subjectName: "Basic Electrical and Electronics Engineering",
+    maxMarks: 30,
+    obtainedMarks: 24,
+    examDate: "2023-09-18",
+    examType: "Minor1"
+  },
+  {
+    subjectId: "1",
+    subjectCode: "MA1102",
+    subjectName: "Design Thinking",
+    maxMarks: 30,
+    obtainedMarks: 28,
+    examDate: "2023-10-20",
+    examType: "Minor2"
+  },
+  {
+    subjectId: "2",
+    subjectCode: "MA1104",
+    subjectName: "Ordinary Differential Equations",
+    maxMarks: 30,
+    obtainedMarks: 29,
+    examDate: "2023-10-21",
+    examType: "Minor2"
+  },
+  {
+    subjectId: "3",
+    subjectCode: "MA1106",
+    subjectName: "Data Structures and Algorithms",
+    maxMarks: 30,
+    obtainedMarks: 27,
+    examDate: "2023-10-22",
+    examType: "Minor2"
+  },
+  {
+    subjectId: "4",
+    subjectCode: "EE1162",
+    subjectName: "Basic Electrical and Electronics Engineering",
+    maxMarks: 30,
+    obtainedMarks: 26,
+    examDate: "2023-10-23",
+    examType: "Minor2"
+  }
+];
+
 // DataProvider component
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [students, setStudents] = useState<Student[]>(mockStudents);
@@ -696,6 +865,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [messages, setMessages] = useState<Message[]>(mockMessages);
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [timetable] = useState<TimeTable>(mockTimetable);
+  const [semesterResults] = useState<SemesterResult[]>(mockSemesterResults);
+  const [minorResults] = useState<MinorResult[]>(mockMinorResults);
 
   // Actions for students
   const submitAssignment = (assignmentId: string, studentId: string, fileUrl: string) => {
@@ -917,6 +1088,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         messages,
         notifications,
         timetable,
+        semesterResults,
+        minorResults,
         submitAssignment,
         sendMessage,
         markMessageAsRead,

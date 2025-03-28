@@ -18,6 +18,7 @@ import StudentAssignments from "./pages/student/Assignments";
 import StudentAttendance from "./pages/student/Attendance";
 import StudentTimetable from "./pages/student/Timetable";
 import StudentChat from "./pages/student/Chat";
+import StudentResults from "./pages/student/Results";
 
 // Teacher Pages
 import TeacherDashboard from "./pages/teacher/Dashboard";
@@ -70,6 +71,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredUserType="student">
                     <StudentTimetable />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/student-dashboard/results" 
+                element={
+                  <ProtectedRoute requiredUserType="student">
+                    <StudentResults />
                   </ProtectedRoute>
                 } 
               />

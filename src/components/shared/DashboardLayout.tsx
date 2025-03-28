@@ -12,7 +12,8 @@ import {
   BarChart, 
   UserCircle, 
   Settings, 
-  Home 
+  Home,
+  GraduationCap
 } from "lucide-react";
 
 interface DashboardLayoutProps {
@@ -119,6 +120,19 @@ export default function DashboardLayout({ children, title, subtitle }: Dashboard
                   <span className="hidden md:inline">Attendance</span>
                 </Button>
               </li>
+              
+              {isStudent && (
+                <li>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-primary-700 hover:bg-primary-100 hover:text-primary-800"
+                    onClick={() => navigateTo("/student-dashboard/results")}
+                  >
+                    <GraduationCap className="h-5 w-5 mr-2" />
+                    <span className="hidden md:inline">Results</span>
+                  </Button>
+                </li>
+              )}
               
               <li>
                 <Button
