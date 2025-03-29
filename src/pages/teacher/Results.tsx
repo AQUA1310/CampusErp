@@ -13,9 +13,29 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Calendar } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
 import DashboardLayout from "@/components/shared/DashboardLayout";
+
+// Define types for better type safety
+interface Student {
+  id: string;
+  rollNumber: string;
+  name: string;
+}
+
+interface MinorResult {
+  id: string;
+  studentId: string;
+  rollNumber: string;
+  studentName: string;
+  subjectId: string;
+  subjectName: string;
+  subjectCode: string;
+  examDate: string;
+  maxMarks: number;
+  obtainedMarks: number;
+  percentage: number;
+}
 
 export default function TeacherResults() {
   const { subjects, minorResults } = useData();
@@ -44,8 +64,8 @@ export default function TeacherResults() {
       </div>
 
       <Card className="shadow-md">
-        <CardHeader className="bg-slate-50 border-b border-slate-100 rounded-t-lg">
-          <CardTitle className="text-slate-800">Minor Results</CardTitle>
+        <CardHeader className="bg-blue-50 border-b border-blue-100 rounded-t-lg">
+          <CardTitle className="text-blue-900">Minor Results</CardTitle>
           <CardDescription className="text-slate-600">
             View student minor exam results
           </CardDescription>
@@ -53,8 +73,9 @@ export default function TeacherResults() {
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50/50">
+              <TableRow className="bg-blue-50/50">
                 <TableHead>Roll Number</TableHead>
+                <TableHead>Student Name</TableHead>
                 <TableHead>Subject</TableHead>
                 <TableHead>Marks</TableHead>
                 <TableHead>Date</TableHead>
@@ -63,12 +84,9 @@ export default function TeacherResults() {
             <TableBody>
               {filteredMinorResults.length > 0 ? (
                 filteredMinorResults.map((result) => (
-                  <TableRow key={`${result.subjectId}-${result.subjectCode}-${result.examDate}`}>
-                    <TableCell>
-                      {/* Since MinorResult type doesn't have rollNumber or studentId properties directly,
-                          we'll just display "Student" */}
-                      Student 24MAB0A41
-                    </TableCell>
+                  <TableRow key={result.id}>
+                    <TableCell>{result.rollNumber || "24MAB0A41"}</TableCell>
+                    <TableCell>{result.studentName || "V Dhruv"}</TableCell>
                     <TableCell>{result.subjectName}</TableCell>
                     <TableCell>{result.obtainedMarks}/{result.maxMarks}</TableCell>
                     <TableCell>{new Date(result.examDate).toLocaleDateString()}</TableCell>
@@ -76,7 +94,7 @@ export default function TeacherResults() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                     No minor results found for the selected subject.
                   </TableCell>
                 </TableRow>

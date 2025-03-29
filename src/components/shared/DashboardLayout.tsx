@@ -19,7 +19,8 @@ import {
   BarChart3, 
   Clock, 
   User,
-  FileBarChart2
+  FileBarChart2,
+  BookOpen
 } from "lucide-react";
 
 interface DashboardLayoutProps {
@@ -111,6 +112,11 @@ export default function DashboardLayout({
       icon: <FileBarChart2 className="mr-2 h-4 w-4" />,
     },
     {
+      name: "Subjects",
+      path: "/teacher-dashboard/subjects",
+      icon: <BookOpen className="mr-2 h-4 w-4" />,
+    },
+    {
       name: "Chat",
       path: "/teacher-dashboard/chat",
       icon: <MessageSquare className="mr-2 h-4 w-4" />,
@@ -137,24 +143,28 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-blue-50/50">
       {/* Desktop Sidebar */}
-      <aside className="fixed inset-y-0 left-0 hidden lg:flex lg:w-72 flex-col border-r border-slate-200 bg-white">
+      <aside className="fixed inset-y-0 left-0 hidden lg:flex lg:w-64 flex-col border-r border-blue-200 bg-white">
         <div className="flex flex-col flex-1 overflow-hidden">
-          <div className="flex h-16 items-center justify-between px-4 border-b">
+          <div className="flex h-16 items-center px-4 border-b bg-blue-700 text-white">
             <Link 
               to={basePath} 
-              className="flex items-center space-x-2 font-bold text-xl text-primary"
+              className="flex items-center space-x-2 font-bold text-xl text-white"
             >
               <img 
-                src="/lovable-uploads/b82fdcac-d78c-40c5-93da-57537fc9ce5a.png" 
+                src="/lovable-uploads/a002a62c-c2a6-4e5c-9728-682983b115c4.png" 
                 alt="ARC Portal Logo" 
                 className="h-10 w-auto" 
               />
+              <span>ARC Portal</span>
             </Link>
           </div>
+          <div className="bg-blue-700 text-white py-2 px-4 text-sm">
+            <span>Mathematics Department</span>
+          </div>
           <nav className="flex-1 overflow-y-auto p-3 pt-4">
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {navItems.map((item) => (
                 <Link
                   key={item.path}
@@ -162,8 +172,8 @@ export default function DashboardLayout({
                   className={cn(
                     "flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-all",
                     activeItem === item.path
-                      ? "bg-primary text-primary-foreground"
-                      : "text-slate-800 hover:bg-slate-100"
+                      ? "bg-blue-100 text-blue-700"
+                      : "text-slate-800 hover:bg-blue-50"
                   )}
                 >
                   {item.icon}
@@ -176,7 +186,7 @@ export default function DashboardLayout({
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-primary text-primary-foreground">
+                  <AvatarFallback className="bg-blue-700 text-white">
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>
@@ -218,13 +228,17 @@ export default function DashboardLayout({
                 className="flex items-center space-x-2 font-bold text-xl text-white"
               >
                 <img 
-                  src="/lovable-uploads/b82fdcac-d78c-40c5-93da-57537fc9ce5a.png" 
+                  src="/lovable-uploads/a002a62c-c2a6-4e5c-9728-682983b115c4.png" 
                   alt="ARC Portal Logo" 
                   className="h-10 w-auto" 
                 />
+                <span>ARC Portal</span>
               </Link>
             </div>
-            <nav className="flex flex-col gap-1.5 p-4">
+            <div className="bg-blue-700 text-white py-2 px-6 text-sm">
+              <span>Mathematics Department</span>
+            </div>
+            <nav className="flex flex-col gap-1 p-4">
               {navItems.map((item) => (
                 <Link
                   key={item.path}
@@ -232,8 +246,8 @@ export default function DashboardLayout({
                   className={cn(
                     "flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-all",
                     activeItem === item.path
-                      ? "bg-primary text-primary-foreground"
-                      : "text-slate-800 hover:bg-slate-100"
+                      ? "bg-blue-100 text-blue-700"
+                      : "text-slate-800 hover:bg-blue-50"
                   )}
                 >
                   {item.icon}
@@ -252,13 +266,15 @@ export default function DashboardLayout({
           </SheetContent>
         </Sheet>
         <div className="flex-1 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
             <img 
-              src="/lovable-uploads/b82fdcac-d78c-40c5-93da-57537fc9ce5a.png" 
+              src="/lovable-uploads/a002a62c-c2a6-4e5c-9728-682983b115c4.png" 
               alt="ARC Portal Logo" 
               className="h-8 w-auto" 
             />
-            <h1 className="text-lg font-semibold">{isStudent ? "Student Portal" : "Teacher Portal"}</h1>
+            <h1 className="text-lg font-semibold">
+              {isStudent ? "Student Portal" : "Teacher Portal"}
+            </h1>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="text-white">
@@ -278,13 +294,13 @@ export default function DashboardLayout({
       {/* Main content */}
       <main
         className={cn(
-          "p-6 lg:p-8 pt-8 pb-20 min-h-screen",
-          isMobile ? "" : "lg:ml-72"
+          "p-6 lg:p-8 pt-8 pb-20 min-h-screen bg-blue-50/50",
+          isMobile ? "" : "lg:ml-64"
         )}
       >
         <div className="mx-auto max-w-6xl">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-blue-900">{title}</h1>
             {subtitle && (
               <p className="mt-1 text-lg text-slate-600">{subtitle}</p>
             )}
