@@ -43,10 +43,8 @@ export default function Results() {
   );
 
   const userMinorResults = minorResults.filter(result => {
-    if ('studentId' in result) {
-      return result.studentId === user?.id;
-    } else if ('rollNumber' in result) {
-      return result.rollNumber === user?.rollNumber;
+    if (result.studentId === user?.id || result.rollNumber === user?.rollNumber) {
+      return true;
     }
     return false;
   });
