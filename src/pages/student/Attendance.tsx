@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import DashboardLayout from "@/components/shared/DashboardLayout";
 import { useData } from "@/contexts/DataContext";
@@ -25,12 +24,10 @@ export default function StudentAttendance() {
   const { user } = useAuth();
   const { attendanceSummary, attendance } = useData();
   
-  // Get attendance data for current student
   const studentAttendanceSummary = attendanceSummary.find(summary => 
     summary.studentId === user?.id || summary.rollNumber === user?.rollNumber
   );
   
-  // Get detailed attendance records for current student
   const attendanceRecords = attendance.filter(record => {
     const studentRecord = record.students.find(s => 
       s.studentId === user?.id || s.rollNumber === user?.rollNumber
@@ -38,7 +35,6 @@ export default function StudentAttendance() {
     return !!studentRecord;
   });
   
-  // Group attendance records by subject
   const attendanceBySubject = attendanceRecords.reduce((acc, record) => {
     if (!acc[record.subjectId]) {
       acc[record.subjectId] = {
@@ -122,8 +118,7 @@ export default function StudentAttendance() {
                                 <div className="w-24">
                                   <Progress 
                                     value={subject.percentage} 
-                                    className="h-2" 
-                                    indicatorClassName={`${
+                                    className={`h-2 ${
                                       subject.percentage >= 85 
                                         ? "bg-green-500" 
                                         : subject.percentage >= 75 
@@ -160,7 +155,6 @@ export default function StudentAttendance() {
           </CardContent>
         </Card>
 
-        {/* Detailed Attendance Records */}
         <div className="space-y-6">
           <h2 className="text-2xl font-bold tracking-tight">Detailed Attendance Records</h2>
           

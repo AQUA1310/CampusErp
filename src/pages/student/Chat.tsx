@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useData } from "@/contexts/DataContext";
@@ -24,6 +23,7 @@ export default function Chat() {
   const [message, setMessage] = useState("");
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showChatBot, setShowChatBot] = useState(false);
 
   // Filter messages that involve the current user
   const userMessages = messages.filter(
@@ -286,7 +286,17 @@ export default function Chat() {
 
       {/* AI Chatbot */}
       <div className="mt-6">
-        <ChatBot />
+        {showChatBot ? (
+          <ChatBot onClose={() => setShowChatBot(false)} />
+        ) : (
+          <Button 
+            onClick={() => setShowChatBot(true)}
+            className="flex items-center gap-2"
+          >
+            <Bot className="h-4 w-4" />
+            Open AI Tutor
+          </Button>
+        )}
       </div>
     </DashboardLayout>
   );
