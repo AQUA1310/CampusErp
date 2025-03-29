@@ -123,18 +123,18 @@ export default function TeacherAssignments() {
         <div className="flex items-center gap-3">
           <Button
             onClick={() => setIsUploadDialogOpen(true)}
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            className="bg-oliveGreen-600 hover:bg-oliveGreen-700"
           >
             <Upload className="h-4 w-4 mr-2" />
             Upload New Assignment
           </Button>
           
           <div className="flex items-center gap-2 ml-4">
-            <Filter className="h-4 w-4 text-primary" />
+            <Filter className="h-4 w-4 text-oliveGreen-600" />
             <select
               value={filterSubject}
               onChange={e => setFilterSubject(e.target.value)}
-              className="border rounded px-2 py-1 text-sm border-primary/20 focus:outline-none focus:ring-1 focus:ring-primary"
+              className="border rounded px-2 py-1 text-sm border-oliveGreen-200 focus:outline-none focus:ring-1 focus:ring-oliveGreen-400"
             >
               <option value="all">All Subjects</option>
               {subjects.map(subject => (
@@ -151,13 +151,13 @@ export default function TeacherAssignments() {
         <TabsList className="mb-4">
           <TabsTrigger 
             value="assignments" 
-            className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+            className="data-[state=active]:bg-oliveGreen-100 data-[state=active]:text-oliveGreen-900"
           >
             All Assignments
           </TabsTrigger>
           <TabsTrigger 
             value="submissions" 
-            className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+            className="data-[state=active]:bg-oliveGreen-100 data-[state=active]:text-oliveGreen-900"
           >
             Student Submissions
           </TabsTrigger>
@@ -165,16 +165,16 @@ export default function TeacherAssignments() {
         
         <TabsContent value="assignments" className="mt-0">
           <Card className="shadow-md">
-            <CardHeader className="bg-slate-50 border-b border-slate-100 rounded-t-lg">
-              <CardTitle className="text-slate-800">All Assignments</CardTitle>
-              <CardDescription className="text-slate-600">
+            <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
+              <CardTitle className="text-oliveGreen-800">All Assignments</CardTitle>
+              <CardDescription className="text-oliveGreen-600">
                 Assignments created for students
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50/50">
+                  <TableRow className="bg-oliveGreen-50/50">
                     <TableHead>Title</TableHead>
                     <TableHead>Subject</TableHead>
                     <TableHead>Due Date</TableHead>
@@ -233,16 +233,16 @@ export default function TeacherAssignments() {
         
         <TabsContent value="submissions" className="mt-0">
           <Card className="shadow-md">
-            <CardHeader className="bg-slate-50 border-b border-slate-100 rounded-t-lg">
-              <CardTitle className="text-slate-800">Student Submissions</CardTitle>
-              <CardDescription className="text-slate-600">
+            <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
+              <CardTitle className="text-oliveGreen-800">Student Submissions</CardTitle>
+              <CardDescription className="text-oliveGreen-600">
                 Review and grade assignment submissions
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50/50">
+                  <TableRow className="bg-oliveGreen-50/50">
                     <TableHead>Student</TableHead>
                     <TableHead>Roll Number</TableHead>
                     <TableHead>Assignment</TableHead>
@@ -261,12 +261,12 @@ export default function TeacherAssignments() {
                         <TableCell>{new Date(submission.submittedAt).toLocaleDateString()}</TableCell>
                         <TableCell>
                           {submission.marks !== undefined ? (
-                            <Badge className="bg-green-100 text-green-700 hover:bg-green-200">
+                            <Badge className="bg-success-100 text-success-700 hover:bg-success-200">
                               <Check className="h-3 w-3 mr-1" />
                               Graded: {submission.marks}/{submission.assignment?.maxMarks}
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-200">
+                            <Badge variant="outline" className="bg-warning-100 text-warning-700 border-warning-200">
                               Pending Review
                             </Badge>
                           )}
@@ -312,7 +312,7 @@ export default function TeacherAssignments() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label htmlFor="title" className="text-sm font-medium text-gray-700">
+              <label htmlFor="title" className="text-sm font-medium">
                 Assignment Title *
               </label>
               <Input
@@ -324,14 +324,14 @@ export default function TeacherAssignments() {
             </div>
             
             <div className="space-y-2">
-              <label htmlFor="subject" className="text-sm font-medium text-gray-700">
+              <label htmlFor="subject" className="text-sm font-medium">
                 Subject *
               </label>
               <select
                 id="subject"
                 value={assignmentData.subjectId}
                 onChange={(e) => setAssignmentData({ ...assignmentData, subjectId: e.target.value })}
-                className="w-full h-10 rounded-md border border-gray-300 bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {subjects.map((subject) => (
                   <option key={subject.id} value={subject.id}>
@@ -342,7 +342,7 @@ export default function TeacherAssignments() {
             </div>
             
             <div className="space-y-2">
-              <label htmlFor="description" className="text-sm font-medium text-gray-700">
+              <label htmlFor="description" className="text-sm font-medium">
                 Description
               </label>
               <Textarea
@@ -351,13 +351,12 @@ export default function TeacherAssignments() {
                 onChange={(e) => setAssignmentData({ ...assignmentData, description: e.target.value })}
                 placeholder="Enter assignment description"
                 rows={3}
-                className="text-gray-700"
               />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="dueDate" className="text-sm font-medium text-gray-700">
+                <label htmlFor="dueDate" className="text-sm font-medium">
                   Due Date *
                 </label>
                 <Input
@@ -369,7 +368,7 @@ export default function TeacherAssignments() {
               </div>
               
               <div className="space-y-2">
-                <label htmlFor="maxMarks" className="text-sm font-medium text-gray-700">
+                <label htmlFor="maxMarks" className="text-sm font-medium">
                   Maximum Marks *
                 </label>
                 <Input
@@ -383,7 +382,7 @@ export default function TeacherAssignments() {
             </div>
             
             <div className="space-y-2">
-              <label htmlFor="file" className="text-sm font-medium text-gray-700">
+              <label htmlFor="file" className="text-sm font-medium">
                 Assignment File *
               </label>
               <Input
@@ -392,17 +391,17 @@ export default function TeacherAssignments() {
                 onChange={handleAssignmentFileChange}
               />
               {selectedFile && (
-                <p className="text-xs text-primary">
+                <p className="text-xs text-oliveGreen-600">
                   Selected file: {selectedFile.name}
                 </p>
               )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)} className="text-gray-700">
+            <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAssignmentSubmit} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button onClick={handleAssignmentSubmit} className="bg-oliveGreen-600 hover:bg-oliveGreen-700">
               Upload Assignment
             </Button>
           </DialogFooter>
@@ -424,38 +423,38 @@ export default function TeacherAssignments() {
           </DialogHeader>
           {selectedSubmission && (
             <div className="space-y-4 py-4">
-              <div className="bg-slate-50 p-4 rounded-lg space-y-2">
+              <div className="bg-oliveGreen-50 p-4 rounded-lg space-y-2">
                 <div className="flex justify-between">
-                  <span className="font-medium text-gray-700">Student:</span>
-                  <span className="text-gray-700">{selectedSubmission.studentName}</span>
+                  <span className="font-medium">Student:</span>
+                  <span>{selectedSubmission.studentName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="font-medium text-gray-700">Roll Number:</span>
-                  <span className="text-gray-700">{selectedSubmission.rollNumber}</span>
+                  <span className="font-medium">Roll Number:</span>
+                  <span>{selectedSubmission.rollNumber}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="font-medium text-gray-700">Assignment:</span>
-                  <span className="text-gray-700">{selectedSubmission.assignment?.title}</span>
+                  <span className="font-medium">Assignment:</span>
+                  <span>{selectedSubmission.assignment?.title}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="font-medium text-gray-700">Submitted On:</span>
-                  <span className="text-gray-700">{new Date(selectedSubmission.submittedAt).toLocaleString()}</span>
+                  <span className="font-medium">Submitted On:</span>
+                  <span>{new Date(selectedSubmission.submittedAt).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="font-medium text-gray-700">Max Marks:</span>
-                  <span className="text-gray-700">{selectedSubmission.assignment?.maxMarks}</span>
+                  <span className="font-medium">Max Marks:</span>
+                  <span>{selectedSubmission.assignment?.maxMarks}</span>
                 </div>
               </div>
 
               <div className="space-y-2 border-t pt-4">
-                <Button variant="outline" className="w-full text-gray-700">
+                <Button variant="outline" className="w-full">
                   <Download className="h-4 w-4 mr-2" />
                   Download Submission
                 </Button>
               </div>
 
               <div className="space-y-2 border-t pt-4">
-                <label htmlFor="marks" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="marks" className="block text-sm font-medium">
                   Marks (out of {selectedSubmission.assignment?.maxMarks})
                 </label>
                 <Input
@@ -469,7 +468,7 @@ export default function TeacherAssignments() {
               </div>
               
               <div className="space-y-2">
-                <label htmlFor="feedback" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="feedback" className="block text-sm font-medium">
                   Feedback
                 </label>
                 <Textarea
@@ -478,16 +477,15 @@ export default function TeacherAssignments() {
                   value={reviewData.feedback}
                   onChange={(e) => setReviewData({ ...reviewData, feedback: e.target.value })}
                   placeholder="Provide feedback to the student..."
-                  className="text-gray-700"
                 />
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsReviewDialogOpen(false)} className="text-gray-700">
+            <Button variant="outline" onClick={() => setIsReviewDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleReviewSubmit} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button onClick={handleReviewSubmit} className="bg-oliveGreen-600 hover:bg-oliveGreen-700">
               Submit Review
             </Button>
           </DialogFooter>

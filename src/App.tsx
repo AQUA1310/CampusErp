@@ -25,8 +25,7 @@ import TeacherDashboard from "./pages/teacher/Dashboard";
 import TeacherAssignments from "./pages/teacher/Assignments";
 import TeacherAttendance from "./pages/teacher/Attendance";
 import TeacherStudents from "./pages/teacher/Students";
-import TeacherChat from "./pages/teacher/Chat";
-import TeacherResults from "./pages/teacher/Results";
+import TeacherChat from "./pages/student/Chat";
 
 const queryClient = new QueryClient();
 
@@ -130,14 +129,6 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredUserType="teacher">
                     <TeacherStudents />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/teacher-dashboard/results" 
-                element={
-                  <ProtectedRoute requiredUserType="teacher">
-                    <TeacherResults />
                   </ProtectedRoute>
                 } 
               />

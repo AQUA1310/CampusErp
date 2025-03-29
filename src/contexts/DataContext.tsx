@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { toast } from "sonner";
 
+// Types for our data
 export interface Student {
   id: string;
   name: string;
@@ -135,7 +136,6 @@ export interface ExamResult {
 }
 
 export interface MinorResult {
-  id?: string;
   subjectId: string;
   subjectCode: string;
   subjectName: string;
@@ -143,8 +143,6 @@ export interface MinorResult {
   obtainedMarks: number;
   examDate: string;
   examType: "Minor1" | "Minor2";
-  studentId?: string;
-  rollNumber?: string;
 }
 
 export interface SemesterResult {
@@ -161,6 +159,7 @@ export interface SemesterResult {
   cgpa: number;
 }
 
+// Create the context
 interface DataContextType {
   students: Student[];
   teachers: Teacher[];
@@ -175,16 +174,19 @@ interface DataContextType {
   semesterResults: SemesterResult[];
   minorResults: MinorResult[];
 
+  // Actions for students
   submitAssignment: (assignmentId: string, studentId: string, fileUrl: string) => void;
   sendMessage: (message: Omit<Message, "id" | "timestamp" | "read">) => void;
   markMessageAsRead: (messageId: string) => void;
 
+  // Actions for teachers
   addAssignment: (assignment: Omit<Assignment, "id" | "createdAt" | "submissions">) => void;
   gradeSubmission: (submissionId: string, marks: number, feedback?: string) => void;
   markAttendance: (subjectId: string, date: string, studentAttendance: { studentId: string; present: boolean }[]) => void;
   addNotification: (notification: Omit<Notification, "id" | "createdAt">) => void;
 }
 
+// Initialize the context with default values
 const DataContext = createContext<DataContextType>({
   students: [],
   teachers: [],
@@ -209,6 +211,7 @@ const DataContext = createContext<DataContextType>({
   addNotification: () => {},
 });
 
+// Mock data
 const mockStudents: Student[] = [
   {
     id: "1",
@@ -777,103 +780,80 @@ const mockSemesterResults: SemesterResult[] = [
 
 const mockMinorResults: MinorResult[] = [
   {
-    id: "m1",
     subjectId: "1",
     subjectCode: "MA1102",
     subjectName: "Design Thinking",
     maxMarks: 30,
     obtainedMarks: 26,
     examDate: "2023-09-15",
-    examType: "Minor1",
-    studentId: "1",
-    rollNumber: "24MAB0A41"
+    examType: "Minor1"
   },
   {
-    id: "m2",
     subjectId: "2",
     subjectCode: "MA1104",
     subjectName: "Ordinary Differential Equations",
     maxMarks: 30,
     obtainedMarks: 28,
     examDate: "2023-09-16",
-    examType: "Minor1",
-    studentId: "1",
-    rollNumber: "24MAB0A41"
+    examType: "Minor1"
   },
   {
-    id: "m3",
     subjectId: "3",
     subjectCode: "MA1106",
     subjectName: "Data Structures and Algorithms",
     maxMarks: 30,
     obtainedMarks: 25,
     examDate: "2023-09-17",
-    examType: "Minor1",
-    studentId: "1",
-    rollNumber: "24MAB0A41"
+    examType: "Minor1"
   },
   {
-    id: "m4",
     subjectId: "4",
     subjectCode: "EE1162",
     subjectName: "Basic Electrical and Electronics Engineering",
     maxMarks: 30,
     obtainedMarks: 24,
     examDate: "2023-09-18",
-    examType: "Minor1",
-    studentId: "1",
-    rollNumber: "24MAB0A41"
+    examType: "Minor1"
   },
   {
-    id: "m5",
     subjectId: "1",
     subjectCode: "MA1102",
     subjectName: "Design Thinking",
     maxMarks: 30,
     obtainedMarks: 28,
     examDate: "2023-10-20",
-    examType: "Minor2",
-    studentId: "1",
-    rollNumber: "24MAB0A41"
+    examType: "Minor2"
   },
   {
-    id: "m6",
     subjectId: "2",
     subjectCode: "MA1104",
     subjectName: "Ordinary Differential Equations",
     maxMarks: 30,
     obtainedMarks: 29,
     examDate: "2023-10-21",
-    examType: "Minor2",
-    studentId: "1",
-    rollNumber: "24MAB0A41"
+    examType: "Minor2"
   },
   {
-    id: "m7",
     subjectId: "3",
     subjectCode: "MA1106",
     subjectName: "Data Structures and Algorithms",
     maxMarks: 30,
     obtainedMarks: 27,
     examDate: "2023-10-22",
-    examType: "Minor2",
-    studentId: "1",
-    rollNumber: "24MAB0A41"
+    examType: "Minor2"
   },
   {
-    id: "m8",
     subjectId: "4",
     subjectCode: "EE1162",
     subjectName: "Basic Electrical and Electronics Engineering",
     maxMarks: 30,
     obtainedMarks: 26,
     examDate: "2023-10-23",
-    examType: "Minor2",
-    studentId: "1",
-    rollNumber: "24MAB0A41"
+    examType: "Minor2"
   }
 ];
 
+// DataProvider component
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [students, setStudents] = useState<Student[]>(mockStudents);
   const [teachers, setTeachers] = useState<Teacher[]>(mockTeachers);
@@ -888,6 +868,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [semesterResults] = useState<SemesterResult[]>(mockSemesterResults);
   const [minorResults] = useState<MinorResult[]>(mockMinorResults);
 
+  // Actions for students
   const submitAssignment = (assignmentId: string, studentId: string, fileUrl: string) => {
     const student = students.find((s) => s.id === studentId);
     if (!student) return;
@@ -907,6 +888,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     setSubmissions([...submissions, newSubmission]);
     
+    // Update assignment submissions
     const updatedAssignments = assignments.map((a) => {
       if (a.id === assignmentId) {
         return {
@@ -941,6 +923,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
+  // Actions for teachers
   const addAssignment = (assignment: Omit<Assignment, "id" | "createdAt" | "submissions">) => {
     const newAssignment: Assignment = {
       ...assignment,
@@ -959,6 +942,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     );
     setSubmissions(updatedSubmissions);
 
+    // Also update the submissions inside the assignments
     const updatedAssignments = assignments.map((a) => {
       if (a.submissions?.some((s) => s.id === submissionId)) {
         return {
@@ -1006,6 +990,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     );
 
     if (existingAttendanceIndex !== -1) {
+      // Update existing attendance
       const updatedAttendance = [...attendance];
       updatedAttendance[existingAttendanceIndex] = {
         ...updatedAttendance[existingAttendanceIndex],
@@ -1013,6 +998,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       };
       setAttendance(updatedAttendance);
     } else {
+      // Add new attendance
       const newAttendance: Attendance = {
         id: `att-${attendance.length + 1}`,
         subjectId,
@@ -1023,6 +1009,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setAttendance([...attendance, newAttendance]);
     }
 
+    // Update attendance summary for each student
     const updatedSummaries = [...attendanceSummary];
     studentAttendance.forEach((record) => {
       const studentSummaryIndex = updatedSummaries.findIndex(
@@ -1050,6 +1037,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             percentage,
           };
 
+          // Update overall attendance
           const overallTotalClasses = studentSummary.overall.totalClasses + 1;
           const overallAttended = record.present
             ? studentSummary.overall.attended + 1
@@ -1080,6 +1068,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     toast.success("Notification added successfully!");
   };
 
+  // Sort students by roll number (for display in UI)
   useEffect(() => {
     setStudents((prev) => 
       [...prev].sort((a, b) => a.rollNumber.localeCompare(b.rollNumber))
@@ -1115,4 +1104,5 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// Hook to use the data context
 export const useData = () => useContext(DataContext);

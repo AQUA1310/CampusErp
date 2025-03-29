@@ -1,302 +1,431 @@
-import { useState, useEffect, useRef } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { useData } from "@/contexts/DataContext";
-import { toast } from "sonner";
-import ChatBot from "@/components/student/ChatBot";
-import DashboardLayout from "@/components/shared/DashboardLayout";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Textarea } from "@/components/ui/textarea";
+
+import React, { useState, useEffect, useRef } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Send, Bot, User } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { 
+  Send, 
+  Search, 
+  User, 
+  Users, 
+  Clock, 
+  CheckCheck 
+} from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useData } from "@/contexts/DataContext";
+import DashboardLayout from "@/components/shared/DashboardLayout";
 
-export default function Chat() {
-  const { user, teacherList } = useAuth();
-  const { messages, sendMessage, markMessageAsRead } = useData();
-  const [message, setMessage] = useState("");
-  const [activeChat, setActiveChat] = useState<string | null>(null);
+export default function StudentChat() {
+  const { user } = useAuth();
+  const { messages, teachers, students, sendMessage, markMessageAsRead } = useData();
+  const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [newMessage, setNewMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeChatTab, setActiveChatTab] = useState<"teachers" | "students">("teachers");
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [showChatBot, setShowChatBot] = useState(false);
-
-  // Filter messages that involve the current user
-  const userMessages = messages.filter(
-    (msg) =>
-      (msg.senderId === user?.id || msg.receiverId === user?.id)
+  
+  // Get all messages for the current student
+  const myMessages = messages.filter(msg => 
+    (msg.senderId === "1" || msg.receiverId === "1")
   );
-
-  // Get unique contacts from messages
-  const userContacts = [
-    ...new Set([
-      ...userMessages
-        .filter((msg) => msg.senderId !== user?.id)
-        .map((msg) => msg.senderId),
-      ...userMessages
-        .filter((msg) => msg.receiverId !== user?.id)
-        .map((msg) => msg.receiverId),
-    ]),
-  ];
-
-  // Group messages by contact
-  const messagesByContact = userContacts.reduce((acc, contactId) => {
-    const contactMessages = userMessages.filter(
-      (msg) =>
-        (msg.senderId === contactId && msg.receiverId === user?.id) ||
-        (msg.senderId === user?.id && msg.receiverId === contactId)
-    );
-    const contact = teacherList.find((t) => t.id === contactId);
+  
+  // Get unique contacts (teachers and students) from messages
+  const teacherContacts = teachers.map(teacher => {
+    const unreadCount = myMessages.filter(
+      msg => msg.senderId === teacher.id && !msg.read
+    ).length;
     
-    if (contact) {
-      acc[contactId] = {
-        contact: {
-          id: contact.id,
-          name: contact.name,
-          email: contact.email,
-          type: "teacher" as const,
-        },
-        messages: contactMessages.sort(
-          (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-        ),
-        unread: contactMessages.filter(
-          (msg) => msg.receiverId === user?.id && !msg.read
-        ).length,
-      };
-    }
+    const lastMessage = myMessages
+      .filter(msg => 
+        (msg.senderId === teacher.id && msg.receiverId === "1") || 
+        (msg.senderId === "1" && msg.receiverId === teacher.id)
+      )
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
     
-    return acc;
-  }, {} as Record<string, { contact: { id: string, name: string, email: string, type: "teacher" }, messages: typeof messages, unread: number }>);
-
-  // Add all teachers as potential contacts even if no messages exist yet
-  teacherList.forEach(teacher => {
-    if (!messagesByContact[teacher.id]) {
-      messagesByContact[teacher.id] = {
-        contact: {
-          id: teacher.id,
-          name: teacher.name,
-          email: teacher.email,
-          type: "teacher",
-        },
-        messages: [],
-        unread: 0,
-      };
-    }
+    return {
+      id: teacher.id,
+      name: teacher.name,
+      email: teacher.email,
+      type: "teacher",
+      department: teacher.department,
+      unreadCount,
+      lastMessage,
+      lastActivity: lastMessage ? new Date(lastMessage.timestamp).getTime() : 0
+    };
   });
-
-  // Get active contact details
-  const activeContact = activeChat ? messagesByContact[activeChat]?.contact : null;
-  const activeMessages = activeChat ? messagesByContact[activeChat]?.messages : [];
-
-  // Mark messages as read when viewing a conversation
+  
+  const studentContacts = students
+    .filter(student => student.id !== "1") // Exclude self
+    .map(student => {
+      const unreadCount = myMessages.filter(
+        msg => msg.senderId === student.id && !msg.read
+      ).length;
+      
+      const lastMessage = myMessages
+        .filter(msg => 
+          (msg.senderId === student.id && msg.receiverId === "1") || 
+          (msg.senderId === "1" && msg.receiverId === student.id)
+        )
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+      
+      return {
+        id: student.id,
+        name: student.name,
+        email: student.email,
+        rollNumber: student.rollNumber,
+        type: "student",
+        unreadCount,
+        lastMessage,
+        lastActivity: lastMessage ? new Date(lastMessage.timestamp).getTime() : 0
+      };
+    });
+  
+  // Filter contacts based on search term
+  const filteredTeacherContacts = teacherContacts
+    .filter(contact => 
+      contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.email.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => b.lastActivity - a.lastActivity);
+  
+  const filteredStudentContacts = studentContacts
+    .filter(contact => 
+      contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.rollNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => b.lastActivity - a.lastActivity);
+  
+  // Get conversation messages with selected contact
+  const conversationMessages = selectedContact 
+    ? myMessages
+        .filter(msg => 
+          (msg.senderId === selectedContact.id && msg.receiverId === "1") || 
+          (msg.senderId === "1" && msg.receiverId === selectedContact.id)
+        )
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+    : [];
+  
+  // Mark unread messages as read
   useEffect(() => {
-    if (activeChat) {
-      const unreadMessages = activeMessages.filter(
-        (msg) => msg.receiverId === user?.id && !msg.read
-      );
-      unreadMessages.forEach((msg) => {
-        markMessageAsRead(msg.id);
+    if (selectedContact) {
+      conversationMessages.forEach(msg => {
+        if (msg.senderId === selectedContact.id && !msg.read) {
+          markMessageAsRead(msg.id);
+        }
       });
     }
-  }, [activeChat, activeMessages, user?.id, markMessageAsRead]);
-
+  }, [selectedContact, conversationMessages]);
+  
   // Scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeMessages]);
-
-  const handleSendMessage = () => {
-    if (!message.trim() || !activeChat || !activeContact) return;
-
-    sendMessage({
-      senderId: user?.id || "",
-      senderName: user?.name || "",
-      senderType: "student",
-      receiverId: activeContact.id,
-      receiverName: activeContact.name,
-      receiverType: "teacher",
-      content: message,
-    });
-
-    setMessage("");
+  }, [conversationMessages]);
+  
+  const handleContactSelect = (contact: any) => {
+    setSelectedContact(contact);
   };
-
-  const getNameInitials = (name: string) => {
-    const nameParts = name.split(' ');
-    return nameParts.length > 1 
-      ? `${nameParts[0][0]}${nameParts[1][0]}` 
-      : name.slice(0, 2).toUpperCase();
+  
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newMessage.trim() || !selectedContact || !user) return;
+    
+    sendMessage({
+      senderId: "1",
+      senderName: user.name,
+      senderType: "student",
+      receiverId: selectedContact.id,
+      receiverName: selectedContact.name,
+      receiverType: selectedContact.type,
+      content: newMessage
+    });
+    
+    setNewMessage("");
+  };
+  
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+  
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase();
   };
 
   return (
-    <DashboardLayout title="Messages" subtitle="Chat with your teachers and academic advisors">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Contacts list */}
-        <div className="md:col-span-1">
-          <Card className="h-[calc(100vh-200px)] overflow-hidden">
-            <CardHeader className="bg-slate-50">
-              <CardTitle className="text-lg">Contacts</CardTitle>
-              <CardDescription>Your teachers and advisors</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="h-[calc(100%-80px)] overflow-y-auto">
-                {Object.entries(messagesByContact).length > 0 ? (
-                  <div className="divide-y">
-                    {Object.entries(messagesByContact).map(([contactId, { contact, messages, unread }]) => (
-                      <button
-                        key={contactId}
-                        className={`w-full text-left p-3 hover:bg-slate-50 transition-colors ${
-                          activeChat === contactId ? "bg-slate-100" : ""
-                        }`}
-                        onClick={() => setActiveChat(contactId)}
-                      >
-                        <div className="flex items-center">
-                          <Avatar className="h-10 w-10 mr-3 bg-primary">
-                            <AvatarFallback>{getNameInitials(contact.name)}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-center">
-                              <p className="font-medium truncate">{contact.name}</p>
-                              {unread > 0 && (
-                                <Badge className="ml-2 bg-primary">{unread}</Badge>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {contact.email}
+    <DashboardLayout title="Messages" subtitle="Chat with teachers and fellow students">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-13rem)]">
+        {/* Contact List */}
+        <Card className="shadow-md border border-oliveGreen-100 overflow-hidden md:col-span-1">
+          <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 space-y-2 px-4 py-3">
+            <div className="flex items-center space-x-2">
+              <Search className="h-4 w-4 text-oliveGreen-500" />
+              <Input
+                placeholder="Search contacts..."
+                className="flex-1 h-9"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex border rounded-md overflow-hidden">
+              <button
+                className={`flex-1 py-1 px-3 text-sm font-medium ${
+                  activeChatTab === "teachers" 
+                    ? "bg-oliveGreen-600 text-white" 
+                    : "bg-oliveGreen-50 text-oliveGreen-600 hover:bg-oliveGreen-100"
+                }`}
+                onClick={() => setActiveChatTab("teachers")}
+              >
+                <User className="h-4 w-4 inline-block mr-1" />
+                Teachers
+              </button>
+              <button
+                className={`flex-1 py-1 px-3 text-sm font-medium ${
+                  activeChatTab === "students" 
+                    ? "bg-oliveGreen-600 text-white" 
+                    : "bg-oliveGreen-50 text-oliveGreen-600 hover:bg-oliveGreen-100"
+                }`}
+                onClick={() => setActiveChatTab("students")}
+              >
+                <Users className="h-4 w-4 inline-block mr-1" />
+                Students
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0 h-[calc(100vh-16rem)] overflow-y-auto">
+            {activeChatTab === "teachers" ? (
+              filteredTeacherContacts.length > 0 ? (
+                <div className="divide-y divide-oliveGreen-100">
+                  {filteredTeacherContacts.map((contact) => (
+                    <div
+                      key={contact.id}
+                      className={`p-3 hover:bg-oliveGreen-50 cursor-pointer transition-colors ${
+                        selectedContact?.id === contact.id ? "bg-oliveGreen-50" : ""
+                      }`}
+                      onClick={() => handleContactSelect(contact)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="h-10 w-10 border border-oliveGreen-200">
+                          <AvatarFallback className="bg-oliveGreen-100 text-oliveGreen-800">
+                            {getInitials(contact.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between">
+                            <p className="text-sm font-medium text-oliveGreen-900 truncate">
+                              Prof. {contact.name}
                             </p>
-                            {messages.length > 0 && (
-                              <p className="text-sm text-muted-foreground truncate mt-1">
-                                {messages[messages.length - 1].content.substring(0, 30)}
-                                {messages[messages.length - 1].content.length > 30 && "..."}
-                              </p>
+                            {contact.lastMessage && (
+                              <span className="text-xs text-oliveGreen-500">
+                                {formatTime(contact.lastMessage.timestamp)}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-oliveGreen-600 truncate">
+                            {contact.department}
+                          </p>
+                          {contact.lastMessage && (
+                            <p className="text-xs text-oliveGreen-500 truncate mt-1">
+                              {contact.lastMessage.senderId === "1" && (
+                                <span className="text-oliveGreen-400 mr-1">You:</span>
+                              )}
+                              {contact.lastMessage.content}
+                            </p>
+                          )}
+                        </div>
+                        {contact.unreadCount > 0 && (
+                          <Badge className="bg-oliveGreen-600">
+                            {contact.unreadCount}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center p-6">
+                  <User className="h-12 w-12 text-oliveGreen-300 mb-2" />
+                  <h3 className="font-medium text-oliveGreen-800">No Teachers Found</h3>
+                  <p className="text-sm text-oliveGreen-600 mt-1">
+                    {searchTerm 
+                      ? "No teachers match your search" 
+                      : "Start a conversation with a teacher"}
+                  </p>
+                </div>
+              )
+            ) : (
+              filteredStudentContacts.length > 0 ? (
+                <div className="divide-y divide-oliveGreen-100">
+                  {filteredStudentContacts.map((contact) => (
+                    <div
+                      key={contact.id}
+                      className={`p-3 hover:bg-oliveGreen-50 cursor-pointer transition-colors ${
+                        selectedContact?.id === contact.id ? "bg-oliveGreen-50" : ""
+                      }`}
+                      onClick={() => handleContactSelect(contact)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="h-10 w-10 border border-oliveGreen-200">
+                          <AvatarFallback className="bg-oliveGreen-100 text-oliveGreen-800">
+                            {getInitials(contact.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between">
+                            <p className="text-sm font-medium text-oliveGreen-900 truncate">
+                              {contact.name}
+                            </p>
+                            {contact.lastMessage && (
+                              <span className="text-xs text-oliveGreen-500">
+                                {formatTime(contact.lastMessage.timestamp)}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-oliveGreen-600 truncate">
+                            {contact.rollNumber}
+                          </p>
+                          {contact.lastMessage && (
+                            <p className="text-xs text-oliveGreen-500 truncate mt-1">
+                              {contact.lastMessage.senderId === "1" && (
+                                <span className="text-oliveGreen-400 mr-1">You:</span>
+                              )}
+                              {contact.lastMessage.content}
+                            </p>
+                          )}
+                        </div>
+                        {contact.unreadCount > 0 && (
+                          <Badge className="bg-oliveGreen-600">
+                            {contact.unreadCount}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center p-6">
+                  <Users className="h-12 w-12 text-oliveGreen-300 mb-2" />
+                  <h3 className="font-medium text-oliveGreen-800">No Students Found</h3>
+                  <p className="text-sm text-oliveGreen-600 mt-1">
+                    {searchTerm 
+                      ? "No students match your search" 
+                      : "Start a conversation with a fellow student"}
+                  </p>
+                </div>
+              )
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Chat Area */}
+        <Card className="shadow-md border border-oliveGreen-100 overflow-hidden md:col-span-2 flex flex-col">
+          {selectedContact ? (
+            <>
+              <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 p-3 flex-shrink-0">
+                <div className="flex items-center space-x-3">
+                  <Avatar className="h-10 w-10 border border-oliveGreen-200">
+                    <AvatarFallback className="bg-oliveGreen-100 text-oliveGreen-800">
+                      {getInitials(selectedContact.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <CardTitle className="text-oliveGreen-800 text-base">
+                      {selectedContact.type === "teacher" ? "Prof. " : ""}{selectedContact.name}
+                    </CardTitle>
+                    <CardDescription className="text-oliveGreen-600 text-xs">
+                      {selectedContact.type === "teacher" 
+                        ? selectedContact.department 
+                        : selectedContact.rollNumber}
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="p-4 flex-grow overflow-y-auto flex flex-col space-y-3 h-[calc(100vh-24rem)]">
+                {conversationMessages.length > 0 ? (
+                  conversationMessages.map((msg) => {
+                    const isMe = msg.senderId === "1";
+                    
+                    return (
+                      <div 
+                        key={msg.id} 
+                        className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+                      >
+                        <div className={`max-w-[80%] ${isMe ? "order-2" : "order-1"}`}>
+                          <div 
+                            className={`py-2 px-3 rounded-lg ${
+                              isMe 
+                                ? "bg-oliveGreen-600 text-white rounded-br-none" 
+                                : "bg-gray-100 text-gray-800 rounded-bl-none"
+                            }`}
+                          >
+                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                          </div>
+                          <div className={`flex items-center text-xs mt-1 ${isMe ? "justify-end" : "justify-start"}`}>
+                            <Clock className="h-3 w-3 mr-1 text-oliveGreen-400" />
+                            <span className="text-oliveGreen-500">
+                              {formatTime(msg.timestamp)}
+                            </span>
+                            {isMe && (
+                              <CheckCheck className={`h-3 w-3 ml-1 ${msg.read ? "text-oliveGreen-600" : "text-oliveGreen-400"}`} />
                             )}
                           </div>
                         </div>
-                      </button>
-                    ))}
-                  </div>
+                      </div>
+                    );
+                  })
                 ) : (
-                  <div className="p-6 text-center text-muted-foreground">
-                    No contacts found.
+                  <div className="flex flex-col items-center justify-center flex-grow text-center">
+                    <div className="w-16 h-16 bg-oliveGreen-50 rounded-full flex items-center justify-center mb-4">
+                      <Send className="h-8 w-8 text-oliveGreen-300" />
+                    </div>
+                    <h3 className="font-medium text-oliveGreen-800">No Messages Yet</h3>
+                    <p className="text-sm text-oliveGreen-600 mt-1">
+                      Send a message to start the conversation
+                    </p>
                   </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Chat area */}
-        <div className="md:col-span-2">
-          <Card className="h-[calc(100vh-200px)] flex flex-col">
-            {activeContact ? (
-              <>
-                <CardHeader className="bg-slate-50 pb-3 flex-shrink-0">
-                  <div className="flex items-center">
-                    <Avatar className="h-10 w-10 mr-3 bg-primary">
-                      <AvatarFallback>{getNameInitials(activeContact.name)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <CardTitle className="text-lg">{activeContact.name}</CardTitle>
-                      <CardDescription>{activeContact.email}</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto p-4 flex flex-col space-y-4">
-                  {activeMessages.length > 0 ? (
-                    activeMessages.map((msg, index) => (
-                      <div
-                        key={msg.id}
-                        className={`flex ${
-                          msg.senderId === user?.id ? "justify-end" : "justify-start"
-                        }`}
-                      >
-                        <div
-                          className={`max-w-[75%] rounded-lg p-3 ${
-                            msg.senderId === user?.id
-                              ? "bg-primary text-white"
-                              : "bg-slate-100 text-slate-900"
-                          }`}
-                        >
-                          <p className="text-sm">{msg.content}</p>
-                          <p
-                            className={`text-xs mt-1 ${
-                              msg.senderId === user?.id
-                                ? "text-primary-foreground/70"
-                                : "text-slate-500"
-                            }`}
-                          >
-                            {new Date(msg.timestamp).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-center">
-                      <User className="h-12 w-12 text-muted-foreground mb-2" />
-                      <p className="font-medium">No messages yet</p>
-                      <p className="text-sm text-muted-foreground">
-                        Send a message to start a conversation with {activeContact.name}
-                      </p>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </CardContent>
-                <div className="p-3 border-t bg-slate-50 flex items-end gap-2">
-                  <Textarea
-                    placeholder={`Message ${activeContact.name}...`}
-                    className="min-h-[60px] resize-none bg-white"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
+                <div ref={messagesEndRef} />
+              </CardContent>
+              
+              <div className="border-t border-oliveGreen-100 p-3 bg-white">
+                <form onSubmit={handleSendMessage} className="flex space-x-2">
+                  <Input
+                    placeholder="Type a message..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    className="flex-1"
                   />
-                  <Button
-                    size="icon"
-                    className="h-10 w-10 rounded-full"
-                    onClick={handleSendMessage}
-                    disabled={!message.trim()}
+                  <Button 
+                    type="submit" 
+                    className="bg-oliveGreen-600 hover:bg-oliveGreen-700"
+                    disabled={!newMessage.trim()}
                   >
                     <Send className="h-4 w-4" />
                   </Button>
-                </div>
-              </>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-                <Bot className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="font-medium text-lg mb-2">Select a Contact</h3>
-                <p className="text-muted-foreground mb-4">
-                  Choose a teacher from the list to start a conversation
-                </p>
+                </form>
               </div>
-            )}
-          </Card>
-        </div>
-      </div>
-
-      {/* AI Chatbot */}
-      <div className="mt-6">
-        {showChatBot ? (
-          <ChatBot onClose={() => setShowChatBot(false)} />
-        ) : (
-          <Button 
-            onClick={() => setShowChatBot(true)}
-            className="flex items-center gap-2"
-          >
-            <Bot className="h-4 w-4" />
-            Open AI Tutor
-          </Button>
-        )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-center p-6">
+              <div className="w-24 h-24 bg-oliveGreen-50 rounded-full flex items-center justify-center mb-6">
+                <Send className="h-12 w-12 text-oliveGreen-300" />
+              </div>
+              <h3 className="text-xl font-medium text-oliveGreen-800">Select a Contact</h3>
+              <p className="text-oliveGreen-600 mt-2 max-w-md">
+                Choose a teacher or student from the list to start a conversation
+              </p>
+            </div>
+          )}
+        </Card>
       </div>
     </DashboardLayout>
   );

@@ -26,8 +26,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MinorResult } from "@/contexts/DataContext";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
 
 export default function Results() {
   const { user } = useAuth();
@@ -35,21 +33,13 @@ export default function Results() {
   const [examType, setExamType] = useState<"minor" | "endSem">("endSem");
   const [minorExamType, setMinorExamType] = useState<"Minor1" | "Minor2">("Minor1");
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
-  const [selectedSemester, setSelectedSemester] = useState<string>("1");
 
   const studentResults = semesterResults.find(result => 
-    (result.rollNumber === user?.rollNumber || result.studentId === user?.id) && 
-    result.semester.toString() === selectedSemester
+    result.rollNumber === user?.rollNumber || 
+    result.studentId === user?.id
   );
 
-  const userMinorResults = minorResults.filter(result => {
-    if (result.studentId === user?.id || result.rollNumber === user?.rollNumber) {
-      return true;
-    }
-    return false;
-  });
-
-  const filteredMinorResults = userMinorResults.filter(result => 
+  const filteredMinorResults = minorResults.filter(result => 
     result.examType === minorExamType && 
     (selectedSubject === "all" ? true : result.subjectId === selectedSubject)
   );
@@ -89,23 +79,6 @@ export default function Results() {
                     <SelectItem value="minor">Minor Exams</SelectItem>
                   </SelectContent>
                 </Select>
-
-                {examType === "endSem" && (
-                  <Select
-                    value={selectedSemester}
-                    onValueChange={setSelectedSemester}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select Semester" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Semester 1</SelectItem>
-                      <SelectItem value="2">Semester 2</SelectItem>
-                      <SelectItem value="3">Semester 3</SelectItem>
-                      <SelectItem value="4">Semester 4</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
 
                 {examType === "minor" && (
                   <>
@@ -225,12 +198,7 @@ export default function Results() {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <Alert variant="destructive">
-                      <AlertCircle className="h-4 w-4 mr-2" />
-                      <AlertDescription>
-                        No end semester results available for semester {selectedSemester} at this time.
-                      </AlertDescription>
-                    </Alert>
+                    <p className="text-muted-foreground">No end semester results available at this time.</p>
                   </div>
                 )}
               </div>
@@ -276,45 +244,7 @@ export default function Results() {
                       ) : (
                         <TableRow>
                           <TableCell colSpan={6} className="text-center py-4">
-                            {user?.name === "V Dhruv" && minorExamType === "Minor1" ? (
-                              <div className="py-2">
-                                <Table>
-                                  <TableBody>
-                                    <TableRow>
-                                      <TableCell className="font-medium">MA201</TableCell>
-                                      <TableCell>Linear Algebra</TableCell>
-                                      <TableCell className="text-center">15</TableCell>
-                                      <TableCell className="text-center">12.5</TableCell>
-                                      <TableCell className="text-center">
-                                        <span className="px-2 py-1 rounded-md text-white bg-green-600">
-                                          83.33%
-                                        </span>
-                                      </TableCell>
-                                      <TableCell className="text-center">10/08/2024</TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                      <TableCell className="font-medium">MA202</TableCell>
-                                      <TableCell>Differential Equations</TableCell>
-                                      <TableCell className="text-center">15</TableCell>
-                                      <TableCell className="text-center">11</TableCell>
-                                      <TableCell className="text-center">
-                                        <span className="px-2 py-1 rounded-md text-white bg-blue-600">
-                                          73.33%
-                                        </span>
-                                      </TableCell>
-                                      <TableCell className="text-center">15/08/2024</TableCell>
-                                    </TableRow>
-                                  </TableBody>
-                                </Table>
-                              </div>
-                            ) : (
-                              <Alert>
-                                <AlertCircle className="h-4 w-4 mr-2" />
-                                <AlertDescription>
-                                  No minor exam results found for the selected criteria.
-                                </AlertDescription>
-                              </Alert>
-                            )}
+                            No minor exam results found for the selected criteria.
                           </TableCell>
                         </TableRow>
                       )}

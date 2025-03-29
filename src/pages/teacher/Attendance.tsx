@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,62 +13,48 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Calendar, Users, Check, X, AlertCircle, Download, FileDown, RefreshCcw } from "lucide-react";
+import { Calendar, Users, Check, X, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useData } from "@/contexts/DataContext";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/shared/DashboardLayout";
 
 export default function TeacherAttendance() {
-  const { studentList } = useAuth();
-  const { subjects, attendance, markAttendance } = useData();
+  const { students, subjects, attendance, markAttendance } = useData();
+  const { user } = useAuth();
   
   const [selectedSubject, setSelectedSubject] = useState(subjects[0]?.id || "");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [studentAttendance, setStudentAttendance] = useState<{ studentId: string; present: boolean }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [canResubmit, setCanResubmit] = useState(true);
   
-  // Get all students with roll numbers starting with 24MAB0A
-  const classMabStudents = studentList.filter(student => 
-    student.rollNumber.startsWith('24MAB0A')
-  ).sort((a, b) => a.rollNumber.localeCompare(b.rollNumber));
+  // Sort students by roll number
+  const sortedStudents = [...students].sort((a, b) => 
+    a.rollNumber.localeCompare(b.rollNumber)
+  );
   
-  // Effect to initialize student attendance when subject or date changes
-  useEffect(() => {
+  // Initialize student attendance when subject or date changes
+  useState(() => {
     const existingAttendance = attendance.find(
       a => a.subjectId === selectedSubject && a.date === selectedDate
     );
     
     if (existingAttendance) {
-      // Create a map of existing attendance records
-      const attendanceMap = new Map(
-        existingAttendance.students.map(s => [s.studentId, s.present])
-      );
-      
-      // Initialize attendance for all students based on the map
       setStudentAttendance(
-        classMabStudents.map(student => ({
-          studentId: student.id,
-          present: attendanceMap.has(student.id) ? attendanceMap.get(student.id)! : true
+        existingAttendance.students.map(s => ({
+          studentId: s.studentId,
+          present: s.present
         }))
       );
-      
-      // If attendance already exists, disable resubmit initially
-      setCanResubmit(false);
     } else {
-      // For new attendance, all students are present by default
       setStudentAttendance(
-        classMabStudents.map(student => ({
+        sortedStudents.map(student => ({
           studentId: student.id,
           present: true
         }))
       );
-      
-      // New attendance can be submitted
-      setCanResubmit(true);
     }
-  }, [selectedSubject, selectedDate, attendance, classMabStudents]);
+  });
   
   const toggleAttendance = (studentId: string) => {
     setStudentAttendance(prev => 
@@ -100,54 +86,8 @@ export default function TeacherAttendance() {
     setTimeout(() => {
       markAttendance(selectedSubject, selectedDate, studentAttendance);
       setIsSubmitting(false);
-      setCanResubmit(false);
       toast.success("Attendance submitted successfully");
     }, 1000);
-  };
-  
-  const enableResubmit = () => {
-    setCanResubmit(true);
-    toast.info("You can now resubmit the attendance data");
-  };
-  
-  const downloadAttendanceData = () => {
-    const existingAttendance = attendance.find(
-      a => a.subjectId === selectedSubject && a.date === selectedDate
-    );
-    
-    if (!existingAttendance) {
-      toast.error("No attendance data to download");
-      return;
-    }
-    
-    // Create CSV content
-    const subject = subjects.find(s => s.id === selectedSubject);
-    const headers = ["Roll Number", "Student Name", "Status"];
-    const rows = existingAttendance.students.map(student => [
-      student.rollNumber,
-      student.name,
-      student.present ? "Present" : "Absent"
-    ]);
-    
-    const csvContent = [
-      `Subject: ${subject?.name || "Unknown Subject"}`,
-      `Date: ${new Date(selectedDate).toLocaleDateString()}`,
-      "",
-      headers.join(","),
-      ...rows.map(row => row.join(","))
-    ].join("\n");
-    
-    // Create and download the file
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `attendance_${subject?.name}_${selectedDate}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast.success("Attendance data downloaded");
   };
   
   const getAttendancePercentage = (studentId: string) => {
@@ -165,20 +105,32 @@ export default function TeacherAttendance() {
     
     return (attendedClasses / totalClasses) * 100;
   };
+  
+  const getAttendanceColor = (percentage: number) => {
+    if (percentage >= 90) return "bg-success-500";
+    if (percentage >= 85) return "bg-warning-500";
+    return "bg-danger-500";
+  };
+  
+  const getAttendanceBgColor = (percentage: number) => {
+    if (percentage >= 90) return "bg-success-100";
+    if (percentage >= 85) return "bg-warning-100";
+    return "bg-danger-100";
+  };
 
   return (
     <DashboardLayout title="Attendance" subtitle="Mark and manage student attendance">
       <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="shadow-sm">
           <CardContent className="p-4 flex flex-col gap-2">
-            <label htmlFor="subject" className="text-sm font-medium text-gray-700">
+            <label htmlFor="subject" className="text-sm font-medium text-navy-800">
               Select Subject
             </label>
             <select
               id="subject"
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full h-10 rounded-md border border-gray-300 bg-background px-3 py-2 text-sm focus:outline-primary"
+              className="w-full h-10 rounded-md border border-navy-200 bg-background px-3 py-2 text-sm focus:outline-primary"
             >
               {subjects.map((subject) => (
                 <option key={subject.id} value={subject.id}>
@@ -191,7 +143,7 @@ export default function TeacherAttendance() {
         
         <Card className="shadow-sm">
           <CardContent className="p-4 flex flex-col gap-2">
-            <label htmlFor="date" className="text-sm font-medium text-gray-700">
+            <label htmlFor="date" className="text-sm font-medium text-navy-800">
               Select Date
             </label>
             <input
@@ -199,7 +151,7 @@ export default function TeacherAttendance() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full h-10 rounded-md border border-gray-300 bg-background px-3 py-2 text-sm focus:outline-primary"
+              className="w-full h-10 rounded-md border border-navy-200 bg-background px-3 py-2 text-sm focus:outline-primary"
             />
           </CardContent>
         </Card>
@@ -207,14 +159,14 @@ export default function TeacherAttendance() {
         <Card className="shadow-sm">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-medium text-gray-700">Quick Actions</h3>
-              <p className="text-xs text-gray-600">Mark all students at once</p>
+              <h3 className="text-sm font-medium text-navy-800">Quick Actions</h3>
+              <p className="text-xs text-navy-600">Mark all students at once</p>
             </div>
             <div className="flex gap-2">
               <Button 
                 size="sm"
                 variant="outline" 
-                className="border-green-300 text-green-700 hover:bg-green-50"
+                className="border-success-300 text-success-700 hover:bg-success-50"
                 onClick={markAllPresent}
               >
                 <Check className="h-4 w-4 mr-1" />
@@ -223,7 +175,7 @@ export default function TeacherAttendance() {
               <Button 
                 size="sm"
                 variant="outline" 
-                className="border-red-300 text-red-700 hover:bg-red-50"
+                className="border-danger-300 text-danger-700 hover:bg-danger-50"
                 onClick={markAllAbsent}
               >
                 <X className="h-4 w-4 mr-1" />
@@ -235,11 +187,11 @@ export default function TeacherAttendance() {
       </div>
       
       <Card className="shadow-md">
-        <CardHeader className="bg-slate-50 border-b border-slate-100 rounded-t-lg">
+        <CardHeader className="bg-navy-50 border-b border-navy-100 rounded-t-lg">
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle className="text-slate-800">Mark Attendance</CardTitle>
-              <CardDescription className="text-slate-600">
+              <CardTitle className="text-navy-800">Mark Attendance</CardTitle>
+              <CardDescription className="text-navy-600">
                 {new Date(selectedDate).toLocaleDateString('en-US', { 
                   weekday: 'long', 
                   year: 'numeric', 
@@ -248,9 +200,9 @@ export default function TeacherAttendance() {
                 })}
               </CardDescription>
             </div>
-            <Badge className="bg-slate-100 text-slate-800 hover:bg-slate-200 flex items-center gap-1">
+            <Badge className="bg-navy-100 text-navy-800 hover:bg-navy-200 flex items-center gap-1">
               <Users className="h-3 w-3" />
-              {classMabStudents.length} Students
+              {students.length} Students
             </Badge>
           </div>
         </CardHeader>
@@ -265,7 +217,7 @@ export default function TeacherAttendance() {
           
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50/50">
+              <TableRow className="bg-navy-50/50">
                 <TableHead className="w-[100px]">Roll No</TableHead>
                 <TableHead>Student Name</TableHead>
                 <TableHead className="text-center">Attendance</TableHead>
@@ -273,7 +225,7 @@ export default function TeacherAttendance() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {classMabStudents.map((student) => {
+              {sortedStudents.map((student) => {
                 const studentAttendanceRecord = studentAttendance.find(
                   sa => sa.studentId === student.id
                 );
@@ -291,9 +243,9 @@ export default function TeacherAttendance() {
                           size="sm"
                           className={`border ${
                             isPresent 
-                              ? "bg-green-100 border-green-300 text-green-700" 
-                              : "bg-white border-green-200 text-green-400"
-                          } hover:bg-green-50 hover:text-green-700`}
+                              ? "bg-success-100 border-success-300 text-success-700" 
+                              : "bg-white border-success-200 text-success-400"
+                          } hover:bg-success-50 hover:text-success-700`}
                           onClick={() => toggleAttendance(student.id)}
                         >
                           <Check className="h-4 w-4 mr-1" />
@@ -305,9 +257,9 @@ export default function TeacherAttendance() {
                           size="sm"
                           className={`border ${
                             !isPresent 
-                              ? "bg-red-100 border-red-300 text-red-700" 
-                              : "bg-white border-red-200 text-red-400"
-                          } hover:bg-red-50 hover:text-red-700`}
+                              ? "bg-danger-100 border-danger-300 text-danger-700" 
+                              : "bg-white border-danger-200 text-danger-400"
+                          } hover:bg-danger-50 hover:text-danger-700`}
                           onClick={() => toggleAttendance(student.id)}
                         >
                           <X className="h-4 w-4 mr-1" />
@@ -323,23 +275,17 @@ export default function TeacherAttendance() {
                           </div>
                           <Progress 
                             value={attendancePercentage} 
-                            className={`h-2 ${
-                              attendancePercentage >= 90 
-                                ? "bg-green-100" 
-                                : attendancePercentage >= 85 
-                                ? "bg-yellow-100"
-                                : "bg-red-100"
-                            }`}
+                            className={`h-2 ${getAttendanceBgColor(attendancePercentage)}`}
                           />
                         </div>
                         <Badge 
                           variant="outline" 
                           className={`
                             ${attendancePercentage >= 90 
-                              ? "bg-green-50 text-green-700 border-green-200" 
+                              ? "bg-success-50 text-success-700 border-success-200" 
                               : attendancePercentage >= 85 
-                              ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                              : "bg-red-50 text-red-700 border-red-200"
+                              ? "bg-warning-50 text-warning-700 border-warning-200"
+                              : "bg-danger-50 text-danger-700 border-danger-200"
                             }
                           `}
                         >
@@ -353,34 +299,13 @@ export default function TeacherAttendance() {
             </TableBody>
           </Table>
           
-          <div className="p-4 border-t border-slate-100 bg-slate-50/30 flex justify-between">
-            <div>
-              <Button
-                variant="outline"
-                onClick={downloadAttendanceData}
-                className="mr-2"
-              >
-                <FileDown className="h-4 w-4 mr-2" />
-                Download Attendance
-              </Button>
-              
-              {!canResubmit && (
-                <Button
-                  variant="outline"
-                  onClick={enableResubmit}
-                >
-                  <RefreshCcw className="h-4 w-4 mr-2" />
-                  Enable Re-submission
-                </Button>
-              )}
-            </div>
-            
+          <div className="p-4 border-t border-navy-100 bg-navy-50/30 flex justify-end">
             <Button
               className="min-w-32"
               onClick={handleSubmit}
-              disabled={isSubmitting || !canResubmit}
+              disabled={isSubmitting}
             >
-              {isSubmitting ? "Submitting..." : canResubmit ? "Submit Attendance" : "Already Submitted"}
+              {isSubmitting ? "Submitting..." : "Submit Attendance"}
             </Button>
           </div>
         </CardContent>
