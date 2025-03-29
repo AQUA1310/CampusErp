@@ -147,7 +147,7 @@ export default function DashboardLayout({
               className="flex items-center space-x-2 font-bold text-xl text-primary"
             >
               <img 
-                src="/lovable-uploads/e1ec4d14-9c17-4973-9868-b2e1f7f239b0.png" 
+                src="/lovable-uploads/b82fdcac-d78c-40c5-93da-57537fc9ce5a.png" 
                 alt="ARC Portal Logo" 
                 className="h-10 w-auto" 
               />
@@ -218,7 +218,7 @@ export default function DashboardLayout({
                 className="flex items-center space-x-2 font-bold text-xl text-white"
               >
                 <img 
-                  src="/lovable-uploads/e1ec4d14-9c17-4973-9868-b2e1f7f239b0.png" 
+                  src="/lovable-uploads/b82fdcac-d78c-40c5-93da-57537fc9ce5a.png" 
                   alt="ARC Portal Logo" 
                   className="h-10 w-auto" 
                 />
@@ -254,7 +254,7 @@ export default function DashboardLayout({
         <div className="flex-1 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <img 
-              src="/lovable-uploads/e1ec4d14-9c17-4973-9868-b2e1f7f239b0.png" 
+              src="/lovable-uploads/b82fdcac-d78c-40c5-93da-57537fc9ce5a.png" 
               alt="ARC Portal Logo" 
               className="h-8 w-auto" 
             />

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import DashboardLayout from "@/components/shared/DashboardLayout";
 import { useData } from "@/contexts/DataContext";
@@ -43,8 +42,16 @@ export default function Results() {
     result.semester.toString() === selectedSemester
   );
 
-  const filteredMinorResults = minorResults.filter(result => 
-    (result.rollNumber === user?.rollNumber || result.studentId === user?.id) && 
+  const userMinorResults = minorResults.filter(result => {
+    if ('studentId' in result) {
+      return result.studentId === user?.id;
+    } else if ('rollNumber' in result) {
+      return result.rollNumber === user?.rollNumber;
+    }
+    return false;
+  });
+
+  const filteredMinorResults = userMinorResults.filter(result => 
     result.examType === minorExamType && 
     (selectedSubject === "all" ? true : result.subjectId === selectedSubject)
   );
