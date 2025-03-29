@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -146,15 +147,10 @@ export default function DashboardLayout({
               className="flex items-center space-x-2 font-bold text-xl text-primary"
             >
               <img 
-                src="/logo.png" 
-                alt="NITW ARC Logo" 
-                className="h-8 w-auto" 
-                onError={(e) => {
-                  // Fallback if logo.png not available
-                  e.currentTarget.src = "/placeholder.svg";
-                }}
+                src="/lovable-uploads/e1ec4d14-9c17-4973-9868-b2e1f7f239b0.png" 
+                alt="ARC Portal Logo" 
+                className="h-10 w-auto" 
               />
-              <span>NITW ARC</span>
             </Link>
           </div>
           <nav className="flex-1 overflow-y-auto p-3 pt-4">
@@ -207,29 +203,25 @@ export default function DashboardLayout({
       </aside>
 
       {/* Mobile Header + Sheet Sidebar */}
-      <header className="sticky top-0 z-40 flex h-16 w-full items-center gap-4 border-b bg-white p-4 lg:hidden">
+      <header className="sticky top-0 z-40 flex h-16 w-full items-center gap-4 border-b bg-blue-700 text-white p-4 lg:hidden">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="lg:hidden">
+            <Button variant="ghost" size="icon" className="lg:hidden text-white">
               <Menu className="h-5 w-5" />
               <span className="sr-only">Toggle Menu</span>
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-72 p-0">
-            <div className="flex h-16 items-center border-b px-6">
+            <div className="flex h-16 items-center border-b px-6 bg-blue-700">
               <Link 
                 to={basePath} 
-                className="flex items-center space-x-2 font-bold text-xl text-primary"
+                className="flex items-center space-x-2 font-bold text-xl text-white"
               >
                 <img 
-                  src="/logo.png" 
-                  alt="NITW ARC Logo" 
-                  className="h-8 w-auto" 
-                  onError={(e) => {
-                    e.currentTarget.src = "/placeholder.svg";
-                  }}
+                  src="/lovable-uploads/e1ec4d14-9c17-4973-9868-b2e1f7f239b0.png" 
+                  alt="ARC Portal Logo" 
+                  className="h-10 w-auto" 
                 />
-                <span>NITW ARC</span>
               </Link>
             </div>
             <nav className="flex flex-col gap-1.5 p-4">
@@ -260,14 +252,21 @@ export default function DashboardLayout({
           </SheetContent>
         </Sheet>
         <div className="flex-1 flex items-center justify-between">
-          <h1 className="text-lg font-semibold">{title}</h1>
+          <div className="flex items-center space-x-4">
+            <img 
+              src="/lovable-uploads/e1ec4d14-9c17-4973-9868-b2e1f7f239b0.png" 
+              alt="ARC Portal Logo" 
+              className="h-8 w-auto" 
+            />
+            <h1 className="text-lg font-semibold">{isStudent ? "Student Portal" : "Teacher Portal"}</h1>
+          </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="text-white">
               <Bell className="h-5 w-5" />
             </Button>
             <Link to={`${basePath}/profile`}>
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary">
+                <AvatarFallback className="bg-white text-blue-700">
                   {userInitials}
                 </AvatarFallback>
               </Avatar>

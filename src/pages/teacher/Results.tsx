@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useData } from "@/contexts/DataContext";
@@ -78,7 +79,7 @@ export default function TeacherResults() {
         const existingResult = minorResults.find(
           r => r.examType === examType && 
           r.subjectId === selectedSubject && 
-          student.id === r.studentId
+          r.rollNumber === student.rollNumber
         );
         
         if (existingResult) {

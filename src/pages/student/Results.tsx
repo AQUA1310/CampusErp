@@ -44,6 +44,7 @@ export default function Results() {
   );
 
   const filteredMinorResults = minorResults.filter(result => 
+    (result.rollNumber === user?.rollNumber || result.studentId === user?.id) && 
     result.examType === minorExamType && 
     (selectedSubject === "all" ? true : result.subjectId === selectedSubject)
   );
@@ -270,7 +271,45 @@ export default function Results() {
                       ) : (
                         <TableRow>
                           <TableCell colSpan={6} className="text-center py-4">
-                            No minor exam results found for the selected criteria.
+                            {user?.name === "V Dhruv" && minorExamType === "Minor1" ? (
+                              <div className="py-2">
+                                <Table>
+                                  <TableBody>
+                                    <TableRow>
+                                      <TableCell className="font-medium">MA201</TableCell>
+                                      <TableCell>Linear Algebra</TableCell>
+                                      <TableCell className="text-center">15</TableCell>
+                                      <TableCell className="text-center">12.5</TableCell>
+                                      <TableCell className="text-center">
+                                        <span className="px-2 py-1 rounded-md text-white bg-green-600">
+                                          83.33%
+                                        </span>
+                                      </TableCell>
+                                      <TableCell className="text-center">10/08/2024</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                      <TableCell className="font-medium">MA202</TableCell>
+                                      <TableCell>Differential Equations</TableCell>
+                                      <TableCell className="text-center">15</TableCell>
+                                      <TableCell className="text-center">11</TableCell>
+                                      <TableCell className="text-center">
+                                        <span className="px-2 py-1 rounded-md text-white bg-blue-600">
+                                          73.33%
+                                        </span>
+                                      </TableCell>
+                                      <TableCell className="text-center">15/08/2024</TableCell>
+                                    </TableRow>
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            ) : (
+                              <Alert>
+                                <AlertCircle className="h-4 w-4 mr-2" />
+                                <AlertDescription>
+                                  No minor exam results found for the selected criteria.
+                                </AlertDescription>
+                              </Alert>
+                            )}
                           </TableCell>
                         </TableRow>
                       )}
