@@ -32,23 +32,19 @@ export default function Results() {
   const { semesterResults, minorResults, subjects } = useData();
   const [examType, setExamType] = useState<"minor" | "endSem">("endSem");
   const [minorExamType, setMinorExamType] = useState<"Minor1" | "Minor2">("Minor1");
-  const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [selectedSubject, setSelectedSubject] = useState<string>("all");
 
-  // Get data for the current student
   const studentResults = semesterResults.find(result => 
     result.rollNumber === user?.rollNumber || 
     result.studentId === user?.id
   );
 
-  // Filter minor results for the current student and selected exam type
   const filteredMinorResults = minorResults.filter(result => 
     result.examType === minorExamType && 
-    (selectedSubject ? result.subjectId === selectedSubject : true)
+    (selectedSubject === "all" ? true : result.subjectId === selectedSubject)
   );
 
-  // Convert minor marks to be out of 15
   const normalizeMinorMarks = (result: MinorResult) => {
-    // Scale marks to be out of 15
     const normalizedMax = 15;
     const normalizedObtained = (result.obtainedMarks / result.maxMarks) * normalizedMax;
     return {
@@ -107,7 +103,7 @@ export default function Results() {
                         <SelectValue placeholder="All Subjects" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Subjects</SelectItem>
+                        <SelectItem value="all">All Subjects</SelectItem>
                         {subjects.map((subject) => (
                           <SelectItem key={subject.id} value={subject.id}>
                             {subject.name}
