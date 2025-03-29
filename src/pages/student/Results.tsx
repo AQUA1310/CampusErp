@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import DashboardLayout from "@/components/shared/DashboardLayout";
 import { useData } from "@/contexts/DataContext";
@@ -26,6 +27,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MinorResult } from "@/contexts/DataContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 export default function Results() {
   const { user } = useAuth();
@@ -33,10 +36,11 @@ export default function Results() {
   const [examType, setExamType] = useState<"minor" | "endSem">("endSem");
   const [minorExamType, setMinorExamType] = useState<"Minor1" | "Minor2">("Minor1");
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
+  const [selectedSemester, setSelectedSemester] = useState<string>("1");
 
   const studentResults = semesterResults.find(result => 
-    result.rollNumber === user?.rollNumber || 
-    result.studentId === user?.id
+    (result.rollNumber === user?.rollNumber || result.studentId === user?.id) && 
+    result.semester.toString() === selectedSemester
   );
 
   const filteredMinorResults = minorResults.filter(result => 
@@ -79,6 +83,23 @@ export default function Results() {
                     <SelectItem value="minor">Minor Exams</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {examType === "endSem" && (
+                  <Select
+                    value={selectedSemester}
+                    onValueChange={setSelectedSemester}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select Semester" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Semester 1</SelectItem>
+                      <SelectItem value="2">Semester 2</SelectItem>
+                      <SelectItem value="3">Semester 3</SelectItem>
+                      <SelectItem value="4">Semester 4</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
 
                 {examType === "minor" && (
                   <>
@@ -198,7 +219,12 @@ export default function Results() {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-muted-foreground">No end semester results available at this time.</p>
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      <AlertDescription>
+                        No end semester results available for semester {selectedSemester} at this time.
+                      </AlertDescription>
+                    </Alert>
                   </div>
                 )}
               </div>

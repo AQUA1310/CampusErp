@@ -2,8 +2,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useData } from "@/contexts/DataContext";
-import { toast } from "sonner";
-import ChatBot from "@/components/student/ChatBot";
 import DashboardLayout from "@/components/shared/DashboardLayout";
 import {
   Card,
@@ -16,13 +14,20 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Send, Bot, User } from "lucide-react";
+import { 
+  Send, 
+  User,
+  Search,
+  UserRound
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
 
-export default function Chat() {
-  const { user, teacherList } = useAuth();
+export default function TeacherChat() {
+  const { user, studentList } = useAuth();
   const { messages, sendMessage, markMessageAsRead } = useData();
   const [message, setMessage] = useState("");
   const [activeChat, setActiveChat] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Filter messages that involve the current user
@@ -50,7 +55,7 @@ export default function Chat() {
         (msg.senderId === contactId && msg.receiverId === user?.id) ||
         (msg.senderId === user?.id && msg.receiverId === contactId)
     );
-    const contact = teacherList.find((t) => t.id === contactId);
+    const contact = studentList.find((s) => s.id === contactId);
     
     if (contact) {
       acc[contactId] = {
@@ -58,7 +63,8 @@ export default function Chat() {
           id: contact.id,
           name: contact.name,
           email: contact.email,
-          type: "teacher" as const,
+          rollNumber: contact.rollNumber,
+          type: "student" as const,
         },
         messages: contactMessages.sort(
           (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -70,23 +76,40 @@ export default function Chat() {
     }
     
     return acc;
-  }, {} as Record<string, { contact: { id: string, name: string, email: string, type: "teacher" }, messages: typeof messages, unread: number }>);
+  }, {} as Record<string, { 
+    contact: { id: string, name: string, email: string, rollNumber: string, type: "student" }, 
+    messages: typeof messages, 
+    unread: number 
+  }>);
 
-  // Add all teachers as potential contacts even if no messages exist yet
-  teacherList.forEach(teacher => {
-    if (!messagesByContact[teacher.id]) {
-      messagesByContact[teacher.id] = {
+  // Add all students as potential contacts even if no messages exist yet
+  studentList.forEach(student => {
+    if (!messagesByContact[student.id]) {
+      messagesByContact[student.id] = {
         contact: {
-          id: teacher.id,
-          name: teacher.name,
-          email: teacher.email,
-          type: "teacher",
+          id: student.id,
+          name: student.name,
+          email: student.email,
+          rollNumber: student.rollNumber,
+          type: "student",
         },
         messages: [],
         unread: 0,
       };
     }
   });
+
+  // Filter contacts by search query
+  const filteredContacts = Object.entries(messagesByContact).filter(
+    ([_, { contact }]) => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        contact.name.toLowerCase().includes(query) ||
+        contact.rollNumber.toLowerCase().includes(query)
+      );
+    }
+  );
 
   // Get active contact details
   const activeContact = activeChat ? messagesByContact[activeChat]?.contact : null;
@@ -115,10 +138,10 @@ export default function Chat() {
     sendMessage({
       senderId: user?.id || "",
       senderName: user?.name || "",
-      senderType: "student",
+      senderType: "teacher",
       receiverId: activeContact.id,
       receiverName: activeContact.name,
-      receiverType: "teacher",
+      receiverType: "student",
       content: message,
     });
 
@@ -132,21 +155,40 @@ export default function Chat() {
       : name.slice(0, 2).toUpperCase();
   };
 
+  // Count total unread messages
+  const totalUnread = Object.values(messagesByContact).reduce(
+    (sum, { unread }) => sum + unread,
+    0
+  );
+
   return (
-    <DashboardLayout title="Messages" subtitle="Chat with your teachers and academic advisors">
+    <DashboardLayout title="Messages" subtitle="Chat with your students">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Contacts list */}
         <div className="md:col-span-1">
           <Card className="h-[calc(100vh-200px)] overflow-hidden">
-            <CardHeader className="bg-slate-50">
-              <CardTitle className="text-lg">Contacts</CardTitle>
-              <CardDescription>Your teachers and advisors</CardDescription>
+            <CardHeader className="bg-slate-50 pb-3">
+              <div className="flex justify-between items-center mb-2">
+                <CardTitle className="text-lg">Students</CardTitle>
+                {totalUnread > 0 && (
+                  <Badge className="bg-primary">{totalUnread} unread</Badge>
+                )}
+              </div>
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or roll no..."
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="h-[calc(100%-80px)] overflow-y-auto">
-                {Object.entries(messagesByContact).length > 0 ? (
+              <div className="h-[calc(100%-90px)] overflow-y-auto">
+                {filteredContacts.length > 0 ? (
                   <div className="divide-y">
-                    {Object.entries(messagesByContact).map(([contactId, { contact, messages, unread }]) => (
+                    {filteredContacts.map(([contactId, { contact, messages, unread }]) => (
                       <button
                         key={contactId}
                         className={`w-full text-left p-3 hover:bg-slate-50 transition-colors ${
@@ -166,7 +208,7 @@ export default function Chat() {
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground truncate">
-                              {contact.email}
+                              {contact.rollNumber}
                             </p>
                             {messages.length > 0 && (
                               <p className="text-sm text-muted-foreground truncate mt-1">
@@ -181,7 +223,7 @@ export default function Chat() {
                   </div>
                 ) : (
                   <div className="p-6 text-center text-muted-foreground">
-                    No contacts found.
+                    No students found matching "{searchQuery}".
                   </div>
                 )}
               </div>
@@ -201,13 +243,13 @@ export default function Chat() {
                     </Avatar>
                     <div>
                       <CardTitle className="text-lg">{activeContact.name}</CardTitle>
-                      <CardDescription>{activeContact.email}</CardDescription>
+                      <CardDescription>{activeContact.rollNumber} • {activeContact.email}</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1 overflow-y-auto p-4 flex flex-col space-y-4">
                   {activeMessages.length > 0 ? (
-                    activeMessages.map((msg, index) => (
+                    activeMessages.map((msg) => (
                       <div
                         key={msg.id}
                         className={`flex ${
@@ -217,7 +259,7 @@ export default function Chat() {
                         <div
                           className={`max-w-[75%] rounded-lg p-3 ${
                             msg.senderId === user?.id
-                              ? "bg-primary text-white"
+                              ? "bg-primary text-primary-foreground"
                               : "bg-slate-100 text-slate-900"
                           }`}
                         >
@@ -239,7 +281,7 @@ export default function Chat() {
                     ))
                   ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-center">
-                      <User className="h-12 w-12 text-muted-foreground mb-2" />
+                      <UserRound className="h-12 w-12 text-muted-foreground mb-2" />
                       <p className="font-medium">No messages yet</p>
                       <p className="text-sm text-muted-foreground">
                         Send a message to start a conversation with {activeContact.name}
@@ -263,7 +305,7 @@ export default function Chat() {
                   />
                   <Button
                     size="icon"
-                    className="h-10 w-10 rounded-full"
+                    className="h-10 w-10 rounded-full bg-primary text-primary-foreground"
                     onClick={handleSendMessage}
                     disabled={!message.trim()}
                   >
@@ -273,20 +315,15 @@ export default function Chat() {
               </>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-                <Bot className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="font-medium text-lg mb-2">Select a Contact</h3>
+                <User className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="font-medium text-lg mb-2">Select a Student</h3>
                 <p className="text-muted-foreground mb-4">
-                  Choose a teacher from the list to start a conversation
+                  Choose a student from the list to start a conversation
                 </p>
               </div>
             )}
           </Card>
         </div>
-      </div>
-
-      {/* AI Chatbot */}
-      <div className="mt-6">
-        <ChatBot />
       </div>
     </DashboardLayout>
   );
