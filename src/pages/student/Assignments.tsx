@@ -153,7 +153,7 @@ export default function StudentAssignments() {
                           </Button>
                           <Button 
                             size="sm"
-                            className="bg-oliveGreen-600 hover:bg-oliveGreen-700"
+                            className="bg-black hover:bg-black"
                             onClick={() => openSubmitDialog(assignment)}
                           >
                             <Upload className="h-4 w-4 mr-1" />
