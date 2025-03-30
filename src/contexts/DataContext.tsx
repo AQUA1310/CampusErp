@@ -1348,6 +1348,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     toast.success(`${minorResult.examType} marks for ${minorResult.subjectName} submitted successfully!`);
   };
 
+  // Add the missing addNotification function
+  const addNotification = (notification: Omit<Notification, "id" | "createdAt">) => {
+    const newNotification: Notification = {
+      ...notification,
+      id: `notification-${notifications.length + 1}`,
+      createdAt: new Date().toISOString(),
+    };
+
+    setNotifications([...notifications, newNotification]);
+    toast.success("Notification added successfully!");
+  };
+
   // Sort students by roll number (for display in UI)
   useEffect(() => {
     setStudents((prev) => 
