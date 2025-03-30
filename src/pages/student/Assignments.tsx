@@ -379,7 +379,7 @@ export default function StudentAssignments() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             {selectedAssignment && (
-              <div className="bg-black p-4 rounded-lg space-y-2">
+              <div className="bg-oliveGreen-600 p-4 rounded-lg space-y-2">
                 <div className="flex justify-between">
                   <span className="font-medium">Due Date:</span>
                   <span className={`${
@@ -427,7 +427,7 @@ export default function StudentAssignments() {
             <Button variant="outline" onClick={() => setIsSubmitDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit} className="bg-oliveGreen-600 hover:bg-oliveGreen-700">
+            <Button onClick={handleSubmit} className="bg-black hover:black">
               Submit Assignment
             </Button>
           </DialogFooter>
