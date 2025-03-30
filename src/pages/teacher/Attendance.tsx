@@ -83,14 +83,28 @@ export default function TeacherAttendance() {
   const handleSubmit = () => {
     setIsSubmitting(true);
     
+    // Make sure we're tracking all students
+    const allStudentsAttendance = sortedStudents.map(student => {
+      const existing = studentAttendance.find(sa => sa.studentId === student.id);
+      return {
+        studentId: student.id,
+        present: existing ? existing.present : true
+      };
+    });
+    
     setTimeout(() => {
-      markAttendance(selectedSubject, selectedDate, studentAttendance);
+      markAttendance(selectedSubject, selectedDate, allStudentsAttendance);
       setIsSubmitting(false);
       toast.success("Attendance submitted successfully");
     }, 1000);
   };
   
   const handleExportAttendance = () => {
+    if (attendance.filter(a => a.subjectId === selectedSubject).length === 0) {
+      toast.error("No attendance data available to export. Please mark attendance first.");
+      return;
+    }
+    
     exportAttendance(selectedSubject);
     toast.success("Attendance data exported to Excel. Download started.");
     

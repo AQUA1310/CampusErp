@@ -18,7 +18,8 @@ import {
   Send, 
   UserCircle,
   MoreVertical,
-  Download
+  Download,
+  File
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -53,11 +54,11 @@ export default function TeacherChat() {
   const student = students.find(s => s.id === selectedStudent);
 
   // Get relevant messages between the teacher and selected student
-  const conversation = selectedStudent
+  const conversation = selectedStudent && user
     ? messages.filter(
         msg =>
-          (msg.senderId === user?.id && msg.receiverId === selectedStudent) ||
-          (msg.senderId === selectedStudent && msg.receiverId === user?.id)
+          (msg.senderId === user.id && msg.receiverId === selectedStudent) ||
+          (msg.senderId === selectedStudent && msg.receiverId === user.id)
       )
     : [];
 
@@ -115,8 +116,10 @@ export default function TeacherChat() {
 
   // Count unread messages from a student
   const countUnreadMessages = (studentId: string) => {
+    if (!user) return 0;
+    
     return messages.filter(
-      msg => msg.senderId === studentId && msg.receiverId === user?.id && !msg.read
+      msg => msg.senderId === studentId && msg.receiverId === user.id && !msg.read
     ).length;
   };
 
@@ -208,7 +211,7 @@ export default function TeacherChat() {
                         <MoreVertical className="h-5 w-5" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="bg-white">
                       <DropdownMenuLabel>Options</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem>View Profile</DropdownMenuItem>
@@ -233,9 +236,12 @@ export default function TeacherChat() {
                       
                       return (
                         <div key={submission.id} className="flex items-center justify-between bg-white p-2 rounded-md border border-blue-100">
-                          <div>
-                            <p className="text-sm font-medium">{assignmentName}</p>
-                            <p className="text-xs text-gray-500">Submitted: {new Date(submission.submittedAt).toLocaleDateString()}</p>
+                          <div className="flex items-center gap-2">
+                            <File className="h-4 w-4 text-blue-500" />
+                            <div>
+                              <p className="text-sm font-medium">{assignmentName}</p>
+                              <p className="text-xs text-gray-500">Submitted: {new Date(submission.submittedAt).toLocaleDateString()}</p>
+                            </div>
                           </div>
                           <Button 
                             variant="outline" 

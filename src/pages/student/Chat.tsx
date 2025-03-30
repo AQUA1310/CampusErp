@@ -52,11 +52,11 @@ export default function StudentChat() {
   const teacher = teachers.find(t => t.id === selectedTeacher);
 
   // Get relevant messages between the student and selected teacher
-  const conversation = selectedTeacher
+  const conversation = selectedTeacher && user
     ? messages.filter(
         msg =>
-          (msg.senderId === user?.id && msg.receiverId === selectedTeacher) ||
-          (msg.senderId === selectedTeacher && msg.receiverId === user?.id)
+          (msg.senderId === user.id && msg.receiverId === selectedTeacher) ||
+          (msg.senderId === selectedTeacher && msg.receiverId === user.id)
       )
     : [];
 
@@ -109,8 +109,10 @@ export default function StudentChat() {
 
   // Count unread messages from a teacher
   const countUnreadMessages = (teacherId: string) => {
+    if (!user) return 0;
+    
     return messages.filter(
-      msg => msg.senderId === teacherId && msg.receiverId === user?.id && !msg.read
+      msg => msg.senderId === teacherId && msg.receiverId === user.id && !msg.read
     ).length;
   };
 
@@ -190,7 +192,7 @@ export default function StudentChat() {
                         <MoreVertical className="h-5 w-5" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="bg-white">
                       <DropdownMenuLabel>Options</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem>View Profile</DropdownMenuItem>
