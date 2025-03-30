@@ -13,14 +13,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Calendar, Users, Check, X, AlertCircle } from "lucide-react";
+import { Calendar, Users, Check, X, AlertCircle, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useData } from "@/contexts/DataContext";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/shared/DashboardLayout";
 
 export default function TeacherAttendance() {
-  const { students, subjects, attendance, markAttendance } = useData();
+  const { students, subjects, attendance, markAttendance, exportAttendance } = useData();
   const { user } = useAuth();
   
   const [selectedSubject, setSelectedSubject] = useState(subjects[0]?.id || "");
@@ -88,6 +88,11 @@ export default function TeacherAttendance() {
       setIsSubmitting(false);
       toast.success("Attendance submitted successfully");
     }, 1000);
+  };
+  
+  const handleExportAttendance = () => {
+    exportAttendance(selectedSubject);
+    toast.success("Attendance data exported to Excel");
   };
   
   const getAttendancePercentage = (studentId: string) => {
@@ -200,10 +205,20 @@ export default function TeacherAttendance() {
                 })}
               </CardDescription>
             </div>
-            <Badge className="bg-navy-100 text-navy-800 hover:bg-navy-200 flex items-center gap-1">
-              <Users className="h-3 w-3" />
-              {students.length} Students
-            </Badge>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={handleExportAttendance}
+                className="border-primary text-primary hover:bg-primary/10"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export to Excel
+              </Button>
+              <Badge className="bg-navy-100 text-navy-800 hover:bg-navy-200 flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                {students.length} Students
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -301,7 +316,7 @@ export default function TeacherAttendance() {
           
           <div className="p-4 border-t border-navy-100 bg-navy-50/30 flex justify-end">
             <Button
-              className="min-w-32"
+              className="min-w-32 bg-primary text-white"
               onClick={handleSubmit}
               disabled={isSubmitting}
             >

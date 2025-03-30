@@ -13,7 +13,9 @@ import {
   UserCircle, 
   Settings, 
   Home,
-  GraduationCap
+  GraduationCap,
+  Download,
+  Upload
 } from "lucide-react";
 
 interface DashboardLayoutProps {
@@ -40,9 +42,9 @@ export default function DashboardLayout({ children, title, subtitle }: Dashboard
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <img 
-              src="/lovable-uploads/f0db7aa5-f112-4e07-b137-5f66d3368625.png" 
+              src="/lovable-uploads/7fd8e31f-5db5-4f00-9ed5-49b91d232e17.png" 
               alt="NIT Warangal" 
-              className="h-10"
+              className="h-14"
             />
             <div>
               <h1 className="text-lg font-semibold">ARC Portal</h1>
@@ -127,6 +129,19 @@ export default function DashboardLayout({ children, title, subtitle }: Dashboard
                     variant="ghost"
                     className="w-full justify-start text-primary-700 hover:bg-primary-100 hover:text-primary-800"
                     onClick={() => navigateTo("/student-dashboard/results")}
+                  >
+                    <GraduationCap className="h-5 w-5 mr-2" />
+                    <span className="hidden md:inline">Results</span>
+                  </Button>
+                </li>
+              )}
+
+              {isTeacher && (
+                <li>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-primary-700 hover:bg-primary-100 hover:text-primary-800"
+                    onClick={() => navigateTo("/teacher-dashboard/results")}
                   >
                     <GraduationCap className="h-5 w-5 mr-2" />
                     <span className="hidden md:inline">Results</span>

@@ -28,22 +28,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export default function StudentChat() {
+export default function TeacherChat() {
   const { user } = useAuth();
-  const { teachers, messages, sendMessage, markMessageAsRead } = useData();
-  const [selectedTeacher, setSelectedTeacher] = useState<string | null>(null);
+  const { students, messages, sendMessage, markMessageAsRead } = useData();
+  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [messageText, setMessageText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Get selected teacher details
-  const teacher = teachers.find(t => t.id === selectedTeacher);
+  // Get selected student details
+  const student = students.find(s => s.id === selectedStudent);
 
-  // Get relevant messages between the student and selected teacher
-  const conversation = selectedTeacher
+  // Get relevant messages between the teacher and selected student
+  const conversation = selectedStudent
     ? messages.filter(
         msg =>
-          (msg.senderId === user?.id && msg.receiverId === selectedTeacher) ||
-          (msg.senderId === selectedTeacher && msg.receiverId === user?.id)
+          (msg.senderId === user?.id && msg.receiverId === selectedStudent) ||
+          (msg.senderId === selectedStudent && msg.receiverId === user?.id)
       )
     : [];
 
@@ -54,16 +54,16 @@ export default function StudentChat() {
 
   // Mark received messages as read when opening conversation
   useEffect(() => {
-    if (selectedTeacher && user) {
+    if (selectedStudent && user) {
       const unreadMessages = sortedMessages.filter(
-        msg => msg.senderId === selectedTeacher && !msg.read
+        msg => msg.senderId === selectedStudent && !msg.read
       );
 
       unreadMessages.forEach(msg => {
         markMessageAsRead(msg.id);
       });
     }
-  }, [selectedTeacher, sortedMessages, user, markMessageAsRead]);
+  }, [selectedStudent, sortedMessages, user, markMessageAsRead]);
 
   // Scroll to bottom of messages when new messages come in
   useEffect(() => {
@@ -72,15 +72,15 @@ export default function StudentChat() {
 
   // Send message handler
   const handleSendMessage = () => {
-    if (!messageText.trim() || !selectedTeacher || !user) return;
+    if (!messageText.trim() || !selectedStudent || !user) return;
 
     sendMessage({
       senderId: user.id,
       senderName: user.name,
-      senderType: "student",
-      receiverId: selectedTeacher,
-      receiverName: teacher?.name || "Teacher",
-      receiverType: "teacher",
+      senderType: "teacher",
+      receiverId: selectedStudent,
+      receiverName: student?.name || "Student",
+      receiverType: "student",
       content: messageText,
     });
 
@@ -94,10 +94,10 @@ export default function StudentChat() {
     }
   };
 
-  // Count unread messages from a teacher
-  const countUnreadMessages = (teacherId: string) => {
+  // Count unread messages from a student
+  const countUnreadMessages = (studentId: string) => {
     return messages.filter(
-      msg => msg.senderId === teacherId && msg.receiverId === user?.id && !msg.read
+      msg => msg.senderId === studentId && msg.receiverId === user?.id && !msg.read
     ).length;
   };
 
@@ -108,36 +108,36 @@ export default function StudentChat() {
   };
 
   return (
-    <DashboardLayout title="Messages" subtitle="Chat with your teachers">
+    <DashboardLayout title="Messages" subtitle="Chat with your students">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Teacher List */}
+        {/* Student List */}
         <Card className="md:col-span-1 shadow-md">
           <CardHeader className="bg-primary/5">
-            <CardTitle className="text-lg">Teachers</CardTitle>
-            <CardDescription>Select a teacher to chat</CardDescription>
+            <CardTitle className="text-lg">Students</CardTitle>
+            <CardDescription>Select a student to chat</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="divide-y">
-              {teachers.map((teacher) => {
-                const unreadCount = countUnreadMessages(teacher.id);
+            <div className="divide-y max-h-[60vh] overflow-y-auto">
+              {students.map((student) => {
+                const unreadCount = countUnreadMessages(student.id);
                 
                 return (
                   <div 
-                    key={teacher.id}
+                    key={student.id}
                     className={`p-3 cursor-pointer hover:bg-gray-50 transition-colors
-                      ${selectedTeacher === teacher.id ? "bg-primary/5" : ""}
+                      ${selectedStudent === student.id ? "bg-primary/5" : ""}
                     `}
-                    onClick={() => setSelectedTeacher(teacher.id)}
+                    onClick={() => setSelectedStudent(student.id)}
                   >
                     <div className="flex items-center gap-3">
                       <Avatar className="h-9 w-9">
                         <AvatarFallback className="bg-primary/20 text-primary-800">
-                          {teacher.name.charAt(0)}
+                          {student.name.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 overflow-hidden">
-                        <p className="font-medium text-sm truncate">{teacher.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{teacher.department}</p>
+                        <p className="font-medium text-sm truncate">{student.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{student.rollNumber}</p>
                       </div>
                       {unreadCount > 0 && (
                         <span className="bg-primary text-white text-xs font-medium px-2 py-0.5 rounded-full">
@@ -154,20 +154,20 @@ export default function StudentChat() {
 
         {/* Chat Area */}
         <Card className="md:col-span-3 shadow-md flex flex-col h-[70vh]">
-          {selectedTeacher && teacher ? (
+          {selectedStudent && student ? (
             <>
               <CardHeader className="bg-primary/5 px-4 py-3 border-b">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9">
                       <AvatarFallback className="bg-primary/20 text-primary-800">
-                        {teacher.name.charAt(0)}
+                        {student.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <CardTitle className="text-base">{teacher.name}</CardTitle>
+                      <CardTitle className="text-base">{student.name}</CardTitle>
                       <CardDescription className="text-xs">
-                        {teacher.department}
+                        {student.rollNumber} • {student.profile.department}
                       </CardDescription>
                     </div>
                   </div>
@@ -262,10 +262,10 @@ export default function StudentChat() {
             <div className="flex-1 flex flex-col items-center justify-center p-4 text-center text-muted-foreground">
               <UserCircle className="h-20 w-20 text-muted-foreground/30 mb-4" />
               <h3 className="font-medium text-lg text-primary-900 mb-2">
-                Select a Teacher
+                Select a Student
               </h3>
               <p>
-                Choose a teacher from the list to start a conversation.
+                Choose a student from the list to start a conversation.
               </p>
             </div>
           )}

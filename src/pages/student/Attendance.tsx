@@ -1,26 +1,15 @@
 
 import { useState } from "react";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import DashboardLayout from "@/components/shared/DashboardLayout";
+import { useData } from "@/contexts/DataContext";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { 
-  Calendar,
-  Users, 
-  BookOpen,
-  BarChart2
-} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -29,388 +18,252 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle 
-} from "@/components/ui/dialog";
-import { useData } from "@/contexts/DataContext";
-import { useAuth } from "@/hooks/useAuth";
-import DashboardLayout from "@/components/shared/DashboardLayout";
+import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Check, X, Calendar, BarChart } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function StudentAttendance() {
-  const { attendanceSummary, attendance, subjects } = useData();
   const { user } = useAuth();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedSubject, setSelectedSubject] = useState<any>(null);
+  const { subjects, attendance, attendanceSummary } = useData();
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>("all");
 
-  // Get data for the currently logged-in student
-  const studentData = attendanceSummary.find(a => a.studentId === user?.id);
-  
-  if (!studentData) {
-    return (
-      <DashboardLayout title="Attendance" subtitle="Your attendance records">
-        <div className="text-center py-12">
-          <div className="mx-auto w-16 h-16 bg-danger-100 rounded-full flex items-center justify-center mb-4">
-            <Users className="h-8 w-8 text-danger-500" />
-          </div>
-          <h3 className="text-xl font-medium text-navy-800">No Attendance Data</h3>
-          <p className="text-navy-600 mt-2">
-            Your attendance records have not been uploaded yet.
-          </p>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  // Get attendance summary for current student
+  const studentSummary = attendanceSummary.find(
+    (summary) => summary.studentId === user?.id
+  );
 
-  const getAttendanceColor = (percentage: number) => {
-    if (percentage >= 90) return "bg-success-500";
-    if (percentage >= 85) return "bg-warning-500";
-    return "bg-danger-500";
+  // Get all attendance records for the student
+  const studentAttendance = attendance.filter((record) =>
+    record.students.some((s) => s.studentId === user?.id)
+  );
+
+  // Filter by subject if selected
+  const filteredAttendance =
+    selectedSubjectId === "all"
+      ? studentAttendance
+      : studentAttendance.filter((record) => record.subjectId === selectedSubjectId);
+
+  // Sort attendance by date (newest first)
+  const sortedAttendance = [...filteredAttendance].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
+  // Format date to readable format
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   };
-  
-  const getAttendanceBgColor = (percentage: number) => {
-    if (percentage >= 90) return "bg-success-100";
-    if (percentage >= 85) return "bg-warning-100";
-    return "bg-danger-100";
+
+  // Get attendance status color
+  const getAttendanceStatusColor = (percentage: number) => {
+    if (percentage >= 85) return "text-green-600 bg-green-100";
+    if (percentage >= 75) return "text-yellow-600 bg-yellow-100";
+    return "text-red-600 bg-red-100";
   };
-  
-  const getAttendanceTextColor = (percentage: number) => {
-    if (percentage >= 90) return "text-success-700";
-    if (percentage >= 85) return "text-warning-700";
-    return "text-danger-700";
+
+  // Get attendance progress color
+  const getAttendanceProgressColor = (percentage: number) => {
+    if (percentage >= 85) return "bg-green-600";
+    if (percentage >= 75) return "bg-yellow-600";
+    return "bg-red-600";
   };
-  
-  const getAttendanceBgClass = (percentage: number) => {
-    if (percentage >= 90) return "bg-success-100";
-    if (percentage >= 85) return "bg-warning-100";
-    return "bg-danger-100";
-  };
-  
-  const openSubjectModal = (subjectId: string) => {
-    const subject = studentData.subjects.find(s => s.subjectId === subjectId);
-    if (subject) {
-      setSelectedSubject(subject);
-      setIsModalOpen(true);
-    }
-  };
-  
-  const getSubjectAttendanceRecords = (subjectId: string) => {
-    return attendance
-      .filter(a => a.subjectId === subjectId)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .map(a => ({
-        ...a,
-        status: a.students.find(s => s.studentId === user?.id)?.present
-      }));
-  };
-  
+
   return (
-    <DashboardLayout title="Attendance" subtitle="Your attendance records">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <Card className="shadow-md hover:shadow-lg transition-shadow border border-navy-100 col-span-1">
-          <CardHeader className="bg-navy-50 border-b border-navy-100 rounded-t-lg">
-            <CardTitle className="text-navy-800">Overall Attendance</CardTitle>
-            <CardDescription className="text-navy-600">
-              Your current attendance status
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center">
-              <div className="relative">
-                <div className="w-36 h-36 rounded-full flex items-center justify-center border-8 border-opacity-20" 
-                  style={{ 
-                    borderColor: studentData.overall.percentage >= 90 
-                      ? 'rgba(0, 200, 0, 0.2)' 
-                      : studentData.overall.percentage >= 85 
-                      ? 'rgba(255, 180, 0, 0.2)' 
-                      : 'rgba(255, 0, 0, 0.2)' 
-                  }}
-                >
-                  <div className={`w-28 h-28 rounded-full flex items-center justify-center ${getAttendanceBgClass(studentData.overall.percentage)}`}>
-                    <span className={`text-4xl font-bold ${getAttendanceTextColor(studentData.overall.percentage)}`}>
-                      {studentData.overall.percentage.toFixed(1)}%
-                    </span>
-                  </div>
+    <DashboardLayout
+      title="Attendance"
+      subtitle="Track your attendance across all subjects"
+    >
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center gap-4 md:justify-between">
+          <Card className="w-full md:w-auto">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/10 p-3 rounded-full">
+                  <BarChart className="h-6 w-6 text-primary" />
                 </div>
-              </div>
-              
-              <div className="mt-6 text-center">
-                <p className="text-lg text-navy-800">
-                  <span className="font-bold">{studentData.overall.attended}</span> / {studentData.overall.totalClasses} classes attended
-                </p>
-                <p className="text-sm text-navy-600 mt-1">
-                  Across all subjects
-                </p>
-              </div>
-              
-              <div className="w-full border-t border-navy-100 mt-6 pt-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="text-center p-3 bg-navy-50 rounded-lg">
-                    <p className="text-sm text-navy-600">Subjects</p>
-                    <p className="text-xl font-bold text-navy-800">{studentData.subjects.length}</p>
-                  </div>
-                  <div className="text-center p-3 bg-navy-50 rounded-lg">
-                    <p className="text-sm text-navy-600">Total Classes</p>
-                    <p className="text-xl font-bold text-navy-800">{studentData.overall.totalClasses}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-md hover:shadow-lg transition-shadow border border-navy-100 col-span-2">
-          <CardHeader className="bg-navy-50 border-b border-navy-100 rounded-t-lg">
-            <CardTitle className="text-navy-800">Subject-wise Attendance</CardTitle>
-            <CardDescription className="text-navy-600">
-              Attendance breakdown by subject
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              {studentData.subjects.map((subject) => (
-                <div 
-                  key={subject.subjectId} 
-                  className="p-3 border border-navy-100 rounded-lg hover:bg-navy-50 cursor-pointer transition-colors"
-                  onClick={() => openSubjectModal(subject.subjectId)}
-                >
-                  <div className="flex justify-between mb-2">
-                    <h3 className="font-medium text-navy-900">{subject.subjectName}</h3>
-                    <Badge 
-                      className={`
-                        ${subject.percentage >= 90 
-                          ? "bg-success-100 text-success-700 hover:bg-success-200" 
-                          : subject.percentage >= 85 
-                          ? "bg-warning-100 text-warning-700 hover:bg-warning-200"
-                          : "bg-danger-100 text-danger-700 hover:bg-danger-200"
-                        }
-                      `}
-                    >
-                      {subject.percentage.toFixed(1)}%
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1">
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-navy-600">
-                          {subject.attended} / {subject.totalClasses} classes
-                        </span>
-                        <span className={`
-                          ${subject.percentage >= 90 ? "text-success-600" : 
-                            subject.percentage >= 85 ? "text-warning-600" : 
-                            "text-danger-600"}
-                        `}>
-                          {subject.percentage.toFixed(1)}%
-                        </span>
-                      </div>
-                      <Progress 
-                        value={subject.percentage} 
-                        className={getAttendanceBgClass(subject.percentage)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="shadow-md hover:shadow-lg transition-shadow border border-navy-100">
-        <CardHeader className="bg-navy-50 border-b border-navy-100 rounded-t-lg">
-          <CardTitle className="text-navy-800">Attendance Log</CardTitle>
-          <CardDescription className="text-navy-600">
-            Recent attendance records across all subjects
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Tabs defaultValue="all" className="w-full">
-            <div className="px-4 pt-4">
-              <TabsList className="w-full grid grid-cols-2">
-                <TabsTrigger value="all" className="data-[state=active]:bg-navy-100 data-[state=active]:text-navy-900">
-                  All Records
-                </TabsTrigger>
-                <TabsTrigger value="absent" className="data-[state=active]:bg-navy-100 data-[state=active]:text-navy-900">
-                  Absent Days
-                </TabsTrigger>
-              </TabsList>
-            </div>
-            
-            <TabsContent value="all" className="mt-4">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-navy-50/50">
-                    <TableHead>Date</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {attendance
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                    .slice(0, 10)
-                    .map((record) => {
-                      const studentRecord = record.students.find(s => s.studentId === user?.id);
-                      if (!studentRecord) return null;
-                      
-                      return (
-                        <TableRow key={record.id}>
-                          <TableCell>
-                            {new Date(record.date).toLocaleDateString('en-US', {
-                              weekday: 'short',
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric'
-                            })}
-                          </TableCell>
-                          <TableCell>{record.subjectName}</TableCell>
-                          <TableCell className="text-center">
-                            <Badge 
-                              className={`
-                                ${studentRecord.present 
-                                  ? "bg-success-100 text-success-700 hover:bg-success-200" 
-                                  : "bg-danger-100 text-danger-700 hover:bg-danger-200"
-                                }
-                              `}
-                            >
-                              {studentRecord.present ? "Present" : "Absent"}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                </TableBody>
-              </Table>
-            </TabsContent>
-            
-            <TabsContent value="absent" className="mt-4">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-navy-50/50">
-                    <TableHead>Date</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {attendance
-                    .filter(record => {
-                      const studentRecord = record.students.find(s => s.studentId === user?.id);
-                      return studentRecord && !studentRecord.present;
-                    })
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                    .map((record) => {
-                      const studentRecord = record.students.find(s => s.studentId === user?.id);
-                      if (!studentRecord) return null;
-                      
-                      return (
-                        <TableRow key={record.id}>
-                          <TableCell>
-                            {new Date(record.date).toLocaleDateString('en-US', {
-                              weekday: 'short',
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric'
-                            })}
-                          </TableCell>
-                          <TableCell>{record.subjectName}</TableCell>
-                          <TableCell className="text-center">
-                            <Badge className="bg-danger-100 text-danger-700 hover:bg-danger-200">
-                              Absent
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                </TableBody>
-              </Table>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-
-      {/* Subject Attendance Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedSubject && selectedSubject.subjectName} Attendance
-            </DialogTitle>
-          </DialogHeader>
-          
-          {selectedSubject && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-navy-50 p-4 rounded-lg text-center">
-                  <p className="text-sm text-navy-600">Attendance Rate</p>
-                  <p className={`text-2xl font-bold ${getAttendanceTextColor(selectedSubject.percentage)}`}>
-                    {selectedSubject.percentage.toFixed(1)}%
-                  </p>
-                </div>
-                
-                <div className="bg-navy-50 p-4 rounded-lg text-center">
-                  <p className="text-sm text-navy-600">Classes Attended</p>
-                  <p className="text-2xl font-bold text-navy-800">
-                    {selectedSubject.attended} / {selectedSubject.totalClasses}
-                  </p>
-                </div>
-                
-                <div className="bg-navy-50 p-4 rounded-lg text-center">
-                  <p className="text-sm text-navy-600">Absences</p>
-                  <p className="text-2xl font-bold text-navy-800">
-                    {selectedSubject.totalClasses - selectedSubject.attended}
+                <div>
+                  <p className="text-sm text-muted-foreground">Overall Attendance</p>
+                  <p className="text-2xl font-bold">
+                    {studentSummary?.overall.percentage.toFixed(1)}%
                   </p>
                 </div>
               </div>
-              
-              <div className="rounded-lg border border-navy-100 overflow-hidden">
-                <div className="bg-navy-50 px-4 py-3 border-b border-navy-100">
-                  <h3 className="font-medium text-navy-800">Attendance Log</h3>
-                </div>
-                
-                <div className="max-h-60 overflow-y-auto">
+            </CardContent>
+          </Card>
+
+          <div className="flex-1 md:flex-none">
+            <Select
+              value={selectedSubjectId}
+              onValueChange={setSelectedSubjectId}
+            >
+              <SelectTrigger className="w-full md:w-[220px]">
+                <SelectValue placeholder="All Subjects" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Subjects</SelectItem>
+                {subjects.map((subject) => (
+                  <SelectItem key={subject.id} value={subject.id}>
+                    {subject.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <Tabs defaultValue="summary">
+          <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+            <TabsTrigger value="summary" className="flex items-center gap-2">
+              <BarChart className="h-4 w-4" />
+              Summary
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Attendance History
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="summary">
+            <Card className="shadow-md">
+              <CardHeader className="bg-primary/5">
+                <CardTitle>Attendance Summary</CardTitle>
+                <CardDescription>
+                  Your attendance percentage across all subjects
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="rounded-md border">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-navy-50/50">
-                        <TableHead>Date</TableHead>
-                        <TableHead className="text-center">Status</TableHead>
+                      <TableRow className="bg-primary/5">
+                        <TableHead>Subject</TableHead>
+                        <TableHead className="w-[150px] text-center">Classes</TableHead>
+                        <TableHead className="w-[150px] text-center">Attended</TableHead>
+                        <TableHead className="w-[200px] text-right">Percentage</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {getSubjectAttendanceRecords(selectedSubject.subjectId).map((record) => (
-                        <TableRow key={record.id}>
-                          <TableCell>
-                            {new Date(record.date).toLocaleDateString('en-US', {
-                              weekday: 'short',
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric'
-                            })}
+                      {studentSummary?.subjects.map((subject) => (
+                        <TableRow key={subject.subjectId}>
+                          <TableCell className="font-medium">
+                            {subject.subjectName}
                           </TableCell>
                           <TableCell className="text-center">
-                            <Badge 
-                              className={`
-                                ${record.status 
-                                  ? "bg-success-100 text-success-700 hover:bg-success-200" 
-                                  : "bg-danger-100 text-danger-700 hover:bg-danger-200"
-                                }
-                              `}
-                            >
-                              {record.status ? "Present" : "Absent"}
-                            </Badge>
+                            {subject.totalClasses}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {subject.attended}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-2">
+                              <div className="w-36">
+                                <Progress
+                                  value={subject.percentage}
+                                  className="h-2"
+                                  indicatorClassName={getAttendanceProgressColor(
+                                    subject.percentage
+                                  )}
+                                />
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className={getAttendanceStatusColor(
+                                  subject.percentage
+                                )}
+                              >
+                                {subject.percentage.toFixed(1)}%
+                              </Badge>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="history">
+            <Card className="shadow-md">
+              <CardHeader className="bg-primary/5">
+                <CardTitle>Attendance History</CardTitle>
+                <CardDescription>
+                  Daily attendance records
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-primary/5">
+                        <TableHead>Date</TableHead>
+                        <TableHead>Subject</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedAttendance.length > 0 ? (
+                        sortedAttendance.map((record) => {
+                          const studentRecord = record.students.find(
+                            (s) => s.studentId === user?.id
+                          );
+                          
+                          return (
+                            <TableRow key={`${record.id}-${user?.id}`}>
+                              <TableCell>
+                                {formatDate(record.date)}
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {record.subjectName}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {studentRecord?.present ? (
+                                  <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+                                    <Check className="h-3 w-3 mr-1" />
+                                    Present
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-red-100 text-red-800 hover:bg-red-200">
+                                    <X className="h-3 w-3 mr-1" />
+                                    Absent
+                                  </Badge>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      ) : (
+                        <TableRow>
+                          <TableCell
+                            colSpan={3}
+                            className="text-center py-8 text-muted-foreground"
+                          >
+                            No attendance records found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </DashboardLayout>
   );
 }

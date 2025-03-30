@@ -136,6 +136,10 @@ export interface ExamResult {
 }
 
 export interface MinorResult {
+  id: string;
+  studentId: string;
+  rollNumber: string;
+  studentName: string;
   subjectId: string;
   subjectCode: string;
   subjectName: string;
@@ -143,6 +147,7 @@ export interface MinorResult {
   obtainedMarks: number;
   examDate: string;
   examType: "Minor1" | "Minor2";
+  marks?: number;
 }
 
 export interface SemesterResult {
@@ -173,17 +178,22 @@ interface DataContextType {
   timetable: TimeTable;
   semesterResults: SemesterResult[];
   minorResults: MinorResult[];
+  finalResults: SemesterResult[];
 
   // Actions for students
   submitAssignment: (assignmentId: string, studentId: string, fileUrl: string) => void;
   sendMessage: (message: Omit<Message, "id" | "timestamp" | "read">) => void;
   markMessageAsRead: (messageId: string) => void;
+  downloadResult: (studentId: string, semester: number) => void;
 
   // Actions for teachers
   addAssignment: (assignment: Omit<Assignment, "id" | "createdAt" | "submissions">) => void;
   gradeSubmission: (submissionId: string, marks: number, feedback?: string) => void;
   markAttendance: (subjectId: string, date: string, studentAttendance: { studentId: string; present: boolean }[]) => void;
   addNotification: (notification: Omit<Notification, "id" | "createdAt">) => void;
+  exportAttendance: (subjectId: string) => void;
+  submitGrades: (studentId: string, semester: number, results: ExamResult[]) => void;
+  submitMinorMarks: (minorResult: Omit<MinorResult, "id">) => void;
 }
 
 // Initialize the context with default values
@@ -200,15 +210,20 @@ const DataContext = createContext<DataContextType>({
   timetable: { slots: [] },
   semesterResults: [],
   minorResults: [],
+  finalResults: [],
 
   submitAssignment: () => {},
   sendMessage: () => {},
   markMessageAsRead: () => {},
+  downloadResult: () => {},
 
   addAssignment: () => {},
   gradeSubmission: () => {},
   markAttendance: () => {},
   addNotification: () => {},
+  exportAttendance: () => {},
+  submitGrades: () => {},
+  submitMinorMarks: () => {},
 });
 
 // Mock data
@@ -662,6 +677,30 @@ const mockMessages: Message[] = [
     timestamp: "2023-11-05T15:45:00",
     read: true,
   },
+  {
+    id: "3",
+    senderId: "1",
+    senderName: "V Dhruv",
+    senderType: "student",
+    receiverId: "1",
+    receiverName: "A Benerji Babu",
+    receiverType: "teacher",
+    content: "Thank you for considering my request. I'm having trouble with the user research part and need an extra day to complete it properly.",
+    timestamp: "2023-11-05T16:10:00",
+    read: false,
+  },
+  {
+    id: "4",
+    senderId: "1",
+    senderName: "A Benerji Babu",
+    senderType: "teacher",
+    receiverId: "1",
+    receiverName: "V Dhruv",
+    receiverType: "student",
+    content: "I understand. I'll grant you a one-day extension. Please ensure you submit by the extended deadline.",
+    timestamp: "2023-11-05T17:30:00",
+    read: false,
+  },
 ];
 
 const mockNotifications: Notification[] = [
@@ -780,76 +819,237 @@ const mockSemesterResults: SemesterResult[] = [
 
 const mockMinorResults: MinorResult[] = [
   {
+    id: "1",
+    studentId: "1",
+    rollNumber: "24MAB0A41",
+    studentName: "V Dhruv",
     subjectId: "1",
     subjectCode: "MA1102",
     subjectName: "Design Thinking",
     maxMarks: 30,
     obtainedMarks: 26,
     examDate: "2023-09-15",
-    examType: "Minor1"
+    examType: "Minor1",
+    marks: 13
   },
   {
+    id: "2",
+    studentId: "1",
+    rollNumber: "24MAB0A41",
+    studentName: "V Dhruv",
     subjectId: "2",
     subjectCode: "MA1104",
     subjectName: "Ordinary Differential Equations",
     maxMarks: 30,
     obtainedMarks: 28,
     examDate: "2023-09-16",
-    examType: "Minor1"
+    examType: "Minor1",
+    marks: 14
   },
   {
+    id: "3",
+    studentId: "1",
+    rollNumber: "24MAB0A41",
+    studentName: "V Dhruv",
     subjectId: "3",
     subjectCode: "MA1106",
     subjectName: "Data Structures and Algorithms",
     maxMarks: 30,
     obtainedMarks: 25,
     examDate: "2023-09-17",
-    examType: "Minor1"
+    examType: "Minor1",
+    marks: 12.5
   },
   {
+    id: "4",
+    studentId: "1",
+    rollNumber: "24MAB0A41",
+    studentName: "V Dhruv",
     subjectId: "4",
     subjectCode: "EE1162",
     subjectName: "Basic Electrical and Electronics Engineering",
     maxMarks: 30,
     obtainedMarks: 24,
     examDate: "2023-09-18",
-    examType: "Minor1"
+    examType: "Minor1",
+    marks: 12
   },
   {
+    id: "5",
+    studentId: "1",
+    rollNumber: "24MAB0A41",
+    studentName: "V Dhruv",
     subjectId: "1",
     subjectCode: "MA1102",
     subjectName: "Design Thinking",
     maxMarks: 30,
     obtainedMarks: 28,
     examDate: "2023-10-20",
-    examType: "Minor2"
+    examType: "Minor2",
+    marks: 14
   },
   {
+    id: "6",
+    studentId: "1",
+    rollNumber: "24MAB0A41",
+    studentName: "V Dhruv",
     subjectId: "2",
     subjectCode: "MA1104",
     subjectName: "Ordinary Differential Equations",
     maxMarks: 30,
     obtainedMarks: 29,
     examDate: "2023-10-21",
-    examType: "Minor2"
+    examType: "Minor2",
+    marks: 14.5
   },
   {
+    id: "7",
+    studentId: "1",
+    rollNumber: "24MAB0A41",
+    studentName: "V Dhruv",
     subjectId: "3",
     subjectCode: "MA1106",
     subjectName: "Data Structures and Algorithms",
     maxMarks: 30,
     obtainedMarks: 27,
     examDate: "2023-10-22",
-    examType: "Minor2"
+    examType: "Minor2",
+    marks: 13.5
   },
   {
+    id: "8",
+    studentId: "1",
+    rollNumber: "24MAB0A41",
+    studentName: "V Dhruv",
     subjectId: "4",
     subjectCode: "EE1162",
     subjectName: "Basic Electrical and Electronics Engineering",
     maxMarks: 30,
     obtainedMarks: 26,
     examDate: "2023-10-23",
-    examType: "Minor2"
+    examType: "Minor2",
+    marks: 13
+  }
+];
+
+const mockFinalResults: SemesterResult[] = [
+  {
+    studentId: "1",
+    studentName: "Vaghela Dhruv Sudhirbhai",
+    rollNumber: "24MAB0A41",
+    department: "Department of Mathematics [MATHS]",
+    specialization: "Mathematics and Computing [MC2024]",
+    year: 1,
+    semester: 1,
+    academicYear: "2024-2025",
+    results: [
+      {
+        subjectCode: "BT1161",
+        subjectName: "Biology for Engineers",
+        credit: 2,
+        grade: "B"
+      },
+      {
+        subjectCode: "MA1101",
+        subjectName: "Calculus",
+        credit: 3,
+        grade: "A"
+      },
+      {
+        subjectCode: "PH1161",
+        subjectName: "Engineering Physics",
+        credit: 4,
+        grade: "S"
+      },
+      {
+        subjectCode: "HS1161",
+        subjectName: "English for Technical Communication",
+        credit: 3,
+        grade: "B"
+      },
+      {
+        subjectCode: "IC1101",
+        subjectName: "Extra Academic Activity - I",
+        credit: 0,
+        grade: "P"
+      },
+      {
+        subjectCode: "MA1103",
+        subjectName: "Programming and Data Structures",
+        credit: 3,
+        grade: "A"
+      },
+      {
+        subjectCode: "MA1105",
+        subjectName: "Programming and Data Structures Lab",
+        credit: 2,
+        grade: "S"
+      }
+    ],
+    sgpa: 9.06,
+    cgpa: 9.06
+  },
+  {
+    studentId: "1",
+    studentName: "Vaghela Dhruv Sudhirbhai",
+    rollNumber: "24MAB0A41",
+    department: "Department of Mathematics [MATHS]",
+    specialization: "Mathematics and Computing [MC2024]",
+    year: 1,
+    semester: 2,
+    academicYear: "2024-2025",
+    results: [
+      {
+        subjectCode: "MA1102",
+        subjectName: "Design Thinking",
+        credit: 3,
+        grade: ""
+      },
+      {
+        subjectCode: "MA1104",
+        subjectName: "Ordinary Differential Equations",
+        credit: 3,
+        grade: ""
+      },
+      {
+        subjectCode: "MA1106",
+        subjectName: "Data Structures and Algorithms",
+        credit: 4,
+        grade: ""
+      },
+      {
+        subjectCode: "EE1162",
+        subjectName: "Basic Electrical and Electronics Engineering",
+        credit: 3,
+        grade: ""
+      },
+      {
+        subjectCode: "MA1108",
+        subjectName: "Elementary Linear Algebra",
+        credit: 3,
+        grade: ""
+      },
+      {
+        subjectCode: "MA1110",
+        subjectName: "Discrete Mathematical Structures",
+        credit: 3,
+        grade: ""
+      },
+      {
+        subjectCode: "EE1164",
+        subjectName: "Basic Electrical Engineering Lab",
+        credit: 2,
+        grade: ""
+      },
+      {
+        subjectCode: "IC1102",
+        subjectName: "EAA-II (Games & Sports / Yoga & Wellness)",
+        credit: 0,
+        grade: ""
+      }
+    ],
+    sgpa: 0,
+    cgpa: 9.06
   }
 ];
 
@@ -866,7 +1066,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [timetable] = useState<TimeTable>(mockTimetable);
   const [semesterResults] = useState<SemesterResult[]>(mockSemesterResults);
-  const [minorResults] = useState<MinorResult[]>(mockMinorResults);
+  const [minorResults, setMinorResults] = useState<MinorResult[]>(mockMinorResults);
+  const [finalResults, setFinalResults] = useState<SemesterResult[]>(mockFinalResults);
 
   // Actions for students
   const submitAssignment = (assignmentId: string, studentId: string, fileUrl: string) => {
@@ -921,6 +1122,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         msg.id === messageId ? { ...msg, read: true } : msg
       )
     );
+  };
+
+  const downloadResult = (studentId: string, semester: number) => {
+    // This is a mock function that would normally generate and download a PDF file
+    // In a real application, this would use a library like jsPDF to generate a PDF
+    // and then trigger a download
+    const result = finalResults.find(r => r.studentId === studentId && r.semester === semester);
+    
+    if (result) {
+      toast.success(`Result for Semester ${semester} downloaded successfully!`);
+    } else {
+      toast.error(`No results available for Semester ${semester}`);
+    }
   };
 
   // Actions for teachers
@@ -1057,15 +1271,81 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     toast.success("Attendance marked successfully!");
   };
 
-  const addNotification = (notification: Omit<Notification, "id" | "createdAt">) => {
-    const newNotification: Notification = {
-      ...notification,
-      id: `n-${notifications.length + 1}`,
-      createdAt: new Date().toISOString(),
-    };
+  const exportAttendance = (subjectId: string) => {
+    // Mock function for exporting attendance to Excel
+    // In a real application, this would generate an Excel file and trigger a download
+    toast.success("Attendance data exported successfully!");
+  };
 
-    setNotifications([...notifications, newNotification]);
-    toast.success("Notification added successfully!");
+  const submitGrades = (studentId: string, semester: number, results: ExamResult[]) => {
+    // Update the final results with the submitted grades
+    setFinalResults(prev => {
+      const updated = [...prev];
+      const studentResultIndex = updated.findIndex(r => r.studentId === studentId && r.semester === semester);
+      
+      if (studentResultIndex !== -1) {
+        // Update existing result
+        updated[studentResultIndex] = {
+          ...updated[studentResultIndex],
+          results: results,
+          // In a real app, SGPA would be calculated based on grades and credits
+          sgpa: 9.0, // Mock SGPA calculation
+          cgpa: 9.0, // Mock CGPA calculation
+        };
+      } else {
+        // Add new result if not found
+        const student = students.find(s => s.id === studentId);
+        if (student) {
+          updated.push({
+            studentId,
+            studentName: student.name,
+            rollNumber: student.rollNumber,
+            department: "Department of Mathematics [MATHS]",
+            specialization: "Mathematics and Computing [MC2024]",
+            year: Math.ceil(semester / 2),
+            semester,
+            academicYear: "2024-2025",
+            results,
+            sgpa: 9.0, // Mock SGPA calculation
+            cgpa: 9.0, // Mock CGPA calculation
+          });
+        }
+      }
+      return updated;
+    });
+    
+    toast.success(`Grades for Semester ${semester} submitted successfully!`);
+  };
+
+  const submitMinorMarks = (minorResult: Omit<MinorResult, "id">) => {
+    // Check if there's already a result for this student and subject
+    const existingResultIndex = minorResults.findIndex(
+      r => r.studentId === minorResult.studentId && 
+          r.subjectId === minorResult.subjectId && 
+          r.examType === minorResult.examType
+    );
+
+    if (existingResultIndex !== -1) {
+      // Update existing result
+      const updated = [...minorResults];
+      updated[existingResultIndex] = {
+        ...updated[existingResultIndex],
+        ...minorResult,
+        id: updated[existingResultIndex].id
+      };
+      setMinorResults(updated);
+    } else {
+      // Add new result
+      setMinorResults([
+        ...minorResults,
+        {
+          ...minorResult,
+          id: `minor-${minorResults.length + 1}`
+        }
+      ]);
+    }
+    
+    toast.success(`${minorResult.examType} marks for ${minorResult.subjectName} submitted successfully!`);
   };
 
   // Sort students by roll number (for display in UI)
@@ -1090,13 +1370,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         timetable,
         semesterResults,
         minorResults,
+        finalResults,
         submitAssignment,
         sendMessage,
         markMessageAsRead,
+        downloadResult,
         addAssignment,
         gradeSubmission,
         markAttendance,
         addNotification,
+        exportAttendance,
+        submitGrades,
+        submitMinorMarks,
       }}
     >
       {children}

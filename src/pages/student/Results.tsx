@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import DashboardLayout from "@/components/shared/DashboardLayout";
 import { useData } from "@/contexts/DataContext";
@@ -7,7 +8,8 @@ import {
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle 
+  CardTitle,
+  CardFooter
 } from "@/components/ui/card";
 import { 
   Table, 
@@ -25,33 +27,45 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MinorResult } from "@/contexts/DataContext";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import { SemesterResult, MinorResult } from "@/contexts/DataContext";
 
 export default function Results() {
   const { user } = useAuth();
-  const { semesterResults, minorResults, subjects } = useData();
+  const { finalResults, minorResults, subjects, downloadResult } = useData();
   const [examType, setExamType] = useState<"minor" | "endSem">("endSem");
   const [minorExamType, setMinorExamType] = useState<"Minor1" | "Minor2">("Minor1");
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
+  const [selectedSemester, setSelectedSemester] = useState<number>(1);
 
-  const studentResults = semesterResults.find(result => 
-    result.rollNumber === user?.rollNumber || 
-    result.studentId === user?.id
+  // Find student results
+  const studentResults = finalResults.find(result => 
+    (result.rollNumber === user?.rollNumber || result.studentId === user?.id) &&
+    result.semester === selectedSemester
   );
 
   const filteredMinorResults = minorResults.filter(result => 
     result.examType === minorExamType && 
+    (result.rollNumber === user?.rollNumber || result.studentId === user?.id) &&
     (selectedSubject === "all" ? true : result.subjectId === selectedSubject)
   );
 
   const normalizeMinorMarks = (result: MinorResult) => {
     const normalizedMax = 15;
-    const normalizedObtained = (result.obtainedMarks / result.maxMarks) * normalizedMax;
+    const normalizedObtained = (result.marks !== undefined) ? result.marks : 
+      (result.obtainedMarks / result.maxMarks) * normalizedMax;
     return {
       ...result,
       maxMarks: normalizedMax,
       obtainedMarks: parseFloat(normalizedObtained.toFixed(2)),
     };
+  };
+
+  const handleDownloadResult = () => {
+    if (user?.id) {
+      downloadResult(user.id, selectedSemester);
+    }
   };
 
   return (
@@ -79,6 +93,24 @@ export default function Results() {
                     <SelectItem value="minor">Minor Exams</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {examType === "endSem" && (
+                  <Select
+                    value={selectedSemester.toString()}
+                    onValueChange={(value) => setSelectedSemester(parseInt(value))}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select Semester" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 8 }, (_, i) => i + 1).map((semester) => (
+                        <SelectItem key={semester} value={semester.toString()}>
+                          Semester {semester}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
 
                 {examType === "minor" && (
                   <>
@@ -167,24 +199,28 @@ export default function Results() {
                               <TableCell>{result.subjectName}</TableCell>
                               <TableCell className="text-center">{result.credit}</TableCell>
                               <TableCell className="text-center">
-                                <span className={`px-2 py-1 rounded-md text-white ${
-                                  result.grade === 'S' ? 'bg-indigo-600' :
-                                  result.grade === 'A' ? 'bg-green-600' :
-                                  result.grade === 'B' ? 'bg-blue-600' :
-                                  result.grade === 'C' ? 'bg-yellow-600' :
-                                  result.grade === 'D' ? 'bg-orange-600' :
-                                  result.grade === 'E' ? 'bg-red-600' :
-                                  result.grade === 'P' ? 'bg-gray-600' : 'bg-gray-500'
-                                }`}>
-                                  {result.grade}
-                                </span>
+                                {result.grade ? (
+                                  <span className={`px-2 py-1 rounded-md text-white ${
+                                    result.grade === 'S' ? 'bg-indigo-600' :
+                                    result.grade === 'A' ? 'bg-green-600' :
+                                    result.grade === 'B' ? 'bg-blue-600' :
+                                    result.grade === 'C' ? 'bg-yellow-600' :
+                                    result.grade === 'D' ? 'bg-orange-600' :
+                                    result.grade === 'E' ? 'bg-red-600' :
+                                    result.grade === 'P' ? 'bg-gray-600' : 'bg-gray-500'
+                                  }`}>
+                                    {result.grade}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
                               </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
                         <TableCaption>
                           <div className="text-right space-y-1 pt-4 border-t">
-                            <p className="font-semibold">SGPA: {studentResults.sgpa}</p>
+                            <p className="font-semibold">SGPA: {studentResults.sgpa || '-'}</p>
                             <p className="font-semibold">CGPA: {studentResults.cgpa}</p>
                             <p className="text-xs text-muted-foreground mt-4">
                               The above result is only for display in the student portal but not equivalent to gradesheet.
@@ -195,10 +231,23 @@ export default function Results() {
                         </TableCaption>
                       </Table>
                     </div>
+                    
+                    <div className="flex justify-end">
+                      <Button 
+                        className="bg-primary text-white"
+                        onClick={handleDownloadResult}
+                      >
+                        <Download className="mr-2 h-4 w-4" /> Download Result PDF
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-muted-foreground">No end semester results available at this time.</p>
+                    <p className="text-muted-foreground">
+                      {selectedSemester === 1 ? 
+                        "No end semester results available at this time." : 
+                        "Currently no data available for Semester " + selectedSemester}
+                    </p>
                   </div>
                 )}
               </div>
