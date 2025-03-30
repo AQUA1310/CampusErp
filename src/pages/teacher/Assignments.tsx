@@ -401,7 +401,7 @@ export default function TeacherAssignments() {
             <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAssignmentSubmit} className="bg-black-600 hover:bg-black-700">
+            <Button onClick={handleAssignmentSubmit} className="bg-black hover:bg-black">
               Upload Assignment
             </Button>
           </DialogFooter>
