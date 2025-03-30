@@ -123,7 +123,7 @@ export default function TeacherAssignments() {
         <div className="flex items-center gap-3">
           <Button
             onClick={() => setIsUploadDialogOpen(true)}
-            className="bg-oliveGreen-600 hover:bg-black"
+            className="bg-oliveGreen-600 hover:bg-oliveGreen-600"
           >
             <Upload className="h-4 w-4 mr-2" />
             Upload New Assignment
@@ -401,7 +401,7 @@ export default function TeacherAssignments() {
             <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAssignmentSubmit} className="bg-oliveGreen-600 hover:bg-oliveGreen-700">
+            <Button onClick={handleAssignmentSubmit} className="bg-black-600 hover:bg-black-700">
               Upload Assignment
             </Button>
           </DialogFooter>
