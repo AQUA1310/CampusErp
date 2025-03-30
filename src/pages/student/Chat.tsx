@@ -35,6 +35,19 @@ export default function StudentChat() {
   const [messageText, setMessageText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Auto-select first teacher if none selected
+  useEffect(() => {
+    if (!selectedTeacher && teachers.length > 0) {
+      // Auto-select A Benerji Babu as requested
+      const benerjiTeacher = teachers.find(t => t.name === "A Benerji Babu");
+      if (benerjiTeacher) {
+        setSelectedTeacher(benerjiTeacher.id);
+      } else {
+        setSelectedTeacher(teachers[0].id);
+      }
+    }
+  }, [teachers, selectedTeacher]);
+
   // Get selected teacher details
   const teacher = teachers.find(t => t.id === selectedTeacher);
 
@@ -251,7 +264,7 @@ export default function StudentChat() {
                   <Button
                     onClick={handleSendMessage}
                     disabled={!messageText.trim()}
-                    className="bg-primary"
+                    className="bg-primary hover:bg-primary/90 text-white"
                   >
                     <Send className="h-4 w-4" />
                   </Button>

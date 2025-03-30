@@ -56,6 +56,18 @@ export default function StudentAttendance() {
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
+  // Group attendance by subject for day-wise view
+  const attendanceBySubject = subjects.map(subject => {
+    const subjectAttendance = studentAttendance.filter(
+      record => record.subjectId === subject.id
+    ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    return {
+      subject,
+      attendance: subjectAttendance
+    };
+  });
+
   // Format date to readable format
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -63,6 +75,15 @@ export default function StudentAttendance() {
       weekday: "long",
       year: "numeric",
       month: "long",
+      day: "numeric",
+    });
+  };
+
+  // Format short date
+  const formatShortDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
       day: "numeric",
     });
   };
@@ -125,14 +146,18 @@ export default function StudentAttendance() {
         </div>
 
         <Tabs defaultValue="summary">
-          <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+          <TabsList className="grid w-full max-w-md grid-cols-3 mb-6">
             <TabsTrigger value="summary" className="flex items-center gap-2">
               <BarChart className="h-4 w-4" />
               Summary
             </TabsTrigger>
             <TabsTrigger value="history" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Attendance History
+              History
+            </TabsTrigger>
+            <TabsTrigger value="daywise" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Day-wise
             </TabsTrigger>
           </TabsList>
 
@@ -173,9 +198,13 @@ export default function StudentAttendance() {
                                 <Progress
                                   value={subject.percentage}
                                   className="h-2"
-                                  indicatorClassName={getAttendanceProgressColor(
-                                    subject.percentage
-                                  )}
+                                  style={{ 
+                                    '--progress-indicator-color': subject.percentage >= 85 
+                                      ? 'var(--green-600)' 
+                                      : subject.percentage >= 75 
+                                        ? 'var(--yellow-600)' 
+                                        : 'var(--red-600)'
+                                  } as React.CSSProperties}
                                 />
                               </div>
                               <Badge
@@ -259,6 +288,87 @@ export default function StudentAttendance() {
                     </TableBody>
                   </Table>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="daywise">
+            <Card className="shadow-md">
+              <CardHeader className="bg-primary/5">
+                <CardTitle>Day-wise Attendance</CardTitle>
+                <CardDescription>
+                  View your daily attendance status for each subject
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {attendanceBySubject.map(({ subject, attendance }) => (
+                  attendance.length > 0 && (
+                    <div key={subject.id} className="mb-8">
+                      <h3 className="text-lg font-semibold mb-3">{subject.name}</h3>
+                      <div className="overflow-x-auto">
+                        <div className="flex items-center space-x-2 min-w-max">
+                          <div className="w-24 shrink-0"></div>
+                          {attendance.map(record => (
+                            <div key={record.id} className="w-12 text-center text-xs font-medium">
+                              {formatShortDate(record.date)}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-2 flex items-center space-x-2 min-w-max">
+                          <div className="w-24 text-sm font-medium shrink-0">Attendance</div>
+                          {attendance.map(record => {
+                            const studentRecord = record.students.find(s => s.studentId === user?.id);
+                            return (
+                              <div key={record.id} className="w-12 flex justify-center">
+                                {studentRecord?.present ? (
+                                  <div className="h-8 w-8 bg-green-100 text-green-800 rounded-full flex items-center justify-center">
+                                    <Check className="h-4 w-4" />
+                                  </div>
+                                ) : (
+                                  <div className="h-8 w-8 bg-red-100 text-red-800 rounded-full flex items-center justify-center">
+                                    <X className="h-4 w-4" />
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      
+                      <div className="mt-4">
+                        {(() => {
+                          const subjectSummary = studentSummary?.subjects.find(s => s.subjectId === subject.id);
+                          return subjectSummary && (
+                            <div className="flex items-center mt-2">
+                              <span className="text-sm text-muted-foreground">Attendance Percentage:</span>
+                              <div className="ml-2 flex items-center">
+                                <Progress 
+                                  value={subjectSummary.percentage} 
+                                  className="h-2 w-36 mr-2"
+                                  style={{ 
+                                    '--progress-indicator-color': subjectSummary.percentage >= 85 
+                                      ? 'var(--green-600)' 
+                                      : subjectSummary.percentage >= 75 
+                                        ? 'var(--yellow-600)' 
+                                        : 'var(--red-600)'
+                                  } as React.CSSProperties}
+                                />
+                                <Badge variant="outline" className={getAttendanceStatusColor(subjectSummary.percentage)}>
+                                  {subjectSummary.percentage.toFixed(1)}%
+                                </Badge>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )
+                ))}
+                {attendanceBySubject.every(({ attendance }) => attendance.length === 0) && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No attendance records found
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
