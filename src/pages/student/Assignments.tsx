@@ -379,7 +379,7 @@ export default function StudentAssignments() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             {selectedAssignment && (
-              <div className="bg-oliveGreen-50 p-4 rounded-lg space-y-2">
+              <div className="bg-black p-4 rounded-lg space-y-2">
                 <div className="flex justify-between">
                   <span className="font-medium">Due Date:</span>
                   <span className={`${
