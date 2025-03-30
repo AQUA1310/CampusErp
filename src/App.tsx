@@ -19,6 +19,7 @@ import StudentAttendance from "./pages/student/Attendance";
 import StudentTimetable from "./pages/student/Timetable";
 import StudentChat from "./pages/student/Chat";
 import StudentResults from "./pages/student/Results";
+import StudentGmail from "./pages/student/Gmail";
 
 // Teacher Pages
 import TeacherDashboard from "./pages/teacher/Dashboard";
@@ -27,6 +28,7 @@ import TeacherAttendance from "./pages/teacher/Attendance";
 import TeacherStudents from "./pages/teacher/Students";
 import TeacherChat from "./pages/teacher/Chat";
 import TeacherResults from "./pages/teacher/Results";
+import TeacherGmail from "./pages/teacher/Gmail";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +93,14 @@ const App = () => (
                   </ProtectedRoute>
                 } 
               />
+              <Route 
+                path="/student-dashboard/gmail" 
+                element={
+                  <ProtectedRoute requiredUserType="student">
+                    <StudentGmail />
+                  </ProtectedRoute>
+                } 
+              />
               <Route
                 path="/student-dashboard/profile"
                 element={<Navigate to="/student-dashboard" replace />}
@@ -146,6 +156,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredUserType="teacher">
                     <TeacherResults />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/teacher-dashboard/gmail" 
+                element={
+                  <ProtectedRoute requiredUserType="teacher">
+                    <TeacherGmail />
                   </ProtectedRoute>
                 } 
               />
