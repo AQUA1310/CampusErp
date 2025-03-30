@@ -1,1424 +1,535 @@
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { toast } from "sonner";
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
-// Types for our data
 export interface Student {
   id: string;
-  name: string;
   rollNumber: string;
-  email: string;
-  cgpa: number;
-  profile: {
-    phoneNumber: string;
-    address: string;
-    dateOfBirth: string;
-    gender: string;
-    department: string;
-    year: number;
-    semester: number;
-    batch: string;
-  };
-}
-
-export interface Teacher {
-  id: string;
   name: string;
   email: string;
-  department: string;
-  subjects: Subject[];
-}
-
-export interface Subject {
-  id: string;
-  code: string;
-  name: string;
-  credits: string;
-  description?: string;
+  course: string;
+  year: number;
 }
 
 export interface Assignment {
   id: string;
   title: string;
   description: string;
-  subjectId: string;
-  subjectName: string;
   dueDate: string;
-  maxMarks: number;
-  fileUrl?: string;
-  createdAt: string;
-  createdBy: string;
-  submissions?: AssignmentSubmission[];
-}
-
-export interface AssignmentSubmission {
-  id: string;
-  assignmentId: string;
-  studentId: string;
-  studentName: string;
-  rollNumber: string;
-  fileUrl: string;
-  submittedAt: string;
-  marks?: number;
+  subject: string;
+  attachmentUrl?: string;
+  status: 'pending' | 'submitted' | 'graded';
+  submissionUrl?: string;
+  grade?: number;
   feedback?: string;
+  teacherId: string;
+  studentId?: string;
 }
 
-export interface Attendance {
+export interface AttendanceRecord {
   id: string;
-  subjectId: string;
-  subjectName: string;
   date: string;
-  students: {
-    studentId: string;
-    rollNumber: string;
-    name: string;
-    present: boolean;
-  }[];
-}
-
-export interface AttendanceSummary {
+  subject: string;
+  status: 'present' | 'absent';
   studentId: string;
-  rollNumber: string;
-  subjects: {
-    subjectId: string;
-    subjectName: string;
-    totalClasses: number;
-    attended: number;
-    percentage: number;
-  }[];
-  overall: {
-    totalClasses: number;
-    attended: number;
-    percentage: number;
-  };
+  teacherId: string;
 }
 
 export interface Message {
   id: string;
-  senderId: string;
-  senderName: string;
-  senderType: "student" | "teacher";
-  receiverId: string;
-  receiverName: string;
-  receiverType: "student" | "teacher";
+  sender: string;
+  senderType: 'student' | 'teacher';
+  recipient: string;
   content: string;
   timestamp: string;
   read: boolean;
 }
 
-export interface Notification {
+export interface Result {
   id: string;
-  title: string;
-  description: string;
-  type: "exam" | "event";
-  date: string;
-  createdAt: string;
-  createdBy: string;
-}
-
-export interface TimeSlot {
-  day: string;
-  time: string;
+  studentId: string;
   subject: string;
-  location: string;
-  faculty?: string;
-}
-
-export interface TimeTable {
-  slots: TimeSlot[];
-}
-
-export interface ExamResult {
-  subjectCode: string;
-  subjectName: string;
-  credit: number;
+  examType: string;
+  marks: number;
+  totalMarks: number;
   grade: string;
-  marks?: number;
+  teacherId: string;
+  date: string;
 }
 
-export interface MinorResult {
+export interface Email {
   id: string;
-  studentId: string;
-  rollNumber: string;
-  studentName: string;
-  subjectId: string;
-  subjectCode: string;
-  subjectName: string;
-  maxMarks: number;
-  obtainedMarks: number;
-  examDate: string;
-  examType: "Minor1" | "Minor2";
-  marks?: number;
+  sender: string;
+  senderEmail: string;
+  recipients: string[];
+  subject: string;
+  content: string;
+  timestamp: string;
+  read: boolean;
+  starred: boolean;
+  attachments?: { name: string; url: string }[];
+  folder: 'inbox' | 'sent' | 'drafts' | 'trash' | 'spam';
 }
 
-export interface SemesterResult {
-  studentId: string;
-  studentName: string;
-  rollNumber: string;
-  department: string;
-  specialization: string;
-  year: number;
-  semester: number;
-  academicYear: string;
-  results: ExamResult[];
-  sgpa: number;
-  cgpa: number;
-}
-
-// Create the context
 interface DataContextType {
   students: Student[];
-  teachers: Teacher[];
-  subjects: Subject[];
   assignments: Assignment[];
-  submissions: AssignmentSubmission[];
-  attendance: Attendance[];
-  attendanceSummary: AttendanceSummary[];
+  attendance: AttendanceRecord[];
   messages: Message[];
-  notifications: Notification[];
-  timetable: TimeTable;
-  semesterResults: SemesterResult[];
-  minorResults: MinorResult[];
-  finalResults: SemesterResult[];
-
-  // Actions for students
-  submitAssignment: (assignmentId: string, studentId: string, fileUrl: string) => void;
-  sendMessage: (message: Omit<Message, "id" | "timestamp" | "read">) => void;
-  markMessageAsRead: (messageId: string) => void;
-  downloadResult: (studentId: string, semester: number) => void;
-
-  // Actions for teachers
-  addAssignment: (assignment: Omit<Assignment, "id" | "createdAt" | "submissions">) => void;
-  gradeSubmission: (submissionId: string, marks: number, feedback?: string) => void;
-  markAttendance: (subjectId: string, date: string, studentAttendance: { studentId: string; present: boolean }[]) => void;
-  addNotification: (notification: Omit<Notification, "id" | "createdAt">) => void;
-  exportAttendance: (subjectId: string) => void;
-  submitGrades: (studentId: string, semester: number, results: ExamResult[]) => void;
-  submitMinorMarks: (minorResult: Omit<MinorResult, "id">) => void;
+  results: Result[];
+  emails: Email[];
+  addStudent: (student: Student) => void;
+  updateStudent: (studentId: string, data: Partial<Student>) => void;
+  removeStudent: (studentId: string) => void;
+  addAssignment: (assignment: Assignment) => void;
+  updateAssignment: (assignmentId: string, data: Partial<Assignment>) => void;
+  removeAssignment: (assignmentId: string) => void;
+  addAttendanceRecord: (record: AttendanceRecord) => void;
+  updateAttendanceRecord: (recordId: string, data: Partial<AttendanceRecord>) => void;
+  removeAttendanceRecord: (recordId: string) => void;
+  addAttendanceRecords: (records: AttendanceRecord[]) => void;
+  addMessage: (message: Message) => void;
+  updateMessage: (messageId: string, data: Partial<Message>) => void;
+  removeMessage: (messageId: string) => void;
+  addResult: (result: Result) => void;
+  updateResult: (resultId: string, data: Partial<Result>) => void;
+  removeResult: (resultId: string) => void;
+  addEmail: (email: Email) => void;
+  updateEmail: (emailId: string, data: Partial<Email>) => void;
+  removeEmail: (emailId: string) => void;
 }
 
-// Initialize the context with default values
-const DataContext = createContext<DataContextType>({
-  students: [],
-  teachers: [],
-  subjects: [],
-  assignments: [],
-  submissions: [],
-  attendance: [],
-  attendanceSummary: [],
-  messages: [],
-  notifications: [],
-  timetable: { slots: [] },
-  semesterResults: [],
-  minorResults: [],
-  finalResults: [],
+const DataContext = createContext<DataContextType | undefined>(undefined);
 
-  submitAssignment: () => {},
-  sendMessage: () => {},
-  markMessageAsRead: () => {},
-  downloadResult: () => {},
+// Complete list of students
+const initialStudents: Student[] = [
+  { id: "1", rollNumber: "24MAB0A01", name: "Aaryaman Pratap Singh", email: "aaryaman@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "2", rollNumber: "24MAB0A02", name: "Aditya Sharma", email: "aditya@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "3", rollNumber: "24MAB0A03", name: "Akshay Kumar", email: "akshay@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "4", rollNumber: "24MAB0A04", name: "Akula Tejaswini", email: "akula@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "5", rollNumber: "24MAB0A05", name: "Arpita Halwasia", email: "arpita@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "6", rollNumber: "24MAB0A06", name: "Bhingradiya Daksh", email: "bhingradiya@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "7", rollNumber: "24MAB0A07", name: "Boddupalli Jahnavi", email: "boddupalli@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "8", rollNumber: "24MAB0A08", name: "Erupula Pragnesh", email: "erupula@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "9", rollNumber: "24MAB0A09", name: "Ganji Satwika", email: "ganji@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "10", rollNumber: "24MAB0A10", name: "H Sahas", email: "hsahas@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "11", rollNumber: "24MAB0A11", name: "Hariom Shilpkar", email: "hariom@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "12", rollNumber: "24MAB0A12", name: "Hasini Sai D", email: "hasini@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "13", rollNumber: "24MAB0A13", name: "Johann S Martin", email: "johann@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "14", rollNumber: "24MAB0A14", name: "KGG Naik", email: "kgg@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "15", rollNumber: "24MAB0A15", name: "Limbani Jeel", email: "limbani@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "16", rollNumber: "24MAB0A16", name: "-", email: "-", course: "Mathematics", year: 1 },
+  { id: "17", rollNumber: "24MAB0A17", name: "M SaiKiran", email: "msaikiran@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "18", rollNumber: "24MAB0A18", name: "Mitrajit Ghorui", email: "mitrajit@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "19", rollNumber: "24MAB0A19", name: "Mohammad Saad Ansari", email: "mohammad@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "20", rollNumber: "24MAB0A20", name: "Ishan Nepal", email: "ishan@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "21", rollNumber: "24MAB0A21", name: "Pansuriya Zeel", email: "pansuriya@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "22", rollNumber: "24MAB0A22", name: "P Kshetragna Sharma", email: "pkshetragna@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "23", rollNumber: "24MAB0A23", name: "Putnala Prabhav", email: "putnala@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "24", rollNumber: "24MAB0A24", name: "Raghu Shaarav", email: "raghu@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "25", rollNumber: "24MAB0A25", name: "Ragula Thirumal", email: "ragula@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "26", rollNumber: "24MAB0A26", name: "Rasesh Kumar Sahu", email: "rasesh@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "27", rollNumber: "24MAB0A27", name: "Rohan Chinta", email: "rohan@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "28", rollNumber: "24MAB0A28", name: "Rohit Manoj Nair", email: "rohit@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "29", rollNumber: "24MAB0A29", name: "Roy Harwani", email: "roy@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "30", rollNumber: "24MAB0A30", name: "S Vageesh", email: "svageesh@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "31", rollNumber: "24MAB0A31", name: "Saisrihan Yadalla", email: "saisrihan@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "32", rollNumber: "24MAB0A32", name: "S Mohan Reddy", email: "smohan@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "33", rollNumber: "24MAB0A33", name: "Shaik Abdul", email: "shaik@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "34", rollNumber: "24MAB0A34", name: "Shaif Arif", email: "shaif@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "35", rollNumber: "24MAB0A35", name: "Shambhavi Dhange", email: "shambhavi@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "36", rollNumber: "24MAB0A36", name: "Srirangam Sri Sahaj", email: "srirangam@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "37", rollNumber: "24MAB0A37", name: "Yashaswini Sudharshan", email: "yashaswini@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "38", rollNumber: "24MAB0A38", name: "Sumedha K", email: "sumedha@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "39", rollNumber: "24MAB0A39", name: "Thaduru Sreshta", email: "thaduru@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "40", rollNumber: "24MAB0A40", name: "Trupti Aggarwal", email: "trupti@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "41", rollNumber: "24MAB0A41", name: "V Dhruv", email: "vd24mab0a41@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "42", rollNumber: "24MAB0A42", name: "V Vamshi", email: "vvamshi@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "43", rollNumber: "24MAB0A43", name: "V Prashanth", email: "vprashanth@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "44", rollNumber: "24MAB0A44", name: "V Neha", email: "vneha@student.nitw.ac.in", course: "Mathematics", year: 1 },
+  { id: "45", rollNumber: "24MAB0A45", name: "W Aryan", email: "waryan@student.nitw.ac.in", course: "Mathematics", year: 1 },
+];
 
-  addAssignment: () => {},
-  gradeSubmission: () => {},
-  markAttendance: () => {},
-  addNotification: () => {},
-  exportAttendance: () => {},
-  submitGrades: () => {},
-  submitMinorMarks: () => {},
-});
-
-// Mock data
-const mockStudents: Student[] = [
+// Sample assignments
+const initialAssignments: Assignment[] = [
   {
     id: "1",
-    name: "V Dhruv",
-    rollNumber: "24MAB0A41",
-    email: "vd24mab0a41@student.nitw.ac.in",
-    cgpa: 9.06,
-    profile: {
-      phoneNumber: "9876543210",
-      address: "Hostel Block A, Room 123, NIT Warangal",
-      dateOfBirth: "2002-05-15",
-      gender: "Male",
-      department: "Mathematics & Computing",
-      year: 1,
-      semester: 1,
-      batch: "2024-2028",
-    },
+    title: "Differential Equations Problem Set",
+    description: "Complete problems 1-10 from Chapter 3 of the textbook.",
+    dueDate: "2023-10-15",
+    subject: "Differential Equations",
+    status: "pending",
+    teacherId: "tchr-1"
   },
   {
     id: "2",
-    name: "Aaryaman Pratap Singh",
-    rollNumber: "24MAB0A01",
-    email: "aps24mab0a01@student.nitw.ac.in",
-    cgpa: 9.21,
-    profile: {
-      phoneNumber: "9876543211",
-      address: "Hostel Block B, Room 101, NIT Warangal",
-      dateOfBirth: "2003-02-20",
-      gender: "Male",
-      department: "Mathematics & Computing",
-      year: 1,
-      semester: 1,
-      batch: "2024-2028",
-    },
+    title: "Linear Algebra Project",
+    description: "Research paper on applications of linear algebra in computer graphics.",
+    dueDate: "2023-10-20",
+    subject: "Linear Algebra",
+    status: "pending",
+    teacherId: "tchr-1"
   },
   {
     id: "3",
-    name: "Aditya Sharma",
-    rollNumber: "24MAB0A02",
-    email: "as24mab0a02@student.nitw.ac.in",
-    cgpa: 8.95,
-    profile: {
-      phoneNumber: "9876543212",
-      address: "Hostel Block A, Room 105, NIT Warangal",
-      dateOfBirth: "2003-04-10",
-      gender: "Male",
-      department: "Mathematics & Computing",
-      year: 1,
-      semester: 1,
-      batch: "2024-2028",
-    },
-  },
-  {
-    id: "4",
-    name: "Akshay Kumar",
-    rollNumber: "24MAB0A03",
-    email: "ak24mab0a03@student.nitw.ac.in",
-    cgpa: 8.75,
-    profile: {
-      phoneNumber: "9876543213",
-      address: "Hostel Block C, Room 210, NIT Warangal",
-      dateOfBirth: "2002-11-22",
-      gender: "Male",
-      department: "Mathematics & Computing",
-      year: 1,
-      semester: 1,
-      batch: "2024-2028",
-    },
-  },
-  {
-    id: "5",
-    name: "Akula Tejaswini",
-    rollNumber: "24MAB0A04",
-    email: "at24mab0a04@student.nitw.ac.in",
-    cgpa: 9.12,
-    profile: {
-      phoneNumber: "9876543214",
-      address: "Hostel Block D, Room 115, NIT Warangal",
-      dateOfBirth: "2003-08-17",
-      gender: "Female",
-      department: "Mathematics & Computing",
-      year: 1,
-      semester: 1,
-      batch: "2024-2028",
-    },
-  },
-  {
-    id: "6",
-    name: "Arpita Halwasia",
-    rollNumber: "24MAB0A05",
-    email: "ah24mab0a05@student.nitw.ac.in",
-    cgpa: 8.89,
-    profile: {
-      phoneNumber: "9876543215",
-      address: "Hostel Block D, Room 120, NIT Warangal",
-      dateOfBirth: "2003-01-05",
-      gender: "Female",
-      department: "Mathematics & Computing",
-      year: 1,
-      semester: 1,
-      batch: "2024-2028",
-    },
-  },
+    title: "Calculus Quiz Preparation",
+    description: "Review limits, derivatives, and integrals for upcoming quiz.",
+    dueDate: "2023-10-10",
+    subject: "Calculus",
+    status: "pending",
+    teacherId: "tchr-1"
+  }
 ];
 
-const mockSubjects: Subject[] = [
-  {
-    id: "1",
-    code: "MA1102",
-    name: "Design Thinking",
-    credits: "0-1-4 3",
-    description: "Introduction to design thinking process, methods, and tools."
-  },
-  {
-    id: "2",
-    code: "MA1104",
-    name: "Ordinary Differential Equations",
-    credits: "3-0-0 3",
-    description: "Study of equations containing derivatives of one or more unknown functions with respect to a single variable."
-  },
-  {
-    id: "3",
-    code: "MA1106",
-    name: "Data Structures and Algorithms",
-    credits: "3-0-2 4",
-    description: "Fundamental data structures and algorithms for organizing, searching, and sorting data."
-  },
-  {
-    id: "4",
-    code: "EE1162",
-    name: "Basic Electrical and Electronics Engineering",
-    credits: "3-0-0 3",
-    description: "Introduction to electrical and electronic components, circuits, and systems."
-  },
-  {
-    id: "5",
-    code: "MA1108",
-    name: "Elementary Linear Algebra",
-    credits: "3-0-0 3",
-    description: "Study of vectors, vector spaces, linear transformations, and systems of linear equations."
-  },
-  {
-    id: "6",
-    code: "MA1110",
-    name: "Discrete Mathematical Structures",
-    credits: "3-0-0 3",
-    description: "Mathematical structures that are fundamentally discrete rather than continuous."
-  },
-  {
-    id: "7",
-    code: "EE1164",
-    name: "Basic Electrical Engineering Lab",
-    credits: "0-1-2 2",
-    description: "Practical laboratory work related to basic electrical engineering concepts."
-  },
-  {
-    id: "8",
-    code: "IC1102",
-    name: "EAA-II (Games & Sports / Yoga & Wellness)",
-    credits: "0-0-0 0",
-    description: "Extra Academic Activity focusing on physical fitness and wellness."
-  },
-];
-
-const mockTeachers: Teacher[] = [
-  {
-    id: "1",
-    name: "A Benerji Babu",
-    email: "abenerji@nitw.ac.in",
-    department: "Maths Dept",
-    subjects: mockSubjects,
-  },
-  {
-    id: "2",
-    name: "Satyanarayana Engu",
-    email: "satyanarayana@nitw.ac.in",
-    department: "Maths Dept",
-    subjects: [mockSubjects[1]],
-  },
-  {
-    id: "3",
-    name: "Debashis Dutta",
-    email: "debashis@nitw.ac.in",
-    department: "Maths Dept",
-    subjects: [mockSubjects[2]],
-  },
-  {
-    id: "4",
-    name: "B. L Narasimharaju",
-    email: "narasimharaju@nitw.ac.in",
-    department: "Electrical Dept",
-    subjects: [mockSubjects[3], mockSubjects[6]],
-  },
-  {
-    id: "5",
-    name: "Jagannath Roy",
-    email: "jagannath@nitw.ac.in",
-    department: "Maths Dept",
-    subjects: [mockSubjects[4]],
-  },
-  {
-    id: "6",
-    name: "D. Srinivasacharya",
-    email: "srinivasacharya@nitw.ac.in",
-    department: "Maths Dept",
-    subjects: [mockSubjects[5]],
-  },
-];
-
-const mockAssignments: Assignment[] = [
-  {
-    id: "1",
-    title: "Design Thinking Project Proposal",
-    description: "Prepare a project proposal for your Design Thinking course final project. Include problem statement, user research plan, and initial sketches.",
-    subjectId: "1",
-    subjectName: "Design Thinking",
-    dueDate: "2023-11-15",
-    maxMarks: 20,
-    fileUrl: "https://example.com/assignments/dt_proposal.pdf",
-    createdAt: "2023-10-25",
-    createdBy: "1",
-    submissions: [],
-  },
-  {
-    id: "2",
-    title: "ODE Assignment 1: First Order Equations",
-    description: "Solve the given set of first-order ordinary differential equations using appropriate methods.",
-    subjectId: "2",
-    subjectName: "Ordinary Differential Equations",
-    dueDate: "2023-11-10",
-    maxMarks: 15,
-    fileUrl: "https://example.com/assignments/ode_assignment1.pdf",
-    createdAt: "2023-10-27",
-    createdBy: "2",
-    submissions: [],
-  },
-  {
-    id: "3",
-    title: "DSA Lab 1: Linked Lists Implementation",
-    description: "Implement singly linked list, doubly linked list, and circular linked list in C/C++/Java. Include operations: insert, delete, search, and traverse.",
-    subjectId: "3",
-    subjectName: "Data Structures and Algorithms",
-    dueDate: "2023-11-05",
-    maxMarks: 25,
-    fileUrl: "https://example.com/assignments/dsa_lab1.pdf",
-    createdAt: "2023-10-20",
-    createdBy: "3",
-    submissions: [],
-  },
-];
-
-const mockSubmissions: AssignmentSubmission[] = [
-  {
-    id: "1",
-    assignmentId: "1",
-    studentId: "1",
-    studentName: "V Dhruv",
-    rollNumber: "24MAB0A41",
-    fileUrl: "https://example.com/submissions/dt_proposal_dhruv.pdf",
-    submittedAt: "2023-11-14",
-    marks: 18,
-    feedback: "Excellent proposal with clear problem statement. Research plan could be more detailed.",
-  },
-  {
-    id: "2",
-    assignmentId: "2",
-    studentId: "1",
-    studentName: "V Dhruv",
-    rollNumber: "24MAB0A41",
-    fileUrl: "https://example.com/submissions/ode_assignment1_dhruv.pdf",
-    submittedAt: "2023-11-09",
-  },
-];
-
-const mockAttendance: Attendance[] = [
-  {
-    id: "1",
-    subjectId: "1",
-    subjectName: "Design Thinking",
-    date: "2023-10-27",
-    students: [
-      {
-        studentId: "1",
-        rollNumber: "24MAB0A41",
-        name: "V Dhruv",
-        present: true,
-      },
-      {
-        studentId: "2",
-        rollNumber: "24MAB0A01",
-        name: "Aaryaman Pratap Singh",
-        present: true,
-      },
-      {
-        studentId: "3",
-        rollNumber: "24MAB0A02",
-        name: "Aditya Sharma",
-        present: false,
-      },
-    ],
-  },
-  {
-    id: "2",
-    subjectId: "1",
-    subjectName: "Design Thinking",
-    date: "2023-11-03",
-    students: [
-      {
-        studentId: "1",
-        rollNumber: "24MAB0A41",
-        name: "V Dhruv",
-        present: true,
-      },
-      {
-        studentId: "2",
-        rollNumber: "24MAB0A01",
-        name: "Aaryaman Pratap Singh",
-        present: true,
-      },
-      {
-        studentId: "3",
-        rollNumber: "24MAB0A02",
-        name: "Aditya Sharma",
-        present: true,
-      },
-    ],
-  },
-  {
-    id: "3",
-    subjectId: "2",
-    subjectName: "Ordinary Differential Equations",
-    date: "2023-10-26",
-    students: [
-      {
-        studentId: "1",
-        rollNumber: "24MAB0A41",
-        name: "V Dhruv",
-        present: true,
-      },
-      {
-        studentId: "2",
-        rollNumber: "24MAB0A01",
-        name: "Aaryaman Pratap Singh",
-        present: false,
-      },
-      {
-        studentId: "3",
-        rollNumber: "24MAB0A02",
-        name: "Aditya Sharma",
-        present: true,
-      },
-    ],
-  },
-];
-
-const mockAttendanceSummary: AttendanceSummary[] = [
-  {
-    studentId: "1",
-    rollNumber: "24MAB0A41",
-    subjects: [
-      {
-        subjectId: "1",
-        subjectName: "Design Thinking",
-        totalClasses: 8,
-        attended: 7,
-        percentage: 87.5,
-      },
-      {
-        subjectId: "2",
-        subjectName: "Ordinary Differential Equations",
-        totalClasses: 10,
-        attended: 9,
-        percentage: 90,
-      },
-      {
-        subjectId: "3",
-        subjectName: "Data Structures and Algorithms",
-        totalClasses: 12,
-        attended: 10,
-        percentage: 83.33,
-      },
-      {
-        subjectId: "4",
-        subjectName: "Basic Electrical and Electronics Engineering",
-        totalClasses: 9,
-        attended: 8,
-        percentage: 88.89,
-      },
-      {
-        subjectId: "5",
-        subjectName: "Elementary Linear Algebra",
-        totalClasses: 10,
-        attended: 9,
-        percentage: 90,
-      },
-      {
-        subjectId: "6",
-        subjectName: "Discrete Mathematical Structures",
-        totalClasses: 11,
-        attended: 9,
-        percentage: 81.82,
-      },
-      {
-        subjectId: "7",
-        subjectName: "Basic Electrical Engineering Lab",
-        totalClasses: 5,
-        attended: 4,
-        percentage: 80,
-      },
-      {
-        subjectId: "8",
-        subjectName: "EAA-II (Games & Sports / Yoga & Wellness)",
-        totalClasses: 6,
-        attended: 4,
-        percentage: 66.67,
-      },
-    ],
-    overall: {
-      totalClasses: 71,
-      attended: 60,
-      percentage: 84.51,
-    },
-  },
-];
-
-const mockMessages: Message[] = [
-  {
-    id: "1",
-    senderId: "1",
-    senderName: "V Dhruv",
-    senderType: "student",
-    receiverId: "1",
-    receiverName: "A Benerji Babu",
-    receiverType: "teacher",
-    content: "Good afternoon Professor, I had a question regarding the upcoming Design Thinking project deadline. Would it be possible to get a one-day extension?",
-    timestamp: "2023-11-05T14:30:00",
-    read: false,
-  },
-  {
-    id: "2",
-    senderId: "1",
-    senderName: "A Benerji Babu",
-    senderType: "teacher",
-    receiverId: "1",
-    receiverName: "V Dhruv",
-    receiverType: "student",
-    content: "Hello Dhruv, I'll consider your request. Can you please explain why you need the extension?",
-    timestamp: "2023-11-05T15:45:00",
-    read: true,
-  },
-  {
-    id: "3",
-    senderId: "1",
-    senderName: "V Dhruv",
-    senderType: "student",
-    receiverId: "1",
-    receiverName: "A Benerji Babu",
-    receiverType: "teacher",
-    content: "Thank you for considering my request. I'm having trouble with the user research part and need an extra day to complete it properly.",
-    timestamp: "2023-11-05T16:10:00",
-    read: false,
-  },
-  {
-    id: "4",
-    senderId: "1",
-    senderName: "A Benerji Babu",
-    senderType: "teacher",
-    receiverId: "1",
-    receiverName: "V Dhruv",
-    receiverType: "student",
-    content: "I understand. I'll grant you a one-day extension. Please ensure you submit by the extended deadline.",
-    timestamp: "2023-11-05T17:30:00",
-    read: false,
-  },
-];
-
-const mockNotifications: Notification[] = [
-  {
-    id: "1",
-    title: "Mid-Semester Examinations",
-    description: "The mid-semester examinations for all subjects will commence from November 20, 2023. The detailed schedule will be shared soon.",
-    type: "exam",
-    date: "2023-11-20",
-    createdAt: "2023-11-01",
-    createdBy: "1",
-  },
-  {
-    id: "2",
-    title: "Department Technical Fest",
-    description: "The Mathematics Department Technical Fest 'MathGenius 2023' will be held on December 10-11, 2023. All students are encouraged to participate.",
-    type: "event",
-    date: "2023-12-10",
-    createdAt: "2023-11-02",
-    createdBy: "1",
-  },
-];
-
-const mockTimetable: TimeTable = {
-  slots: [
-    { day: "Monday", time: "8:00 - 8:55", subject: "DMS", location: "E104", faculty: "D. Srinivasacharya" },
-    { day: "Monday", time: "9:00 - 12:00", subject: "BEE LAB", location: "Electrical Dept", faculty: "B. L Narasimharaju" },
-    { day: "Monday", time: "1:00 - 1:55", subject: "DMS", location: "E104", faculty: "D. Srinivasacharya" },
-    { day: "Monday", time: "2:00 - 2:55", subject: "ODE", location: "E104", faculty: "Satyanarayana Engu" },
-    { day: "Monday", time: "3:05 - 4:00", subject: "ELA", location: "A315", faculty: "Jagannath Roy" },
-    
-    { day: "Tuesday", time: "8:00 - 8:55", subject: "DMS", location: "E104", faculty: "D. Srinivasacharya" },
-    { day: "Tuesday", time: "1:00 - 1:55", subject: "BEEE", location: "E104", faculty: "B. L Narasimharaju" },
-    { day: "Tuesday", time: "2:00 - 2:55", subject: "ODE", location: "E104", faculty: "Satyanarayana Engu" },
-    { day: "Tuesday", time: "3:05 - 4:00", subject: "ELA", location: "A315", faculty: "Jagannath Roy" },
-    
-    { day: "Wednesday", time: "8:00 - 8:55", subject: "GSYW", location: "Stadium", faculty: "" },
-    { day: "Wednesday", time: "9:00 - 9:55", subject: "DMS", location: "E104", faculty: "D. Srinivasacharya" },
-    { day: "Wednesday", time: "10:00 - 10:55", subject: "DSA", location: "E104", faculty: "Debashis Dutta" },
-    { day: "Wednesday", time: "11:05 - 12:00", subject: "BEEE", location: "E104", faculty: "B. L Narasimharaju" },
-    { day: "Wednesday", time: "1:00 - 1:55", subject: "ODE", location: "E104", faculty: "Satyanarayana Engu" },
-    
-    { day: "Thursday", time: "8:00 - 8:55", subject: "GSYW", location: "Stadium", faculty: "" },
-    { day: "Thursday", time: "9:00 - 9:55", subject: "BEEE", location: "E104", faculty: "B. L Narasimharaju" },
-    { day: "Thursday", time: "10:00 - 10:55", subject: "DMS", location: "E104", faculty: "D. Srinivasacharya" },
-    { day: "Thursday", time: "11:05 - 12:00", subject: "DSA", location: "E104", faculty: "Debashis Dutta" },
-    { day: "Thursday", time: "12:05 - 1:00", subject: "BEEE", location: "E104", faculty: "B. L Narasimharaju" },
-    
-    { day: "Friday", time: "8:00 - 8:55", subject: "GSYW", location: "Stadium", faculty: "" },
-    { day: "Friday", time: "9:00 - 9:55", subject: "ELA", location: "A315", faculty: "Jagannath Roy" },
-    { day: "Friday", time: "10:00 - 10:55", subject: "BEEE", location: "E104", faculty: "B. L Narasimharaju" },
-    { day: "Friday", time: "11:05 - 12:00", subject: "DMS", location: "E104", faculty: "D. Srinivasacharya" },
-    { day: "Friday", time: "12:05 - 1:00", subject: "DSA", location: "E104", faculty: "Debashis Dutta" },
-    { day: "Friday", time: "2:00 - 6:00", subject: "DT", location: "Computation Lab", faculty: "A Benerji Babu" },
-  ],
+// Sample attendance records
+const generateAttendanceRecords = () => {
+  const records: AttendanceRecord[] = [];
+  const subjects = ["Calculus", "Linear Algebra", "Differential Equations", "Statistics"];
+  const startDate = new Date(2023, 8, 1); // September 1, 2023
+  const endDate = new Date(2023, 9, 20); // October 20, 2023
+  
+  // Generate mock attendance records for V Dhruv
+  for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+    if (date.getDay() !== 0 && date.getDay() !== 6) { // Skip weekends
+      subjects.forEach(subject => {
+        // Random attendance (80% chance of being present)
+        const status = Math.random() > 0.2 ? 'present' : 'absent';
+        records.push({
+          id: `att-${date.toISOString()}-${subject}-41`,
+          date: date.toISOString().split('T')[0],
+          subject,
+          status,
+          studentId: "41",
+          teacherId: "tchr-1"
+        });
+      });
+    }
+  }
+  
+  return records;
 };
 
-const mockSemesterResults: SemesterResult[] = [
+// Sample messages
+const initialMessages: Message[] = [
   {
-    studentId: "1",
-    studentName: "Vaghela Dhruv Sudhirbhai",
-    rollNumber: "24MAB0A41",
-    department: "Department of Mathematics [MATHS]",
-    specialization: "Mathematics and Computing [MC2024]",
-    year: 1,
-    semester: 1,
-    academicYear: "2024-2025",
-    results: [
-      {
-        subjectCode: "BT1161",
-        subjectName: "Biology for Engineers",
-        credit: 2,
-        grade: "B"
-      },
-      {
-        subjectCode: "MA1101",
-        subjectName: "Calculus",
-        credit: 3,
-        grade: "A"
-      },
-      {
-        subjectCode: "PH1161",
-        subjectName: "Engineering Physics",
-        credit: 4,
-        grade: "S"
-      },
-      {
-        subjectCode: "HS1161",
-        subjectName: "English for Technical Communication",
-        credit: 3,
-        grade: "B"
-      },
-      {
-        subjectCode: "IC1101",
-        subjectName: "Extra Academic Activity - I",
-        credit: 0,
-        grade: "P"
-      },
-      {
-        subjectCode: "MA1103",
-        subjectName: "Programming and Data Structures",
-        credit: 3,
-        grade: "A"
-      },
-      {
-        subjectCode: "MA1105",
-        subjectName: "Programming and Data Structures Lab",
-        credit: 2,
-        grade: "S"
-      }
-    ],
-    sgpa: 9.06,
-    cgpa: 9.06
+    id: "msg1",
+    sender: "tchr-1",
+    senderType: "teacher",
+    recipient: "41",
+    content: "Please submit your Calculus assignment by tomorrow.",
+    timestamp: new Date(2023, 9, 10, 14, 30).toISOString(),
+    read: true
+  },
+  {
+    id: "msg2",
+    sender: "41",
+    senderType: "student",
+    recipient: "tchr-1",
+    content: "I have completed the assignment and will submit it today.",
+    timestamp: new Date(2023, 9, 10, 15, 45).toISOString(),
+    read: false
+  },
+  {
+    id: "msg3",
+    sender: "tchr-1",
+    senderType: "teacher",
+    recipient: "41",
+    content: "Great! Looking forward to reviewing it.",
+    timestamp: new Date(2023, 9, 10, 16, 20).toISOString(),
+    read: false
   }
 ];
 
-const mockMinorResults: MinorResult[] = [
+// Sample results
+const initialResults: Result[] = [
   {
-    id: "1",
-    studentId: "1",
-    rollNumber: "24MAB0A41",
-    studentName: "V Dhruv",
-    subjectId: "1",
-    subjectCode: "MA1102",
-    subjectName: "Design Thinking",
-    maxMarks: 30,
-    obtainedMarks: 26,
-    examDate: "2023-09-15",
-    examType: "Minor1",
-    marks: 13
+    id: "res1",
+    studentId: "41",
+    subject: "Calculus",
+    examType: "Mid-term",
+    marks: 85,
+    totalMarks: 100,
+    grade: "A",
+    teacherId: "tchr-1",
+    date: "2023-09-15"
   },
   {
-    id: "2",
-    studentId: "1",
-    rollNumber: "24MAB0A41",
-    studentName: "V Dhruv",
-    subjectId: "2",
-    subjectCode: "MA1104",
-    subjectName: "Ordinary Differential Equations",
-    maxMarks: 30,
-    obtainedMarks: 28,
-    examDate: "2023-09-16",
-    examType: "Minor1",
-    marks: 14
+    id: "res2",
+    studentId: "41",
+    subject: "Linear Algebra",
+    examType: "Quiz",
+    marks: 18,
+    totalMarks: 20,
+    grade: "A+",
+    teacherId: "tchr-1",
+    date: "2023-09-20"
   },
   {
-    id: "3",
-    studentId: "1",
-    rollNumber: "24MAB0A41",
-    studentName: "V Dhruv",
-    subjectId: "3",
-    subjectCode: "MA1106",
-    subjectName: "Data Structures and Algorithms",
-    maxMarks: 30,
-    obtainedMarks: 25,
-    examDate: "2023-09-17",
-    examType: "Minor1",
-    marks: 12.5
-  },
-  {
-    id: "4",
-    studentId: "1",
-    rollNumber: "24MAB0A41",
-    studentName: "V Dhruv",
-    subjectId: "4",
-    subjectCode: "EE1162",
-    subjectName: "Basic Electrical and Electronics Engineering",
-    maxMarks: 30,
-    obtainedMarks: 24,
-    examDate: "2023-09-18",
-    examType: "Minor1",
-    marks: 12
-  },
-  {
-    id: "5",
-    studentId: "1",
-    rollNumber: "24MAB0A41",
-    studentName: "V Dhruv",
-    subjectId: "1",
-    subjectCode: "MA1102",
-    subjectName: "Design Thinking",
-    maxMarks: 30,
-    obtainedMarks: 28,
-    examDate: "2023-10-20",
-    examType: "Minor2",
-    marks: 14
-  },
-  {
-    id: "6",
-    studentId: "1",
-    rollNumber: "24MAB0A41",
-    studentName: "V Dhruv",
-    subjectId: "2",
-    subjectCode: "MA1104",
-    subjectName: "Ordinary Differential Equations",
-    maxMarks: 30,
-    obtainedMarks: 29,
-    examDate: "2023-10-21",
-    examType: "Minor2",
-    marks: 14.5
-  },
-  {
-    id: "7",
-    studentId: "1",
-    rollNumber: "24MAB0A41",
-    studentName: "V Dhruv",
-    subjectId: "3",
-    subjectCode: "MA1106",
-    subjectName: "Data Structures and Algorithms",
-    maxMarks: 30,
-    obtainedMarks: 27,
-    examDate: "2023-10-22",
-    examType: "Minor2",
-    marks: 13.5
-  },
-  {
-    id: "8",
-    studentId: "1",
-    rollNumber: "24MAB0A41",
-    studentName: "V Dhruv",
-    subjectId: "4",
-    subjectCode: "EE1162",
-    subjectName: "Basic Electrical and Electronics Engineering",
-    maxMarks: 30,
-    obtainedMarks: 26,
-    examDate: "2023-10-23",
-    examType: "Minor2",
-    marks: 13
+    id: "res3",
+    studentId: "41",
+    subject: "Differential Equations",
+    examType: "Assignment",
+    marks: 28,
+    totalMarks: 30,
+    grade: "A",
+    teacherId: "tchr-1",
+    date: "2023-09-25"
   }
 ];
 
-const mockFinalResults: SemesterResult[] = [
+// Sample emails
+const initialEmails: Email[] = [
   {
-    studentId: "1",
-    studentName: "Vaghela Dhruv Sudhirbhai",
-    rollNumber: "24MAB0A41",
-    department: "Department of Mathematics [MATHS]",
-    specialization: "Mathematics and Computing [MC2024]",
-    year: 1,
-    semester: 1,
-    academicYear: "2024-2025",
-    results: [
-      {
-        subjectCode: "BT1161",
-        subjectName: "Biology for Engineers",
-        credit: 2,
-        grade: "B"
-      },
-      {
-        subjectCode: "MA1101",
-        subjectName: "Calculus",
-        credit: 3,
-        grade: "A"
-      },
-      {
-        subjectCode: "PH1161",
-        subjectName: "Engineering Physics",
-        credit: 4,
-        grade: "S"
-      },
-      {
-        subjectCode: "HS1161",
-        subjectName: "English for Technical Communication",
-        credit: 3,
-        grade: "B"
-      },
-      {
-        subjectCode: "IC1101",
-        subjectName: "Extra Academic Activity - I",
-        credit: 0,
-        grade: "P"
-      },
-      {
-        subjectCode: "MA1103",
-        subjectName: "Programming and Data Structures",
-        credit: 3,
-        grade: "A"
-      },
-      {
-        subjectCode: "MA1105",
-        subjectName: "Programming and Data Structures Lab",
-        credit: 2,
-        grade: "S"
-      }
-    ],
-    sgpa: 9.06,
-    cgpa: 9.06
+    id: "email1",
+    sender: "Mathematics Department",
+    senderEmail: "math-dept@nitw.ac.in",
+    recipients: ["vd24mab0a41@student.nitw.ac.in"],
+    subject: "Welcome to the Mathematics Department",
+    content: "Dear V Dhruv,\n\nWelcome to the Mathematics Department at NIT Warangal. We are excited to have you join us for the new academic year.\n\nRegards,\nMathematics Department",
+    timestamp: new Date(2023, 8, 1, 9, 0).toISOString(),
+    read: true,
+    starred: false,
+    folder: "inbox"
   },
   {
-    studentId: "1",
-    studentName: "Vaghela Dhruv Sudhirbhai",
-    rollNumber: "24MAB0A41",
-    department: "Department of Mathematics [MATHS]",
-    specialization: "Mathematics and Computing [MC2024]",
-    year: 1,
-    semester: 2,
-    academicYear: "2024-2025",
-    results: [
-      {
-        subjectCode: "MA1102",
-        subjectName: "Design Thinking",
-        credit: 3,
-        grade: ""
-      },
-      {
-        subjectCode: "MA1104",
-        subjectName: "Ordinary Differential Equations",
-        credit: 3,
-        grade: ""
-      },
-      {
-        subjectCode: "MA1106",
-        subjectName: "Data Structures and Algorithms",
-        credit: 4,
-        grade: ""
-      },
-      {
-        subjectCode: "EE1162",
-        subjectName: "Basic Electrical and Electronics Engineering",
-        credit: 3,
-        grade: ""
-      },
-      {
-        subjectCode: "MA1108",
-        subjectName: "Elementary Linear Algebra",
-        credit: 3,
-        grade: ""
-      },
-      {
-        subjectCode: "MA1110",
-        subjectName: "Discrete Mathematical Structures",
-        credit: 3,
-        grade: ""
-      },
-      {
-        subjectCode: "EE1164",
-        subjectName: "Basic Electrical Engineering Lab",
-        credit: 2,
-        grade: ""
-      },
-      {
-        subjectCode: "IC1102",
-        subjectName: "EAA-II (Games & Sports / Yoga & Wellness)",
-        credit: 0,
-        grade: ""
-      }
-    ],
-    sgpa: 0,
-    cgpa: 9.06
+    id: "email2",
+    sender: "V Dhruv",
+    senderEmail: "vd24mab0a41@student.nitw.ac.in",
+    recipients: ["abenerji@nitw.ac.in"],
+    subject: "Request for appointment",
+    content: "Dear Professor Benerji,\n\nI would like to schedule an appointment to discuss my research interests in mathematics. Would you be available this week?\n\nBest regards,\nV Dhruv",
+    timestamp: new Date(2023, 9, 5, 14, 30).toISOString(),
+    read: true,
+    starred: true,
+    folder: "sent"
+  },
+  {
+    id: "email3",
+    sender: "A Benerji",
+    senderEmail: "abenerji@nitw.ac.in",
+    recipients: ["vd24mab0a41@student.nitw.ac.in"],
+    subject: "Re: Request for appointment",
+    content: "Dear Dhruv,\n\nI would be available on Thursday at 2 PM. Please come to my office.\n\nRegards,\nProf. A Benerji",
+    timestamp: new Date(2023, 9, 6, 10, 15).toISOString(),
+    read: false,
+    starred: false,
+    folder: "inbox"
+  },
+  {
+    id: "email4",
+    sender: "Library",
+    senderEmail: "library@nitw.ac.in",
+    recipients: ["vd24mab0a41@student.nitw.ac.in"],
+    subject: "Library Book Due",
+    content: "Dear Student,\n\nThis is a reminder that you have a library book due tomorrow. Please return it on time to avoid fines.\n\nRegards,\nLibrary Department",
+    timestamp: new Date(2023, 9, 8, 11, 45).toISOString(),
+    read: false,
+    starred: false,
+    folder: "inbox"
+  },
+  // Teacher emails
+  {
+    id: "email5",
+    sender: "Academic Affairs",
+    senderEmail: "academics@nitw.ac.in",
+    recipients: ["abenerji@nitw.ac.in"],
+    subject: "Faculty Meeting Agenda",
+    content: "Dear Faculty Members,\n\nPlease find attached the agenda for our upcoming faculty meeting on Friday.\n\nRegards,\nDean of Academic Affairs",
+    timestamp: new Date(2023, 9, 7, 16, 30).toISOString(),
+    read: true,
+    starred: false,
+    folder: "inbox",
+    attachments: [{ name: "agenda.pdf", url: "#" }]
+  },
+  {
+    id: "email6",
+    sender: "A Benerji",
+    senderEmail: "abenerji@nitw.ac.in",
+    recipients: ["hod-math@nitw.ac.in"],
+    subject: "Research Paper Submission",
+    content: "Dear HOD,\n\nI'm pleased to inform you that our research paper on advanced calculus methods has been accepted for publication.\n\nBest regards,\nA Benerji",
+    timestamp: new Date(2023, 9, 3, 13, 20).toISOString(),
+    read: true,
+    starred: true,
+    folder: "sent"
   }
 ];
 
-// DataProvider component
-export const DataProvider = ({ children }: { children: ReactNode }) => {
-  const [students, setStudents] = useState<Student[]>(mockStudents);
-  const [teachers, setTeachers] = useState<Teacher[]>(mockTeachers);
-  const [subjects, setSubjects] = useState<Subject[]>(mockSubjects);
-  const [assignments, setAssignments] = useState<Assignment[]>(mockAssignments);
-  const [submissions, setSubmissions] = useState<AssignmentSubmission[]>(mockSubmissions);
-  const [attendance, setAttendance] = useState<Attendance[]>(mockAttendance);
-  const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary[]>(mockAttendanceSummary);
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
-  const [timetable] = useState<TimeTable>(mockTimetable);
-  const [semesterResults] = useState<SemesterResult[]>(mockSemesterResults);
-  const [minorResults, setMinorResults] = useState<MinorResult[]>(mockMinorResults);
-  const [finalResults, setFinalResults] = useState<SemesterResult[]>(mockFinalResults);
+export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  const [students, setStudents] = useState<Student[]>(initialStudents);
+  const [assignments, setAssignments] = useState<Assignment[]>(initialAssignments);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>(generateAttendanceRecords());
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [results, setResults] = useState<Result[]>(initialResults);
+  const [emails, setEmails] = useState<Email[]>(initialEmails);
 
-  // Actions for students
-  const submitAssignment = (assignmentId: string, studentId: string, fileUrl: string) => {
-    const student = students.find((s) => s.id === studentId);
-    if (!student) return;
-
-    const assignment = assignments.find((a) => a.id === assignmentId);
-    if (!assignment) return;
-
-    const newSubmission: AssignmentSubmission = {
-      id: `s-${submissions.length + 1}`,
-      assignmentId,
-      studentId,
-      studentName: student.name,
-      rollNumber: student.rollNumber,
-      fileUrl,
-      submittedAt: new Date().toISOString(),
-    };
-
-    setSubmissions([...submissions, newSubmission]);
-    
-    // Update assignment submissions
-    const updatedAssignments = assignments.map((a) => {
-      if (a.id === assignmentId) {
-        return {
-          ...a,
-          submissions: [...(a.submissions || []), newSubmission],
-        };
-      }
-      return a;
-    });
-    
-    setAssignments(updatedAssignments);
-    toast.success("Assignment submitted successfully!");
-  };
-
-  const sendMessage = (message: Omit<Message, "id" | "timestamp" | "read">) => {
-    const newMessage: Message = {
-      ...message,
-      id: `m-${messages.length + 1}`,
-      timestamp: new Date().toISOString(),
-      read: false,
-    };
-
-    setMessages(prevMessages => [...prevMessages, newMessage]);
-    toast.success("Message sent successfully!");
-  };
-
-  const markMessageAsRead = (messageId: string) => {
-    setMessages(
-      messages.map((msg) =>
-        msg.id === messageId ? { ...msg, read: true } : msg
-      )
-    );
-  };
-
-  const downloadResult = (studentId: string, semester: number) => {
-    // This is a mock function that would normally generate and download a PDF file
-    // In a real application, this would use a library like jsPDF to generate a PDF
-    // and then trigger a download
-    const result = finalResults.find(r => r.studentId === studentId && r.semester === semester);
-    
-    if (result) {
-      toast.success(`Result for Semester ${semester} downloaded successfully!`);
-    } else {
-      toast.error(`No results available for Semester ${semester}`);
-    }
-  };
-
-  // Actions for teachers
-  const addAssignment = (assignment: Omit<Assignment, "id" | "createdAt" | "submissions">) => {
-    const newAssignment: Assignment = {
-      ...assignment,
-      id: `a-${assignments.length + 1}`,
-      createdAt: new Date().toISOString(),
-      submissions: [],
-    };
-
-    setAssignments([...assignments, newAssignment]);
-    toast.success("Assignment created successfully!");
-  };
-
-  const gradeSubmission = (submissionId: string, marks: number, feedback?: string) => {
-    const updatedSubmissions = submissions.map((sub) =>
-      sub.id === submissionId ? { ...sub, marks, feedback } : sub
-    );
-    setSubmissions(updatedSubmissions);
-
-    // Also update the submissions inside the assignments
-    const updatedAssignments = assignments.map((a) => {
-      if (a.submissions?.some((s) => s.id === submissionId)) {
-        return {
-          ...a,
-          submissions: a.submissions.map((s) =>
-            s.id === submissionId ? { ...s, marks, feedback } : s
-          ),
-        };
-      }
-      return a;
-    });
-
-    setAssignments(updatedAssignments);
-    toast.success("Submission graded successfully!");
-  };
-
-  const markAttendance = (
-    subjectId: string,
-    date: string,
-    studentAttendance: { studentId: string; present: boolean }[]
-  ) => {
-    const subject = subjects.find((s) => s.id === subjectId);
-    if (!subject) return;
-
-    const attendanceRecords = studentAttendance.map((record) => {
-      const student = students.find((s) => s.id === record.studentId);
-      if (!student) {
-        return {
-          studentId: record.studentId,
-          rollNumber: "Unknown",
-          name: "Unknown",
-          present: record.present,
-        };
-      }
-      return {
-        studentId: record.studentId,
-        rollNumber: student.rollNumber,
-        name: student.name,
-        present: record.present,
-      };
-    });
-
-    const existingAttendanceIndex = attendance.findIndex(
-      (a) => a.subjectId === subjectId && a.date === date
-    );
-
-    if (existingAttendanceIndex !== -1) {
-      // Update existing attendance
-      const updatedAttendance = [...attendance];
-      updatedAttendance[existingAttendanceIndex] = {
-        ...updatedAttendance[existingAttendanceIndex],
-        students: attendanceRecords,
-      };
-      setAttendance(updatedAttendance);
-    } else {
-      // Add new attendance
-      const newAttendance: Attendance = {
-        id: `att-${attendance.length + 1}`,
-        subjectId,
-        subjectName: subject.name,
-        date,
-        students: attendanceRecords,
-      };
-      setAttendance([...attendance, newAttendance]);
-    }
-
-    // Update attendance summary for each student
-    const updatedSummaries = [...attendanceSummary];
-    studentAttendance.forEach((record) => {
-      const studentSummaryIndex = updatedSummaries.findIndex(
-        (s) => s.studentId === record.studentId
-      );
-
-      if (studentSummaryIndex !== -1) {
-        const studentSummary = updatedSummaries[studentSummaryIndex];
-        const subjectSummaryIndex = studentSummary.subjects.findIndex(
-          (s) => s.subjectId === subjectId
-        );
-
-        if (subjectSummaryIndex !== -1) {
-          const subjectSummary = studentSummary.subjects[subjectSummaryIndex];
-          const totalClasses = subjectSummary.totalClasses + 1;
-          const attended = record.present
-            ? subjectSummary.attended + 1
-            : subjectSummary.attended;
-          const percentage = (attended / totalClasses) * 100;
-
-          studentSummary.subjects[subjectSummaryIndex] = {
-            ...subjectSummary,
-            totalClasses,
-            attended,
-            percentage,
-          };
-
-          // Update overall attendance
-          const overallTotalClasses = studentSummary.overall.totalClasses + 1;
-          const overallAttended = record.present
-            ? studentSummary.overall.attended + 1
-            : studentSummary.overall.attended;
-          const overallPercentage = (overallAttended / overallTotalClasses) * 100;
-
-          studentSummary.overall = {
-            totalClasses: overallTotalClasses,
-            attended: overallAttended,
-            percentage: overallPercentage,
-          };
-        }
-      }
-    });
-
-    setAttendanceSummary(updatedSummaries);
-    toast.success("Attendance marked successfully!");
-  };
-
-  // Properly implement the exportAttendance function to work with real Excel data
-  const exportAttendance = (subjectId: string) => {
-    // Find all attendance records for the selected subject
-    const subjectAttendance = attendance.filter(record => record.subjectId === subjectId);
-    const subjectName = subjects.find(s => s.id === subjectId)?.name || "Unknown Subject";
-    
-    if (subjectAttendance.length === 0) {
-      toast.error("No attendance data available for this subject");
-      return;
-    }
-    
-    // In a real-world app, this would generate an actual Excel file with the attendance data
-    // For simulation purposes, we're just showing a toast and initiating a download
-    toast.success(`Exporting attendance data for ${subjectName}`);
-    
-    // Create a fake download link to simulate file download
-    const link = document.createElement('a');
-    link.href = '#';
-    link.setAttribute('download', `attendance_${subjectName}_${new Date().toISOString().split('T')[0]}.xlsx`);
-    link.click();
-    
-    console.log("Attendance data being exported:", subjectAttendance);
-  };
-
-  const submitGrades = (studentId: string, semester: number, results: ExamResult[]) => {
-    // Update the final results with the submitted grades
-    setFinalResults(prev => {
-      const updated = [...prev];
-      const studentResultIndex = updated.findIndex(r => r.studentId === studentId && r.semester === semester);
-      
-      if (studentResultIndex !== -1) {
-        // Update existing result
-        updated[studentResultIndex] = {
-          ...updated[studentResultIndex],
-          results: results,
-          // In a real app, SGPA would be calculated based on grades and credits
-          sgpa: 9.0, // Mock SGPA calculation
-          cgpa: 9.0, // Mock CGPA calculation
-        };
-      } else {
-        // Add new result if not found
-        const student = students.find(s => s.id === studentId);
-        if (student) {
-          updated.push({
-            studentId,
-            studentName: student.name,
-            rollNumber: student.rollNumber,
-            department: "Department of Mathematics [MATHS]",
-            specialization: "Mathematics and Computing [MC2024]",
-            year: Math.ceil(semester / 2),
-            semester,
-            academicYear: "2024-2025",
-            results,
-            sgpa: 9.0, // Mock SGPA calculation
-            cgpa: 9.0, // Mock CGPA calculation
-          });
-        }
-      }
-      return updated;
-    });
-    
-    toast.success(`Grades for Semester ${semester} submitted successfully!`);
-  };
-
-  const submitMinorMarks = (minorResult: Omit<MinorResult, "id">) => {
-    // Check if there's already a result for this student and subject
-    const existingResultIndex = minorResults.findIndex(
-      r => r.studentId === minorResult.studentId && 
-          r.subjectId === minorResult.subjectId && 
-          r.examType === minorResult.examType
-    );
-
-    if (existingResultIndex !== -1) {
-      // Update existing result
-      const updated = [...minorResults];
-      updated[existingResultIndex] = {
-        ...updated[existingResultIndex],
-        ...minorResult,
-        id: updated[existingResultIndex].id
-      };
-      setMinorResults(updated);
-    } else {
-      // Add new result
-      setMinorResults([
-        ...minorResults,
-        {
-          ...minorResult,
-          id: `minor-${minorResults.length + 1}`
-        }
-      ]);
-    }
-    
-    toast.success(`${minorResult.examType} marks for ${minorResult.subjectName} submitted successfully!`);
-  };
-
-  // Fix the missing addNotification function
-  const addNotification = (notification: Omit<Notification, "id" | "createdAt">) => {
-    const newNotification: Notification = {
-      ...notification,
-      id: `notification-${notifications.length + 1}`,
-      createdAt: new Date().toISOString(),
-    };
-
-    setNotifications([...notifications, newNotification]);
-    toast.success("Notification added successfully!");
-  };
-
-  // Sort students by roll number (for display in UI)
+  // Load data from localStorage on initial render if available
   useEffect(() => {
-    setStudents((prev) => 
-      [...prev].sort((a, b) => a.rollNumber.localeCompare(b.rollNumber))
-    );
+    try {
+      const storedStudents = localStorage.getItem('students');
+      const storedAssignments = localStorage.getItem('assignments');
+      const storedAttendance = localStorage.getItem('attendance');
+      const storedMessages = localStorage.getItem('messages');
+      const storedResults = localStorage.getItem('results');
+      const storedEmails = localStorage.getItem('emails');
+
+      if (storedStudents) setStudents(JSON.parse(storedStudents));
+      if (storedAssignments) setAssignments(JSON.parse(storedAssignments));
+      if (storedAttendance) setAttendance(JSON.parse(storedAttendance));
+      if (storedMessages) setMessages(JSON.parse(storedMessages));
+      if (storedResults) setResults(JSON.parse(storedResults));
+      if (storedEmails) setEmails(JSON.parse(storedEmails));
+    } catch (error) {
+      console.error('Error loading data from localStorage:', error);
+    }
   }, []);
 
+  // Save data to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('students', JSON.stringify(students));
+      localStorage.setItem('assignments', JSON.stringify(assignments));
+      localStorage.setItem('attendance', JSON.stringify(attendance));
+      localStorage.setItem('messages', JSON.stringify(messages));
+      localStorage.setItem('results', JSON.stringify(results));
+      localStorage.setItem('emails', JSON.stringify(emails));
+    } catch (error) {
+      console.error('Error saving data to localStorage:', error);
+    }
+  }, [students, assignments, attendance, messages, results, emails]);
+
+  // Student operations
+  const addStudent = (student: Student) => {
+    setStudents(prev => [...prev, student]);
+  };
+
+  const updateStudent = (studentId: string, data: Partial<Student>) => {
+    setStudents(prev => prev.map(student => 
+      student.id === studentId ? { ...student, ...data } : student
+    ));
+  };
+
+  const removeStudent = (studentId: string) => {
+    setStudents(prev => prev.filter(student => student.id !== studentId));
+  };
+
+  // Assignment operations
+  const addAssignment = (assignment: Assignment) => {
+    setAssignments(prev => [...prev, assignment]);
+  };
+
+  const updateAssignment = (assignmentId: string, data: Partial<Assignment>) => {
+    setAssignments(prev => prev.map(assignment => 
+      assignment.id === assignmentId ? { ...assignment, ...data } : assignment
+    ));
+  };
+
+  const removeAssignment = (assignmentId: string) => {
+    setAssignments(prev => prev.filter(assignment => assignment.id !== assignmentId));
+  };
+
+  // Attendance operations
+  const addAttendanceRecord = (record: AttendanceRecord) => {
+    setAttendance(prev => [...prev, record]);
+  };
+
+  const addAttendanceRecords = (records: AttendanceRecord[]) => {
+    setAttendance(prev => [...prev, ...records]);
+  };
+
+  const updateAttendanceRecord = (recordId: string, data: Partial<AttendanceRecord>) => {
+    setAttendance(prev => prev.map(record => 
+      record.id === recordId ? { ...record, ...data } : record
+    ));
+  };
+
+  const removeAttendanceRecord = (recordId: string) => {
+    setAttendance(prev => prev.filter(record => record.id !== recordId));
+  };
+
+  // Message operations
+  const addMessage = (message: Message) => {
+    setMessages(prev => [...prev, message]);
+  };
+
+  const updateMessage = (messageId: string, data: Partial<Message>) => {
+    setMessages(prev => prev.map(message => 
+      message.id === messageId ? { ...message, ...data } : message
+    ));
+  };
+
+  const removeMessage = (messageId: string) => {
+    setMessages(prev => prev.filter(message => message.id !== messageId));
+  };
+
+  // Result operations
+  const addResult = (result: Result) => {
+    setResults(prev => [...prev, result]);
+  };
+
+  const updateResult = (resultId: string, data: Partial<Result>) => {
+    setResults(prev => prev.map(result => 
+      result.id === resultId ? { ...result, ...data } : result
+    ));
+  };
+
+  const removeResult = (resultId: string) => {
+    setResults(prev => prev.filter(result => result.id !== resultId));
+  };
+
+  // Email operations
+  const addEmail = (email: Email) => {
+    setEmails(prev => [...prev, email]);
+  };
+
+  const updateEmail = (emailId: string, data: Partial<Email>) => {
+    setEmails(prev => prev.map(email => 
+      email.id === emailId ? { ...email, ...data } : email
+    ));
+  };
+
+  const removeEmail = (emailId: string) => {
+    setEmails(prev => prev.filter(email => email.id !== emailId));
+  };
+
   return (
-    <DataContext.Provider
-      value={{
-        students,
-        teachers,
-        subjects,
-        assignments,
-        submissions,
-        attendance,
-        attendanceSummary,
-        messages,
-        notifications,
-        timetable,
-        semesterResults,
-        minorResults,
-        finalResults,
-        submitAssignment,
-        sendMessage,
-        markMessageAsRead,
-        downloadResult,
-        addAssignment,
-        gradeSubmission,
-        markAttendance,
-        addNotification,
-        exportAttendance,
-        submitGrades,
-        submitMinorMarks,
-      }}
-    >
+    <DataContext.Provider value={{
+      students,
+      assignments,
+      attendance,
+      messages,
+      results,
+      emails,
+      addStudent,
+      updateStudent,
+      removeStudent,
+      addAssignment,
+      updateAssignment,
+      removeAssignment,
+      addAttendanceRecord,
+      updateAttendanceRecord,
+      removeAttendanceRecord,
+      addAttendanceRecords,
+      addMessage,
+      updateMessage,
+      removeMessage,
+      addResult,
+      updateResult,
+      removeResult,
+      addEmail,
+      updateEmail,
+      removeEmail
+    }}>
       {children}
     </DataContext.Provider>
   );
 };
 
-// Hook to use the data context
-export const useData = () => useContext(DataContext);
+export const useData = () => {
+  const context = useContext(DataContext);
+  if (!context) {
+    throw new Error('useData must be used within a DataProvider');
+  }
+  return context;
+};

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/hooks/use-toast";
 
 export default function Index() {
   const { isAuthenticated, user, login, isLoading } = useAuth();
@@ -26,12 +27,38 @@ export default function Index() {
 
   const handleStudentLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(studentEmail, studentPassword, "student");
+    try {
+      await login(studentEmail, studentPassword, "student");
+      toast({
+        title: "Login successful",
+        description: "Welcome back to the student portal.",
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      toast({
+        title: "Login failed",
+        description: "Please check your credentials and try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleTeacherLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(teacherEmail, teacherPassword, "teacher");
+    try {
+      await login(teacherEmail, teacherPassword, "teacher");
+      toast({
+        title: "Login successful",
+        description: "Welcome back to the teacher portal.",
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      toast({
+        title: "Login failed",
+        description: "Please check your credentials and try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
