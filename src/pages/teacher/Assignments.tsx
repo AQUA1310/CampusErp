@@ -123,14 +123,14 @@ export default function TeacherAssignments() {
         <div className="flex items-center gap-3">
           <Button
             onClick={() => setIsUploadDialogOpen(true)}
-            className="bg-oliveGreen-600 hover:bg-oliveGreen-700"
+            className="bg-oliveGreen-600 hover:bg-black"
           >
             <Upload className="h-4 w-4 mr-2" />
             Upload New Assignment
           </Button>
           
           <div className="flex items-center gap-2 ml-4">
-            <Filter className="h-4 w-4 text-oliveGreen-600" />
+            <Filter className="h-4 w-4 text-black" />
             <select
               value={filterSubject}
               onChange={e => setFilterSubject(e.target.value)}
