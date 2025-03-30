@@ -559,7 +559,7 @@ export default function TeacherDashboard() {
             <Button variant="outline" onClick={() => setIsAssignmentDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAssignmentSubmit} className="bg-oliveGreen-600 hover:bg-oliveGreen-700">
+            <Button onClick={handleAssignmentSubmit} className="bg-black-600 hover:bg-black-700">
               Upload Assignment
             </Button>
           </DialogFooter>
