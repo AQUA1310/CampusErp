@@ -10,6 +10,8 @@ interface User {
   name: string;
   email: string;
   type: UserType;
+  rollNumber?: string;
+  department?: string;
 }
 
 interface AuthContextType {
@@ -18,6 +20,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string, userType: UserType) => Promise<void>;
   logout: () => void;
+  studentList?: User[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -54,10 +57,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Simulate student login
         if (email === 'vd24mab0a41@student.nitw.ac.in' && password === 'Dhruv@22') {
           mockUser = {
-            id: 'std-1',
+            id: '41',
             name: 'V Dhruv',
             email: 'vd24mab0a41@student.nitw.ac.in',
-            type: 'student'
+            type: 'student',
+            rollNumber: '24MAB0A41'
           };
         } else {
           throw new Error('Invalid credentials');
@@ -69,7 +73,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: 'tchr-1',
             name: 'A Benerji',
             email: 'abenerji@nitw.ac.in',
-            type: 'teacher'
+            type: 'teacher',
+            department: 'Mathematics'
           };
         } else {
           throw new Error('Invalid credentials');
@@ -111,7 +116,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isAuthenticated: !!user, 
+      isLoading, 
+      login, 
+      logout,
+      studentList: [
+        { id: '41', name: 'V Dhruv', email: 'vd24mab0a41@student.nitw.ac.in', type: 'student', rollNumber: '24MAB0A41' }
+      ]
+    }}>
       {children}
     </AuthContext.Provider>
   );
