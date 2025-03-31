@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -14,10 +13,15 @@ export interface Student {
   profile?: {
     address?: string;
     phone?: string;
+    phoneNumber?: string;
     parentName?: string;
     parentPhone?: string;
     bloodGroup?: string;
     dateOfBirth?: string;
+    department?: string;
+    year?: number;
+    semester?: number;
+    batch?: string;
   };
 }
 
@@ -40,6 +44,7 @@ export interface Assignment {
   submissions?: AssignmentSubmission[];
   grade?: number;
   feedback?: string;
+  createdBy?: string;
 }
 
 // Assignment Submission type
@@ -66,7 +71,10 @@ export interface AttendanceRecord {
   status: 'present' | 'absent';
   studentId: string;
   studentIds?: string[];
-  students?: Student[];
+  students?: {
+    studentId: string;
+    present: boolean;
+  }[];
   teacherId: string;
 }
 
@@ -80,6 +88,7 @@ export interface Message {
   recipient: string;
   receiverId?: string;
   receiverType?: 'student' | 'teacher';
+  receiverName?: string;
   content: string;
   timestamp: string;
   read: boolean;
@@ -135,6 +144,9 @@ export interface SemesterResult {
   sgpa: number;
   cgpa: number;
   results: ExamResult[];
+  department?: string;
+  specialization?: string;
+  academicYear?: string;
 }
 
 // Exam Result type
@@ -174,6 +186,11 @@ export interface TimetableEntry {
   type: 'lecture' | 'lab' | 'tutorial';
 }
 
+// With slots property for compatibility
+export const timetableWithSlots = {
+  slots: [] as TimetableEntry[],
+};
+
 // Notification type
 export interface Notification {
   id: string;
@@ -183,6 +200,8 @@ export interface Notification {
   read: boolean;
   type: 'assignment' | 'attendance' | 'result' | 'announcement' | 'other';
   link?: string;
+  date?: string;
+  description?: string;
 }
 
 // Teacher type
@@ -213,6 +232,18 @@ export interface AttendanceSummary {
   absent: number;
   percentage: number;
   lastUpdated: string;
+  subjects?: {
+    subjectId: string;
+    subjectName: string;
+    totalClasses: number;
+    attended: number;
+    percentage: number;
+  }[];
+  overall: {
+    totalClasses: number;
+    attended: number;
+    percentage: number;
+  };
 }
 
 interface DataContextType {
@@ -248,7 +279,7 @@ interface DataContextType {
   updateAttendanceRecord: (recordId: string, data: Partial<AttendanceRecord>) => void;
   removeAttendanceRecord: (recordId: string) => void;
   addAttendanceRecords: (records: AttendanceRecord[]) => void;
-  markAttendance: (date: string, subjectId: string, studentIds: string[], status: 'present' | 'absent') => void;
+  markAttendance: (subjectId: string, date: string, students: { studentId: string; present: boolean }[]) => void;
   exportAttendance: (subjectId: string) => void;
   
   // Functions for messages
@@ -742,7 +773,8 @@ const generateAttendanceSummary = () => {
     const absent = totalClasses - present;
     const percentage = (present / totalClasses) * 100;
     
-    summary.push({
+    // Create summary for each subject
+    const subjectSummary = {
       studentId: "41",
       rollNumber: "24MAB0A41",
       studentName: "V Dhruv",
@@ -752,8 +784,24 @@ const generateAttendanceSummary = () => {
       present,
       absent,
       percentage,
-      lastUpdated: new Date().toISOString()
-    });
+      lastUpdated: new Date().toISOString(),
+      subjects: [
+        {
+          subjectId: subject.id,
+          subjectName: subject.name,
+          totalClasses,
+          attended: present,
+          percentage
+        }
+      ],
+      overall: {
+        totalClasses,
+        attended: present,
+        percentage
+      }
+    };
+    
+    summary.push(subjectSummary);
   });
   
   return summary;
@@ -1234,7 +1282,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAttendance(prev => prev.filter(record => record.id !== recordId));
   };
 
-  const markAttendance = (date: string, subjectId: string, studentIds: string[], status: 'present' | 'absent') => {
+  const markAttendance = (subjectId: string, date: string, students: { studentId: string; present: boolean }[]) => {
     const subject = subjects.find(s => s.id === subjectId);
     
     if (!subject) return;
@@ -1245,21 +1293,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
     
     // Add new records
-    const newRecords = studentIds.map(studentId => {
-      const student = students.find(s => s.id === studentId);
-      return {
-        id: `att-${date}-${subjectId}-${studentId}`,
-        date,
-        subject: subject.name,
-        subjectId,
-        subjectName: subject.name,
-        status,
-        studentId,
-        teacherId: subject.teacherId
-      };
-    });
+    const newRecord = {
+      id: `att-${date}-${subjectId}`,
+      date,
+      subject: subject.name,
+      subjectId,
+      subjectName: subject.name,
+      students: students,
+      teacherId: subject.teacherId
+    };
     
-    setAttendance([...filteredAttendance, ...newRecords]);
+    setAttendance([...filteredAttendance, newRecord]);
     
     // Update attendance summary
     updateAttendanceSummary(subjectId);

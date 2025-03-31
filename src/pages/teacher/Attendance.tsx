@@ -41,10 +41,10 @@ export default function TeacherAttendance() {
     
     if (existingAttendance) {
       setStudentAttendance(
-        existingAttendance.students.map(s => ({
+        existingAttendance.students?.map(s => ({
           studentId: s.studentId,
           present: s.present
-        }))
+        })) || []
       );
     } else {
       setStudentAttendance(

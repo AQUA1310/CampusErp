@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import DashboardLayout from "@/components/shared/DashboardLayout";
 import { useData } from "@/contexts/DataContext";
@@ -39,7 +38,15 @@ export default function Results() {
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
   const [selectedSemester, setSelectedSemester] = useState<number>(1);
 
-  // Find student results
+  const semesterData = {
+    rollNumber: user?.rollNumber || '',
+    name: user?.name || '',
+    department: 'Mathematics',
+    program: 'B.Tech',
+    specialization: 'Applied Mathematics',
+    academicYear: '2023-24'
+  };
+
   const studentResults = finalResults.find(result => 
     (result.rollNumber === user?.rollNumber || result.studentId === user?.id) &&
     result.semester === selectedSemester

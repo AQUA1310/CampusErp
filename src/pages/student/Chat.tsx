@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import DashboardLayout from "@/components/shared/DashboardLayout";
 import { useData } from "@/contexts/DataContext";
@@ -35,10 +34,8 @@ export default function StudentChat() {
   const [messageText, setMessageText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-select first teacher if none selected
   useEffect(() => {
     if (!selectedTeacher && teachers.length > 0) {
-      // Auto-select A Benerji Babu as requested
       const benerjiTeacher = teachers.find(t => t.name === "A Benerji Babu");
       if (benerjiTeacher) {
         setSelectedTeacher(benerjiTeacher.id);
@@ -48,10 +45,8 @@ export default function StudentChat() {
     }
   }, [teachers, selectedTeacher]);
 
-  // Get selected teacher details
   const teacher = teachers.find(t => t.id === selectedTeacher);
 
-  // Get relevant messages between the student and selected teacher
   const conversation = selectedTeacher && user
     ? messages.filter(
         msg =>
@@ -60,12 +55,10 @@ export default function StudentChat() {
       )
     : [];
 
-  // Sort messages by timestamp
   const sortedMessages = [...conversation].sort(
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
 
-  // Mark received messages as read when opening conversation
   useEffect(() => {
     if (selectedTeacher && user) {
       const unreadMessages = sortedMessages.filter(
@@ -78,36 +71,34 @@ export default function StudentChat() {
     }
   }, [selectedTeacher, sortedMessages, user, markMessageAsRead]);
 
-  // Scroll to bottom of messages when new messages come in
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [sortedMessages]);
 
-  // Send message handler
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedTeacher || !user) return;
 
     sendMessage({
+      sender: user.id,
       senderId: user.id,
-      senderName: user.name,
       senderType: "student",
+      senderName: user.name,
+      recipient: selectedTeacher,
       receiverId: selectedTeacher,
-      receiverName: teacher?.name || "Teacher",
       receiverType: "teacher",
+      receiverName: teacher?.name || "Teacher",
       content: messageText,
     });
 
     setMessageText("");
   };
 
-  // Handle key press for sending message
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       handleSendMessage();
     }
   };
 
-  // Count unread messages from a teacher
   const countUnreadMessages = (teacherId: string) => {
     if (!user) return 0;
     
@@ -116,7 +107,6 @@ export default function StudentChat() {
     ).length;
   };
 
-  // Format timestamp to readable format
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -125,7 +115,6 @@ export default function StudentChat() {
   return (
     <DashboardLayout title="Messages" subtitle="Chat with your teachers">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Teacher List */}
         <Card className="md:col-span-1 shadow-md">
           <CardHeader className="bg-primary/5">
             <CardTitle className="text-lg">Teachers</CardTitle>
@@ -167,7 +156,6 @@ export default function StudentChat() {
           </CardContent>
         </Card>
 
-        {/* Chat Area */}
         <Card className="md:col-span-3 shadow-md flex flex-col h-[70vh]">
           {selectedTeacher && teacher ? (
             <>

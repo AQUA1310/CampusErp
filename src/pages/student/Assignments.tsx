@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,52 +25,63 @@ export default function StudentAssignments() {
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  
+  const [submittingId, setSubmittingId] = useState<string>('');
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setSelectedFile(e.target.files[0]);
     }
   };
-  
+
   const openSubmitDialog = (assignment: any) => {
     setSelectedAssignment(assignment);
     setSelectedFile(null);
     setIsSubmitDialogOpen(true);
   };
-  
-  const handleSubmit = () => {
-    if (!selectedFile || !selectedAssignment || !user) {
-      toast.error("Please select a file to upload");
-      return;
-    }
+
+  const handleSubmitAssignment = (assignmentId: string) => {
+    if (!user) return;
     
-    // Create a fake URL for the file
-    const fileUrl = URL.createObjectURL(selectedFile);
+    setSubmittingId(assignmentId);
     
-    submitAssignment(selectedAssignment.id, "1", fileUrl);
-    setIsSubmitDialogOpen(false);
-    setSelectedAssignment(null);
-    setSelectedFile(null);
+    // Simulate file upload delay
+    setTimeout(() => {
+      submitAssignment({
+        assignmentId, 
+        studentId: user.id,
+        studentName: user.name,
+        rollNumber: user.rollNumber || '',
+        submittedAt: new Date().toISOString(),
+        fileUrl: '/path/to/uploaded/file.pdf',
+        status: 'submitted'
+      });
+      
+      setSubmittingId('');
+      toast({
+        title: 'Assignment Submitted',
+        description: 'Your assignment has been submitted successfully.',
+      });
+    }, 1500);
   };
-  
+
   const getSubmissionForAssignment = (assignmentId: string) => {
     return submissions.find(sub => 
       sub.assignmentId === assignmentId && sub.studentId === "1"
     );
   };
-  
+
   const pendingAssignments = assignments.filter(
     assignment => !getSubmissionForAssignment(assignment.id)
   );
-  
+
   const submittedAssignments = assignments.filter(
     assignment => getSubmissionForAssignment(assignment.id)
   );
-  
+
   const isPastDue = (dueDate: string) => {
     return new Date(dueDate) < new Date();
   };
-  
+
   return (
     <DashboardLayout title="Assignments" subtitle="View and submit your assignments">
       <Tabs defaultValue="pending" className="w-full">
@@ -427,7 +437,7 @@ export default function StudentAssignments() {
             <Button variant="outline" onClick={() => setIsSubmitDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit} className="bg-black hover:black">
+            <Button onClick={handleSubmitAssignment} className="bg-black hover:black">
               Submit Assignment
             </Button>
           </DialogFooter>

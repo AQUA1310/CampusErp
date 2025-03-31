@@ -42,7 +42,7 @@ export default function StudentAttendance() {
 
   // Get all attendance records for the student
   const studentAttendance = attendance.filter((record) =>
-    record.students.some((s) => s.studentId === user?.id)
+    record.students?.some((s) => s.studentId === user?.id)
   );
 
   // Filter by subject if selected
@@ -118,7 +118,7 @@ export default function StudentAttendance() {
                 <div>
                   <p className="text-sm text-muted-foreground">Overall Attendance</p>
                   <p className="text-2xl font-bold">
-                    {studentSummary?.overall.percentage.toFixed(1)}%
+                    {studentSummary?.overall?.percentage.toFixed(1)}%
                   </p>
                 </div>
               </div>
@@ -181,7 +181,7 @@ export default function StudentAttendance() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {studentSummary?.subjects.map((subject) => (
+                      {studentSummary?.subjects?.map((subject) => (
                         <TableRow key={subject.subjectId}>
                           <TableCell className="font-medium">
                             {subject.subjectName}
@@ -247,7 +247,7 @@ export default function StudentAttendance() {
                     <TableBody>
                       {sortedAttendance.length > 0 ? (
                         sortedAttendance.map((record) => {
-                          const studentRecord = record.students.find(
+                          const studentRecord = record.students?.find(
                             (s) => s.studentId === user?.id
                           );
                           
@@ -317,7 +317,7 @@ export default function StudentAttendance() {
                         <div className="mt-2 flex items-center space-x-2 min-w-max">
                           <div className="w-24 text-sm font-medium shrink-0">Attendance</div>
                           {attendance.map(record => {
-                            const studentRecord = record.students.find(s => s.studentId === user?.id);
+                            const studentRecord = record.students?.find(s => s.studentId === user?.id);
                             return (
                               <div key={record.id} className="w-12 flex justify-center">
                                 {studentRecord?.present ? (
@@ -334,41 +334,9 @@ export default function StudentAttendance() {
                           })}
                         </div>
                       </div>
-                      
-                      <div className="mt-4">
-                        {(() => {
-                          const subjectSummary = studentSummary?.subjects.find(s => s.subjectId === subject.id);
-                          return subjectSummary && (
-                            <div className="flex items-center mt-2">
-                              <span className="text-sm text-muted-foreground">Attendance Percentage:</span>
-                              <div className="ml-2 flex items-center">
-                                <Progress 
-                                  value={subjectSummary.percentage} 
-                                  className="h-2 w-36 mr-2"
-                                  style={{ 
-                                    '--progress-indicator-color': subjectSummary.percentage >= 85 
-                                      ? 'var(--green-600)' 
-                                      : subjectSummary.percentage >= 75 
-                                        ? 'var(--yellow-600)' 
-                                        : 'var(--red-600)'
-                                  } as React.CSSProperties}
-                                />
-                                <Badge variant="outline" className={getAttendanceStatusColor(subjectSummary.percentage)}>
-                                  {subjectSummary.percentage.toFixed(1)}%
-                                </Badge>
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
                     </div>
                   )
                 ))}
-                {attendanceBySubject.every(({ attendance }) => attendance.length === 0) && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No attendance records found
-                  </div>
-                )}
               </CardContent>
             </Card>
           </TabsContent>
