@@ -1,16 +1,9 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, CheckCircle, AlertCircle, BookOpen, Bell, MessageSquare, Award, CalendarCheck } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { ArrowUpRight, Calendar, GraduationCap, Users, CheckCircle, Clock } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -22,52 +15,54 @@ import {
 import { useData } from "@/contexts/DataContext";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/shared/DashboardLayout";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import { Assignment } from "@/contexts/DataContext";
 
 export default function TeacherDashboard() {
   const { user } = useAuth();
-  const { students, assignments, subjects, notifications, addNotification, addAssignment } = useData();
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
-  const [showEventModal, setShowEventModal] = useState<boolean>(false);
-  const [showAssignmentModal, setShowAssignmentModal] = useState<boolean>(false);
-  const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const { students, assignments, subjects, attendance, addAssignment } = useData();
 
-  useEffect(() => {
-    // Load initial calendar events from local storage or default data
-    const storedEvents = localStorage.getItem('calendarEvents');
-    if (storedEvents) {
-      setCalendarEvents(JSON.parse(storedEvents));
-    }
-  }, []);
+  const [showModal, setShowModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [calendarValue, setCalendarValue] = useState<Date>();
+  const [performanceSubject, setPerformanceSubject] = useState("");
 
-  useEffect(() => {
-    // Save calendar events to local storage whenever they change
-    localStorage.setItem('calendarEvents', JSON.stringify(calendarEvents));
-  }, [calendarEvents]);
+  const formattedDate = calendarValue ? format(calendarValue, "yyyy-MM-dd") : "";
 
-  const handleAddEvent = (data: any) => {
-    // Add the event to calendar events
-    const newEvent = {
-      id: `event-${Date.now()}`,
-      title: data.title,
-      date: data.date,
-      type: data.type === 'exam' ? 'announcement' : 'other',
-      description: data.description
-    };
-    
-    setCalendarEvents([...calendarEvents, newEvent]);
-    
-    // Add a notification for students
-    addNotification({
-      title: data.title,
-      content: data.description,
-      type: data.type === 'exam' ? 'announcement' : 'other',
-      link: '/student-dashboard'
-    });
-    
-    // Close modal
-    setShowEventModal(false);
+  const [formValues, setFormValues] = useState({
+    title: "",
+    description: "",
+    dueDate: formattedDate,
+    subject: "",
+    subjectId: "",
+    maxMarks: ""
+  });
+
+  const [scheduleFormValues, setScheduleFormValues] = useState({
+    subject: "",
+    date: formattedDate,
+    startTime: "",
+    endTime: "",
+    room: ""
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormValues(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleScheduleFormChange = (name: string, value: string) => {
+    setScheduleFormValues(prev => ({ ...prev, [name]: value }));
   };
 
   const handleAddAssignment = (data: any) => {
@@ -83,523 +78,425 @@ export default function TeacherDashboard() {
       teacherId: user?.id || '',
       maxMarks: parseInt(data.maxMarks, 10)
     };
-    
+
     addAssignment(newAssignment);
-    
-    // Add notification for students
-    addNotification({
-      title: "New Assignment",
-      content: `${newAssignment.title} has been posted. Due: ${newAssignment.dueDate}`,
-      type: "assignment",
-      link: "/student-dashboard/assignments"
-    });
-    
-    setShowAssignmentModal(false);
+    setShowModal(false);
+
+    toast.success("Assignment added successfully");
   };
 
-  const upcomingAssignments = assignments
-    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-    .slice(0, 3);
+  const handleScheduleClass = () => {
+    // Implement schedule class logic here
+    setShowScheduleModal(false);
+    toast.success("Class scheduled successfully");
+  };
 
-  const recentNotifications = notifications
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    .slice(0, 5);
+  const totalStudents = students.length;
+  const totalAssignments = assignments.length;
 
-  const formatNotificationDate = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInHours = Math.abs(now.getTime() - date.getTime()) / 36e5;
-    
-    if (diffInHours < 24) {
-      return `Today, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    } else if (diffInHours < 48) {
-      return `Yesterday, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    } else {
-      return date.toLocaleDateString();
+  const now = new Date();
+  const upcomingAssignments = assignments.filter(assignment => new Date(assignment.dueDate) > now).length;
+
+  const attendanceRate = (attendance.filter(record => record.status === 'present').length / attendance.length) * 100;
+
+  const studentPerformanceData = [
+    { name: "Excellent", value: 30 },
+    { name: "Good", value: 40 },
+    { name: "Average", value: 20 },
+    { name: "Poor", value: 10 },
+  ];
+
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
+
+  const RADIAN = Math.PI / 180;
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }: any) => {
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    return (
+      <text x={x} y={y} fill="white" textAnchor={x > cx ? "start" : "end"} dominantBaseline="central">
+        {`${studentPerformanceData[index].name} ${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
+  };
+
+  // Safe formatting function for potentially undefined values
+  const safeToFixed = (value: number | undefined, digits: number = 2): string => {
+    if (value === undefined || value === null) {
+      return '0.00';
     }
-  };
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case "assignment":
-        return <BookOpen className="h-5 w-5 text-blue-600" />;
-      case "attendance":
-        return <CalendarCheck className="h-5 w-5 text-yellow-600" />;
-      case "result":
-        return <Award className="h-5 w-5 text-green-600" />;
-      case "announcement":
-        return <Bell className="h-5 w-5 text-purple-600" />;
-      default:
-        return <MessageSquare className="h-5 w-5 text-gray-600" />;
-    }
-  };
-
-  // Make sure we properly handle undefined values for student.cgpa
-  const safeToFixed = (value: any, digits: number = 2) => {
-    if (value === undefined || value === null) return "N/A";
-    return Number(value).toFixed(digits);
+    return value.toFixed(digits);
   };
 
   return (
-    <DashboardLayout title="Dashboard" subtitle="Manage your classes and students">
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>Welcome back, {user?.name}!</CardTitle>
-            <CardDescription>
-              Here's what's happening in your classroom today.
-            </CardDescription>
+    <DashboardLayout title="Dashboard" subtitle="Welcome to your teacher dashboard">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+            <Users className="h-4 w-4 text-gray-500" />
           </CardHeader>
-          <CardContent className="pl-2 flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-bold">{students.length}</h3>
-              <p className="text-sm text-muted-foreground">Total Students</p>
-            </div>
-            <CalendarIcon className="w-10 h-10 text-muted-foreground" />
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>Upcoming Assignments</CardTitle>
-            <CardDescription>
-              Stay on top of your assignment deadlines.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pl-2">
-            {upcomingAssignments.length > 0 ? (
-              upcomingAssignments.map((assignment) => (
-                <div key={assignment.id} className="mb-4">
-                  <h4 className="font-medium">{assignment.title}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Due: {new Date(assignment.dueDate).toLocaleDateString()}
-                  </p>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-4">
-                <CheckCircle className="h-6 w-6 text-green-500 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  No upcoming assignments
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>Today's Schedule</CardTitle>
-            <CardDescription>
-              View your schedule for the day.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <p className="text-sm text-muted-foreground">
-              No classes scheduled for today.
+          <CardContent>
+            <div className="text-2xl font-bold">{totalStudents}</div>
+            <p className="text-sm text-gray-500">
+              <ArrowUpRight className="inline-block h-4 w-4 text-green-500 mr-1" />
+              {safeToFixed(attendanceRate)}% increase in attendance this month
             </p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>Recent Notifications</CardTitle>
-            <CardDescription>
-              Stay up-to-date with the latest notifications.
-            </CardDescription>
+        <Card className="shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Assignments</CardTitle>
+            <GraduationCap className="h-4 w-4 text-gray-500" />
           </CardHeader>
-          <CardContent className="pl-2">
-            {recentNotifications.length > 0 ? (
-              recentNotifications.map((notification) => (
-                <div key={notification.id} className="mb-3 flex items-start gap-2">
-                  <div className="shrink-0">{getNotificationIcon(notification.type)}</div>
-                  <div>
-                    <h4 className="font-medium">{notification.title}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {notification.content}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatNotificationDate(notification.timestamp)}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-4">
-                <AlertCircle className="h-6 w-6 text-yellow-500 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  No recent notifications
-                </p>
-              </div>
-            )}
+          <CardContent>
+            <div className="text-2xl font-bold">{totalAssignments}</div>
+            <p className="text-sm text-gray-500">
+              <ArrowUpRight className="inline-block h-4 w-4 text-green-500 mr-1" />
+              {upcomingAssignments} upcoming assignments
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Upcoming Classes</CardTitle>
+            <Calendar className="h-4 w-4 text-gray-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">3</div>
+            <p className="text-sm text-gray-500">
+              <ArrowUpRight className="inline-block h-4 w-4 text-green-500 mr-1" />
+              View scheduled classes
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Attendance Rate</CardTitle>
+            <CheckCircle className="h-4 w-4 text-gray-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{safeToFixed(attendanceRate)}%</div>
+            <p className="text-sm text-gray-500">
+              <ArrowUpRight className="inline-block h-4 w-4 text-green-500 mr-1" />
+              Track student attendance
+            </p>
           </CardContent>
         </Card>
       </div>
-
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3 mt-8">
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>Calendar</CardTitle>
-            <CardDescription>
-              View events and manage your schedule.
+      
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="col-span-1">
+          <CardHeader className="bg-slate-50 border-b border-slate-100 rounded-t-lg">
+            <CardTitle className="text-slate-800">Student Performance</CardTitle>
+            <CardDescription className="text-slate-600">
+              Filter by subject to view student performance
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={""}
+          <CardContent className="p-4">
+            {/* Updated Select component without className prop */}
+            <Select value={performanceSubject} onValueChange={setPerformanceSubject}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select subject" />
+              </SelectTrigger>
+              <SelectContent>
+                {subjects.map((subject) => (
+                  <SelectItem key={subject.id} value={subject.id}>
+                    {subject.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={studentPerformanceData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={renderCustomizedLabel}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? (
-                    new Date(date).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })
-                  ) : (
-                    <span>Pick a date</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-            <div className="border rounded-md p-2">
-              <h4 className="text-sm font-medium mb-1">Events on this day:</h4>
-              {calendarEvents.filter(event => event.date === date?.toLocaleDateString()).length > 0 ? (
-                calendarEvents
-                  .filter(event => event.date === date?.toLocaleDateString())
-                  .map(event => (
-                    <div key={event.id} className="text-xs">
-                      {event.title}
-                    </div>
-                  ))
-              ) : (
-                <div className="text-xs text-muted-foreground">No events on this day.</div>
-              )}
-            </div>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button>Add Event</Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Add New Event</DialogTitle>
-                  <DialogDescription>
-                    Create a new event to add to the calendar.
-                  </DialogDescription>
-                </DialogHeader>
-                <AddEventForm onSubmit={handleAddEvent} />
-              </DialogContent>
-            </Dialog>
+                  {studentPerformanceData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
-
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>Add New Assignment</CardTitle>
-            <CardDescription>
-              Create a new assignment for your students.
+        
+        <Card className="col-span-1">
+          <CardHeader className="bg-slate-50 border-b border-slate-100 rounded-t-lg">
+            <CardTitle className="text-slate-800">Class Schedule</CardTitle>
+            <CardDescription className="text-slate-600">
+              View upcoming classes and manage your schedule
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button>Add Assignment</Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Add New Assignment</DialogTitle>
-                  <DialogDescription>
-                    Create a new assignment for your students.
-                  </DialogDescription>
-                </DialogHeader>
-                <AddAssignmentForm onSubmit={handleAddAssignment} subjects={subjects} setSelectedSubject={setSelectedSubject} selectedSubject={selectedSubject} />
-              </DialogContent>
-            </Dialog>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>Student List</CardTitle>
-            <CardDescription>
-              View a list of all your students.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-4">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Roll No</TableHead>
+                  <TableHead>Subject</TableHead>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Room</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {students.slice(0, 5).map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell>{student.name}</TableCell>
-                    <TableCell>{student.rollNumber || 'N/A'}</TableCell>
-                  </TableRow>
-                ))}
+                <TableRow>
+                  <TableCell>Calculus</TableCell>
+                  <TableCell>9:00 AM - 10:00 AM</TableCell>
+                  <TableCell>LH-1</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Linear Algebra</TableCell>
+                  <TableCell>10:00 AM - 11:00 AM</TableCell>
+                  <TableCell>LH-2</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Differential Equations</TableCell>
+                  <TableCell>11:15 AM - 12:15 PM</TableCell>
+                  <TableCell>LH-3</TableCell>
+                </TableRow>
               </TableBody>
             </Table>
+            <Button onClick={() => setShowScheduleModal(true)} className="mt-4 w-full">
+              Schedule Class
+            </Button>
           </CardContent>
         </Card>
+
+        {/* Add Assignment Modal */}
+        <Dialog open={showModal} onOpenChange={setShowModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Assignment</DialogTitle>
+              <DialogDescription>
+                Create a new assignment for your students
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="title" className="text-right">
+                  Title
+                </Label>
+                <Input
+                  type="text"
+                  id="title"
+                  name="title"
+                  value={formValues.title}
+                  onChange={handleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="description" className="text-right">
+                  Description
+                </Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={formValues.description}
+                  onChange={handleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="subject" className="text-right">
+                  Subject
+                </Label>
+                <Select onValueChange={(value) => setFormValues(prev => ({ ...prev, subjectId: value, subject: subjects.find(s => s.id === value)?.name || "" }))} defaultValue={formValues.subjectId}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select a subject" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subjects.map((subject) => (
+                      <SelectItem key={subject.id} value={subject.id}>
+                        {subject.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="dueDate" className="text-right">
+                  Due Date
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-[240px] justify-start text-left font-normal",
+                        !calendarValue && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {calendarValue ? format(calendarValue, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      captionLayout="dropdown"
+                      selected={calendarValue}
+                      onSelect={setCalendarValue}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="maxMarks" className="text-right">
+                  Max Marks
+                </Label>
+                <Input
+                  type="number"
+                  id="maxMarks"
+                  name="maxMarks"
+                  value={formValues.maxMarks}
+                  onChange={handleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button variant="ghost" onClick={() => setShowModal(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => handleAddAssignment(formValues)}
+                className="bg-slate-900 text-white"
+              >
+                Create Assignment
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Schedule Class Modal */}
+        <Dialog open={showScheduleModal} onOpenChange={setShowScheduleModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Schedule Class</DialogTitle>
+              <DialogDescription>
+                Schedule a new class for your students
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="subject" className="text-right">
+                  Subject
+                </Label>
+                
+              {/* Updated Select component without className prop */}
+              <Select value={scheduleFormValues.subject} onValueChange={(value) => handleScheduleFormChange('subject', value)}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((subject) => (
+                    <SelectItem key={subject.id} value={subject.id}>
+                      {subject.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="date" className="text-right">
+                  Date
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-[240px] justify-start text-left font-normal",
+                        !calendarValue && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {calendarValue ? format(calendarValue, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      captionLayout="dropdown"
+                      selected={calendarValue}
+                      onSelect={(date) => {
+                        setCalendarValue(date);
+                        handleScheduleFormChange('date', format(date!, "yyyy-MM-dd"));
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="startTime" className="text-right">
+                  Start Time
+                </Label>
+                <Input
+                  type="time"
+                  id="startTime"
+                  name="startTime"
+                  value={scheduleFormValues.startTime}
+                  onChange={(e) => handleScheduleFormChange('startTime', e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="endTime" className="text-right">
+                  End Time
+                </Label>
+                <Input
+                  type="time"
+                  id="endTime"
+                  name="endTime"
+                  value={scheduleFormValues.endTime}
+                  onChange={(e) => handleScheduleFormChange('endTime', e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="room" className="text-right">
+                  Room
+                </Label>
+                <Input
+                  type="text"
+                  id="room"
+                  name="room"
+                  value={scheduleFormValues.room}
+                  onChange={(e) => handleScheduleFormChange('room', e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setShowScheduleModal(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleScheduleClass}
+                className="bg-slate-900 text-white"
+              >
+                Schedule Class
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
-  );
-}
-
-interface AddEventFormProps {
-  onSubmit: (data: any) => void;
-}
-
-function AddEventForm({ onSubmit }: AddEventFormProps) {
-  const [title, setTitle] = useState("");
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [type, setType] = useState("exam");
-  const [description, setDescription] = useState("");
-
-  const handleSubmit = () => {
-    if (!title || !date || !type || !description) {
-      toast.error("Please fill in all fields.");
-      return;
-    }
-
-    onSubmit({
-      title,
-      date: date.toLocaleDateString(),
-      type,
-      description,
-    });
-
-    setTitle("");
-    setDate(undefined);
-    setType("exam");
-    setDescription("");
-  };
-
-  return (
-    <div className="grid gap-4 py-4">
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="title" className="text-right">
-          Title
-        </Label>
-        <Input
-          type="text"
-          id="title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="date" className="text-right">
-          Date
-        </Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className="col-span-3 justify-start text-left font-normal"
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {date ? (
-                new Date(date).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })
-              ) : (
-                <span>Pick a date</span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="type" className="text-right">
-          Type
-        </Label>
-        <Select value={type} onValueChange={setType} className="col-span-3">
-          <SelectTrigger>
-            <SelectValue placeholder="Select type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="exam">Exam</SelectItem>
-            <SelectItem value="event">Event</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="description" className="text-right">
-          Description
-        </Label>
-        <Textarea
-          id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="col-span-3"
-        />
-      </div>
-      <DialogFooter>
-        <Button type="button" onClick={handleSubmit}>
-          Add Event
-        </Button>
-      </DialogFooter>
-    </div>
-  );
-}
-
-interface AddAssignmentFormProps {
-  onSubmit: (data: any) => void;
-  subjects: any[];
-  setSelectedSubject: (subject: string) => void;
-  selectedSubject: string;
-}
-
-function AddAssignmentForm({ onSubmit, subjects, setSelectedSubject, selectedSubject }: AddAssignmentFormProps) {
-  const [title, setTitle] = useState("");
-  const [dueDate, setDueDate] = useState<Date | undefined>(new Date());
-  const [subject, setSubject] = useState("");
-  const [subjectId, setSubjectId] = useState("");
-  const [maxMarks, setMaxMarks] = useState("");
-  const [description, setDescription] = useState("");
-
-  const handleSubmit = () => {
-    if (!title || !dueDate || !subject || !maxMarks || !description) {
-      toast.error("Please fill in all fields.");
-      return;
-    }
-
-    onSubmit({
-      title,
-      dueDate: dueDate.toLocaleDateString(),
-      subject,
-      subjectId,
-      maxMarks,
-      description,
-    });
-
-    setTitle("");
-    setDueDate(undefined);
-    setSubject("");
-    setMaxMarks("");
-    setDescription("");
-  };
-
-  return (
-    <div className="grid gap-4 py-4">
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="title" className="text-right">
-          Title
-        </Label>
-        <Input
-          type="text"
-          id="title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="dueDate" className="text-right">
-          Due Date
-        </Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className="col-span-3 justify-start text-left font-normal"
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {dueDate ? (
-                new Date(dueDate).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })
-              ) : (
-                <span>Pick a date</span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={dueDate}
-              onSelect={setDueDate}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="subject" className="text-right">
-          Subject
-        </Label>
-        <Select value={selectedSubject} onValueChange={(value) => {
-          setSubject(subjects.find(s => s.id === value)?.name || "");
-          setSubjectId(value);
-          setSelectedSubject(value);
-        }} className="col-span-3">
-          <SelectTrigger>
-            <SelectValue placeholder="Select subject" />
-          </SelectTrigger>
-          <SelectContent>
-            {subjects.map((subject) => (
-              <SelectItem key={subject.id} value={subject.id}>
-                {subject.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="maxMarks" className="text-right">
-          Max Marks
-        </Label>
-        <Input
-          type="number"
-          id="maxMarks"
-          value={maxMarks}
-          onChange={(e) => setMaxMarks(e.target.value)}
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="description" className="text-right">
-          Description
-        </Label>
-        <Textarea
-          id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="col-span-3"
-        />
-      </div>
-      <DialogFooter>
-        <Button type="button" onClick={handleSubmit}>
-          Add Assignment
-        </Button>
-      </DialogFooter>
-    </div>
   );
 }

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,7 +59,6 @@ export default function StudentAssignments() {
       
       setSubmittingId('');
       toast({
-        title: 'Assignment Submitted',
         description: 'Your assignment has been submitted successfully.',
       });
     }, 1500);
@@ -437,7 +437,10 @@ export default function StudentAssignments() {
             <Button variant="outline" onClick={() => setIsSubmitDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSubmitAssignment} className="bg-black hover:black">
+            <Button 
+              onClick={() => selectedAssignment && handleSubmitAssignment(selectedAssignment.id)} 
+              className="bg-black hover:black"
+            >
               Submit Assignment
             </Button>
           </DialogFooter>

@@ -8,31 +8,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-  DialogFooter,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { useData } from "@/contexts/DataContext";
-import { useAuth } from "@/hooks/useAuth";
-import { Plus, Edit, Trash2, Search } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import {
   Form,
   FormControl,
@@ -41,48 +33,42 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { cn } from "@/lib/utils";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useData } from "@/contexts/DataContext";
+import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/shared/DashboardLayout";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Loader2, User, Search, Edit, Mail, Phone } from "lucide-react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Student } from "@/contexts/DataContext";
 
+// Student schema for validation
 const studentSchema = z.object({
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters.",
-  }),
-  rollNumber: z.string().min(5, {
-    message: "Roll number must be at least 5 characters.",
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
-  course: z.string().min(2, {
-    message: "Course must be at least 2 characters.",
-  }),
-  year: z.string().refine((value) => {
-    const num = parseInt(value, 10);
-    return !isNaN(num) && num > 0;
-  }, {
-    message: "Year must be a valid number.",
-  }),
+  rollNumber: z.string().min(1, "Roll number is required"),
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  course: z.string().min(1, "Course is required"),
+  year: z.coerce.number().min(1, "Year must be at least 1").max(5, "Year must be at most 5"),
 });
 
 export default function TeacherStudents() {
-  const { students, addStudent, updateStudent, removeStudent } = useData();
+  const { students, addStudent, updateStudent } = useData();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -92,58 +78,78 @@ export default function TeacherStudents() {
   const form = useForm<z.infer<typeof studentSchema>>({
     resolver: zodResolver(studentSchema),
     defaultValues: {
-      name: "",
       rollNumber: "",
+      name: "",
       email: "",
       course: "",
-      year: "",
+      year: 1,
     },
   });
 
   const editForm = useForm<z.infer<typeof studentSchema>>({
     resolver: zodResolver(studentSchema),
     defaultValues: {
-      name: "",
       rollNumber: "",
+      name: "",
       email: "",
       course: "",
-      year: "",
+      year: 1,
     },
   });
 
-  const onSubmit = (values: z.infer<typeof studentSchema>) => {
-    addStudent({
-      id: `stu-${Date.now()}`,
-      ...values,
-    });
-    toast.success("Student added successfully");
+  useEffect(() => {
+    if (selectedStudent) {
+      editForm.reset({
+        rollNumber: selectedStudent.rollNumber,
+        name: selectedStudent.name,
+        email: selectedStudent.email,
+        course: selectedStudent.course,
+        year: selectedStudent.year,
+      });
+    }
+  }, [selectedStudent, editForm]);
+
+  const handleAddStudent = (data: z.infer<typeof studentSchema>) => {
+    // Create a new student object with required fields
+    const newStudent: Student = {
+      id: `student-${Date.now()}`,
+      rollNumber: data.rollNumber,
+      name: data.name,
+      email: data.email,
+      course: data.course,
+      year: data.year
+    };
+    
+    addStudent(newStudent);
     setOpen(false);
     form.reset();
+    toast.success("Student added successfully");
   };
 
-  const onEditSubmit = (values: z.infer<typeof studentSchema>) => {
+  const handleEditStudent = (data: z.infer<typeof studentSchema>) => {
     if (selectedStudent) {
-      updateStudent(selectedStudent.id, values);
-      toast.success("Student updated successfully");
+      // Convert form data to appropriate types
+      const updatedData: Partial<Student> = {
+        rollNumber: data.rollNumber,
+        name: data.name,
+        email: data.email,
+        course: data.course,
+        year: data.year
+      };
+      
+      updateStudent(selectedStudent.id, updatedData);
       setEditOpen(false);
-      setSelectedStudent(null);
-      editForm.reset();
+      toast.success("Student updated successfully");
     }
   };
 
-  const handleEdit = (student: any) => {
+  const viewStudent = (student: typeof students[0]) => {
     setSelectedStudent(student);
-    editForm.setValue("name", student.name);
-    editForm.setValue("rollNumber", student.rollNumber);
-    editForm.setValue("email", student.email);
-    editForm.setValue("course", student.course);
-    editForm.setValue("year", student.year.toString());
-    setEditOpen(true);
   };
 
-  const handleDelete = (studentId: string) => {
-    removeStudent(studentId);
-    toast.success("Student deleted successfully");
+  const editStudent = (student: typeof students[0]) => {
+    setSelectedStudent(student);
+    setEditOpen(true);
   };
 
   const filteredStudents = students.filter((student) =>
@@ -153,313 +159,397 @@ export default function TeacherStudents() {
   );
 
   return (
-    <DashboardLayout title="Students" subtitle="Manage student records">
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+    <DashboardLayout title="Students" subtitle="Manage student profiles and data">
+      <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Search students..."
+            className="pl-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="max-w-md"
           />
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-black hover:bg-black">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Student
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Add Student</DialogTitle>
-                <DialogDescription>
-                  Add a new student to the database.
-                </DialogDescription>
-              </DialogHeader>
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  className="space-y-4"
-                >
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="rollNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Roll Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="24MAB000" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="john.doe@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="course"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Course</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Mathematics" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="year"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Year</FormLabel>
-                        <FormControl>
-                          <Input placeholder="1" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <DialogFooter>
-                    <Button type="submit" className="bg-black hover:bg-black">
-                      Add Student
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
         </div>
+        <Button onClick={() => setOpen(true)}>Add Student</Button>
+      </div>
 
-        <Card className="shadow-md">
-          <CardHeader className="bg-secondary/50">
-            <CardTitle>Student List</CardTitle>
-            <CardDescription>
-              Manage and view all students in your courses.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50px]">Avatar</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Roll No</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Course</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+      <Card className="shadow-md">
+        <CardHeader className="bg-slate-50 border-b border-slate-100 rounded-t-lg">
+          <CardTitle className="text-slate-800">Students</CardTitle>
+          <CardDescription className="text-slate-600">
+            View and manage student information
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader className="bg-slate-50/50">
+              <TableRow>
+                <TableHead>Roll Number</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Course</TableHead>
+                <TableHead>Year</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredStudents.length > 0 ? (
+                filteredStudents.map((student) => (
+                  <TableRow key={student.id}>
+                    <TableCell className="font-medium">{student.rollNumber}</TableCell>
+                    <TableCell>{student.name}</TableCell>
+                    <TableCell>{student.email}</TableCell>
+                    <TableCell>{student.course}</TableCell>
+                    <TableCell>{student.year}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mr-2"
+                        onClick={() => viewStudent(student)}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => editStudent(student)}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStudents.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell>
-                        <Avatar>
-                          <AvatarImage src={`https://avatar.api.dicebear.com/7.x/pixel-art/svg?seed=${student.name}`} />
-                          <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                      </TableCell>
-                      <TableCell className="font-medium">{student.name}</TableCell>
-                      <TableCell>{student.rollNumber}</TableCell>
-                      <TableCell>{student.email}</TableCell>
-                      <TableCell>{student.course}</TableCell>
-                      <TableCell className="text-right">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                className="w-8 h-8 p-0"
-                                onClick={() => handleEdit(student)}
-                              >
-                                <Edit className="h-4 w-4 mr-2" />
-                                <span className="sr-only">Edit</span>
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="left">
-                              Edit student
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                className="w-8 h-8 p-0"
-                                onClick={() => handleDelete(student.id)}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                <span className="sr-only">Delete</span>
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="left">
-                              Delete student
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredStudents.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center">
-                        No students found.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                    No students found matching your search criteria.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-        {/* Edit Student Dialog */}
-        <Dialog open={editOpen} onOpenChange={setEditOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Edit Student</DialogTitle>
-              <DialogDescription>
-                Edit student details in the database.
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...editForm}>
-              <form
-                onSubmit={editForm.handleSubmit(onEditSubmit)}
-                className="space-y-4"
-              >
-                <FormField
-                  control={editForm.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="John Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={editForm.control}
-                  name="rollNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Roll Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="24MAB000" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={editForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="john.doe@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={editForm.control}
-                  name="course"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Course</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Mathematics" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={editForm.control}
-                  name="year"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Year</FormLabel>
-                      <FormControl>
-                        <Input placeholder="1" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <DialogFooter>
-                  <Button type="submit" className="bg-black hover:bg-black">
-                    Update Student
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-            {selectedStudent && (
-              <div className="mt-6 border-t pt-4">
-                <CardHeader>
-                  <CardTitle>Student Details</CardTitle>
-                  <CardDescription>
-                    View detailed information about the student.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Avatar className="h-20 w-20">
-                    <AvatarImage src={`https://avatar.api.dicebear.com/7.x/pixel-art/svg?seed=${selectedStudent.name}`} />
-                    <AvatarFallback>{selectedStudent.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Phone:</span>
-                      <span>{selectedStudent.profile?.phone || 'Not provided'}</span>
+      {/* Add Student Dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Student</DialogTitle>
+            <DialogDescription>
+              Fill in the student details to add them to the system.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleAddStudent)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="rollNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Roll Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="24XXB0A00" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Full Name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="student@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="course"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Course</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Mathematics" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="year"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Year</FormLabel>
+                    <FormControl>
+                      <Input type="number" min={1} max={5} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="submit">Add Student</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Student Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Student</DialogTitle>
+            <DialogDescription>
+              Update student information.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(handleEditStudent)} className="space-y-4">
+              <FormField
+                control={editForm.control}
+                name="rollNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Roll Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="course"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Course</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="year"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Year</FormLabel>
+                    <FormControl>
+                      <Input type="number" min={1} max={5} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="submit">Update Student</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Student Details Sheet */}
+      {selectedStudent && (
+        <Sheet open={!!selectedStudent && !editOpen} onOpenChange={(open) => !open && setSelectedStudent(null)}>
+          <SheetContent className="w-full sm:max-w-lg">
+            <SheetHeader>
+              <SheetTitle>Student Profile</SheetTitle>
+              <SheetDescription>
+                Detailed information about {selectedStudent.name}
+              </SheetDescription>
+            </SheetHeader>
+            <ScrollArea className="h-[calc(100vh-10rem)] pr-4 mt-6">
+              <div className="flex flex-col items-center mb-6">
+                <div className="h-24 w-24 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                  <User className="h-12 w-12 text-slate-400" />
+                </div>
+                <h3 className="text-xl font-bold">{selectedStudent.name}</h3>
+                <p className="text-sm text-muted-foreground">{selectedStudent.rollNumber}</p>
+              </div>
+
+              <Tabs defaultValue="basic-info" className="w-full">
+                <TabsList className="w-full">
+                  <TabsTrigger value="basic-info" className="flex-1">
+                    Basic Info
+                  </TabsTrigger>
+                  <TabsTrigger value="academic" className="flex-1">
+                    Academic
+                  </TabsTrigger>
+                  <TabsTrigger value="contact" className="flex-1">
+                    Contact
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="basic-info" className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-slate-50 p-3 rounded-md">
+                      <p className="text-xs text-slate-500">Roll Number</p>
+                      <p className="font-medium">{selectedStudent.rollNumber}</p>
                     </div>
-                    
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Department:</span>
-                      <span>Mathematics</span>
+                    <div className="bg-slate-50 p-3 rounded-md">
+                      <p className="text-xs text-slate-500">Email</p>
+                      <p className="font-medium break-all">{selectedStudent.email}</p>
                     </div>
-                    
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Admission Details:</span>
-                      <span>Year {selectedStudent.year} | Semester {1} | Batch {2023}</span>
+                    <div className="bg-slate-50 p-3 rounded-md">
+                      <p className="text-xs text-slate-500">Course</p>
+                      <p className="font-medium">{selectedStudent.course}</p>
+                    </div>
+                    <div className="bg-slate-50 p-3 rounded-md">
+                      <p className="text-xs text-slate-500">Year</p>
+                      <p className="font-medium">{selectedStudent.year}</p>
+                    </div>
+                    <div className="bg-slate-50 p-3 rounded-md">
+                      <p className="text-xs text-slate-500">CGPA</p>
+                      <p className="font-medium">{selectedStudent.cgpa || "N/A"}</p>
+                    </div>
+                    <div className="bg-slate-50 p-3 rounded-md">
+                      <p className="text-xs text-slate-500">Date of Birth</p>
+                      <p className="font-medium">
+                        {selectedStudent.profile?.dateOfBirth || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-slate-50 p-3 rounded-md">
+                      <p className="text-xs text-slate-500">Blood Group</p>
+                      <p className="font-medium">
+                        {selectedStudent.profile?.bloodGroup || "N/A"}
+                      </p>
                     </div>
                   </div>
-                </CardContent>
+                </TabsContent>
+
+                <TabsContent value="academic" className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-slate-50 p-3 rounded-md">
+                      <p className="text-xs text-slate-500">Department</p>
+                      <p className="font-medium">
+                        {selectedStudent.profile?.department || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-slate-50 p-3 rounded-md">
+                      <p className="text-xs text-slate-500">Academic Info</p>
+                      <p className="font-medium">
+                        {selectedStudent.profile?.year || "N/A"} Year,{" "}
+                        {selectedStudent.profile?.semester || "N/A"} Semester,{" "}
+                        {selectedStudent.profile?.batch || "N/A"} Batch
+                      </p>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="contact" className="space-y-4 mt-4">
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="bg-slate-50 p-3 rounded-md flex items-center">
+                      <Phone className="h-4 w-4 text-slate-400 mr-2" />
+                      <div>
+                        <p className="text-xs text-slate-500">Phone</p>
+                        <p className="font-medium">
+                          {selectedStudent.profile?.phone || "N/A"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="bg-slate-50 p-3 rounded-md flex items-center">
+                      <Mail className="h-4 w-4 text-slate-400 mr-2" />
+                      <div>
+                        <p className="text-xs text-slate-500">Email</p>
+                        <p className="font-medium">{selectedStudent.email}</p>
+                      </div>
+                    </div>
+                    <div className="bg-slate-50 p-3 rounded-md">
+                      <p className="text-xs text-slate-500">Address</p>
+                      <p className="font-medium">
+                        {selectedStudent.profile?.address || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-slate-50 p-3 rounded-md">
+                      <p className="text-xs text-slate-500">Parent's Name</p>
+                      <p className="font-medium">
+                        {selectedStudent.profile?.parentName || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-slate-50 p-3 rounded-md">
+                      <p className="text-xs text-slate-500">Parent's Phone</p>
+                      <p className="font-medium">
+                        {selectedStudent.profile?.parentPhone || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+
+              <div className="mt-6 flex justify-end">
+                <Button
+                  variant="outline"
+                  className="mr-2"
+                  onClick={() => setSelectedStudent(null)}
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    setEditOpen(true);
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
               </div>
-            )}
-          </DialogContent>
-        </Dialog>
-      </div>
+            </ScrollArea>
+          </SheetContent>
+        </Sheet>
+      )}
     </DashboardLayout>
   );
 }

@@ -198,7 +198,7 @@ export interface Notification {
   content: string;
   timestamp: string;
   read: boolean;
-  type: 'assignment' | 'attendance' | 'result' | 'announcement' | 'other';
+  type: 'assignment' | 'attendance' | 'result' | 'announcement' | 'other' | 'exam' | 'event';
   link?: string;
   date?: string;
   description?: string;
@@ -774,7 +774,7 @@ const generateAttendanceSummary = () => {
     const percentage = (present / totalClasses) * 100;
     
     // Create summary for each subject
-    const subjectSummary = {
+    const subjectSummary: AttendanceSummary = {
       studentId: "41",
       rollNumber: "24MAB0A41",
       studentName: "V Dhruv",
@@ -1292,18 +1292,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       !(record.date === date && record.subjectId === subjectId)
     );
     
-    // Add new records
-    const newRecord = {
-      id: `att-${date}-${subjectId}`,
+    // Add new records for each student
+    const newRecords: AttendanceRecord[] = students.map(student => ({
+      id: `att-${date}-${subjectId}-${student.studentId}`,
       date,
       subject: subject.name,
       subjectId,
       subjectName: subject.name,
-      students: students,
+      studentId: student.studentId,
+      status: student.present ? 'present' : 'absent',
+      students: [student], // Keep the students array for backward compatibility
       teacherId: subject.teacherId
-    };
+    }));
     
-    setAttendance([...filteredAttendance, newRecord]);
+    setAttendance([...filteredAttendance, ...newRecords]);
     
     // Update attendance summary
     updateAttendanceSummary(subjectId);
@@ -1315,7 +1317,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!subject) return;
     
     // Calculate summary for each student
-    const summary = students.map(student => {
+    const summaries = students.map(student => {
       const studentAttendance = attendance.filter(record => 
         record.studentId === student.id && record.subjectId === subjectId
       );
@@ -1335,13 +1337,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         present,
         absent,
         percentage,
-        lastUpdated: new Date().toISOString()
-      };
+        lastUpdated: new Date().toISOString(),
+        subjects: [
+          {
+            subjectId,
+            subjectName: subject.name,
+            totalClasses,
+            attended: present,
+            percentage
+          }
+        ],
+        overall: {
+          totalClasses,
+          attended: present,
+          percentage
+        }
+      } as AttendanceSummary;
     });
     
     // Replace existing summary for this subject
     const filteredSummary = attendanceSummary.filter(s => s.subjectId !== subjectId);
-    setAttendanceSummary([...filteredSummary, ...summary]);
+    setAttendanceSummary([...filteredSummary, ...summaries]);
   };
 
   const exportAttendance = (subjectId: string) => {
