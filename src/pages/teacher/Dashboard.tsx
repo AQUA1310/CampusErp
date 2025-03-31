@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -131,6 +132,12 @@ export default function TeacherDashboard() {
       default:
         return <MessageSquare className="h-5 w-5 text-gray-600" />;
     }
+  };
+
+  // Make sure we properly handle undefined values for student.cgpa
+  const safeToFixed = (value: any, digits: number = 2) => {
+    if (value === undefined || value === null) return "N/A";
+    return Number(value).toFixed(digits);
   };
 
   return (
@@ -340,7 +347,7 @@ export default function TeacherDashboard() {
                 {students.slice(0, 5).map((student) => (
                   <TableRow key={student.id}>
                     <TableCell>{student.name}</TableCell>
-                    <TableCell>{student.rollNumber}</TableCell>
+                    <TableCell>{student.rollNumber || 'N/A'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
