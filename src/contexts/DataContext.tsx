@@ -145,6 +145,7 @@ export interface MinorResult {
   examType: "Minor1" | "Minor2";
   studentId?: string;
   rollNumber?: string;
+  studentName?: string;
 }
 
 export interface SemesterResult {
