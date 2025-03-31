@@ -20,7 +20,8 @@ import {
   Clock, 
   User,
   FileBarChart2,
-  BookOpen
+  BookOpen,
+  Mail
 } from "lucide-react";
 
 interface DashboardLayoutProps {
@@ -144,25 +145,48 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-blue-50/50">
-      {/* Desktop Sidebar */}
-      <aside className="fixed inset-y-0 left-0 hidden lg:flex lg:w-64 flex-col border-r border-blue-200 bg-white">
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <div className="flex h-16 items-center px-4 border-b bg-blue-700 text-white">
-            <Link 
-              to={basePath} 
-              className="flex items-center space-x-2 font-bold text-xl text-white"
+      {/* Desktop Top Header - New style based on reference image */}
+      <header className="sticky top-0 z-40 w-full h-16 bg-blue-700 text-white border-b border-blue-800 shadow-md">
+        <div className="container mx-auto h-full flex items-center justify-between px-4">
+          <div className="flex items-center gap-3">
+            <img 
+              src="/lovable-uploads/01aa3e2d-72b1-482f-81a3-5878ef282949.png" 
+              alt="NIT Warangal Logo" 
+              className="h-10 w-auto"
+            />
+            <div className="flex flex-col justify-center">
+              <h1 className="text-xl font-bold">ARC Portal</h1>
+              <p className="text-xs opacity-90">Mathematics Department</p>
+            </div>
+          </div>
+          
+          <div className="hidden lg:flex items-center gap-4">
+            <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600">
+              <Bell className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600">
+              <Mail className="h-5 w-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-white hover:bg-blue-600"
+              onClick={handleLogout}
             >
-              <img 
-                src="/lovable-uploads/a002a62c-c2a6-4e5c-9728-682983b115c4.png" 
-                alt="ARC Portal Logo" 
-                className="h-10 w-auto" 
-              />
-              <span>ARC Portal</span>
-            </Link>
+              <LogOut className="h-5 w-5" />
+            </Button>
+            <Avatar className="h-10 w-10 bg-blue-800 border-2 border-white">
+              <AvatarFallback className="bg-blue-600 text-white">
+                {userInitials}
+              </AvatarFallback>
+            </Avatar>
           </div>
-          <div className="bg-blue-700 text-white py-2 px-4 text-sm">
-            <span>Mathematics Department</span>
-          </div>
+        </div>
+      </header>
+
+      {/* Desktop Sidebar */}
+      <aside className="fixed inset-y-16 left-0 hidden lg:flex lg:w-64 flex-col border-r border-blue-200 bg-white z-30">
+        <div className="flex flex-col flex-1 overflow-hidden">
           <nav className="flex-1 overflow-y-auto p-3 pt-4">
             <div className="space-y-1">
               {navItems.map((item) => (
@@ -183,30 +207,20 @@ export default function DashboardLayout({
             </div>
           </nav>
           <div className="border-t border-slate-200 p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-blue-700 text-white">
-                    {userInitials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="overflow-hidden">
-                  <p className="text-sm font-medium text-slate-900 truncate">
-                    {user?.name}
-                  </p>
-                  <p className="text-xs text-slate-500 capitalize truncate">
-                    {userType}
-                  </p>
-                </div>
+            <div className="flex items-center space-x-2">
+              <Avatar className="h-9 w-9">
+                <AvatarFallback className="bg-blue-700 text-white">
+                  {userInitials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="overflow-hidden">
+                <p className="text-sm font-medium text-slate-900 truncate">
+                  {user?.name}
+                </p>
+                <p className="text-xs text-slate-500 capitalize truncate">
+                  {userType}
+                </p>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLogout}
-                title="Logout"
-              >
-                <LogOut className="h-5 w-5 text-slate-500" />
-              </Button>
             </div>
           </div>
         </div>
@@ -228,15 +242,15 @@ export default function DashboardLayout({
                 className="flex items-center space-x-2 font-bold text-xl text-white"
               >
                 <img 
-                  src="/lovable-uploads/a002a62c-c2a6-4e5c-9728-682983b115c4.png" 
-                  alt="ARC Portal Logo" 
+                  src="/lovable-uploads/01aa3e2d-72b1-482f-81a3-5878ef282949.png" 
+                  alt="NIT Warangal Logo" 
                   className="h-10 w-auto" 
                 />
-                <span>ARC Portal</span>
+                <div className="flex flex-col justify-center">
+                  <span>ARC Portal</span>
+                  <span className="text-xs">Mathematics Department</span>
+                </div>
               </Link>
-            </div>
-            <div className="bg-blue-700 text-white py-2 px-6 text-sm">
-              <span>Mathematics Department</span>
             </div>
             <nav className="flex flex-col gap-1 p-4">
               {navItems.map((item) => (
@@ -268,8 +282,8 @@ export default function DashboardLayout({
         <div className="flex-1 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <img 
-              src="/lovable-uploads/a002a62c-c2a6-4e5c-9728-682983b115c4.png" 
-              alt="ARC Portal Logo" 
+              src="/lovable-uploads/01aa3e2d-72b1-482f-81a3-5878ef282949.png" 
+              alt="NIT Warangal Logo" 
               className="h-8 w-auto" 
             />
             <h1 className="text-lg font-semibold">
@@ -295,7 +309,7 @@ export default function DashboardLayout({
       <main
         className={cn(
           "p-6 lg:p-8 pt-8 pb-20 min-h-screen bg-blue-50/50",
-          isMobile ? "" : "lg:ml-64"
+          isMobile ? "" : "lg:ml-64 lg:mt-0"
         )}
       >
         <div className="mx-auto max-w-6xl">
