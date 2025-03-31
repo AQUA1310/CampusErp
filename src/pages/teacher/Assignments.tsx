@@ -2,228 +2,495 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
-import { CalendarIcon } from "lucide-react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   Table,
   TableBody,
   TableCell,
-  TableCaption,
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
+import { Download, Eye, Check, Upload, FileText, Filter } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
-import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/shared/DashboardLayout";
-import { Assignment } from "@/contexts/DataContext";
 
 export default function TeacherAssignments() {
-  const { user } = useAuth();
-  const { subjects, assignments, addAssignment } = useData();
-  const [showModal, setShowModal] = useState(false);
-  const [selectedSubject, setSelectedSubject] = useState("");
-  const [calendarValue, setCalendarValue] = useState<Date>();
-  
-  const formattedDate = calendarValue ? format(calendarValue, "yyyy-MM-dd") : "";
-  
-  const [formValues, setFormValues] = useState({
+  const { assignments, submissions, subjects, addAssignment, gradeSubmission } = useData();
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
+  const [assignmentData, setAssignmentData] = useState({
     title: "",
     description: "",
-    dueDate: formattedDate,
-    subject: "",
-    subjectId: "",
-    maxMarks: ""
+    subjectId: subjects[0]?.id || "",
+    dueDate: "",
+    maxMarks: 10,
+  });
+  const [reviewData, setReviewData] = useState({
+    marks: 0,
+    feedback: "",
   });
   
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormValues(prev => ({ ...prev, [name]: value }));
-  };
-  
-  const handleSelectChange = (value: string) => {
-    setSelectedSubject(value);
-    setFormValues(prev => ({ ...prev, subjectId: value, subject: subjects.find(s => s.id === value)?.name || "" }));
-  };
-  
-  const handleAddAssignment = (data: any) => {
-    const newAssignment: Assignment = {
-      id: `assign-${Date.now()}`,
-      title: data.title,
-      description: data.description,
-      dueDate: data.dueDate,
-      subject: data.subject,
-      subjectId: data.subjectId,
-      subjectName: subjects.find(s => s.id === data.subjectId)?.name || data.subject,
-      status: 'pending',
-      teacherId: user?.id || '',
-      maxMarks: parseInt(data.maxMarks, 10)
-    };
-    
-    addAssignment(newAssignment);
-    setShowModal(false);
-    
-    toast.success("Assignment added successfully");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filterSubject, setFilterSubject] = useState<string>("all");
+
+  const handleAssignmentFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+    }
   };
 
+  const handleAssignmentSubmit = () => {
+    if (!assignmentData.title || !assignmentData.subjectId || !assignmentData.dueDate) {
+      toast.error("Please fill in required fields");
+      return;
+    }
+
+    if (!selectedFile) {
+      toast.error("Please select a file to upload");
+      return;
+    }
+
+    // Create a fake URL for the file
+    const fileUrl = URL.createObjectURL(selectedFile);
+    
+    const subject = subjects.find((s) => s.id === assignmentData.subjectId);
+    
+    addAssignment({
+      title: assignmentData.title,
+      description: assignmentData.description,
+      subjectId: assignmentData.subjectId,
+      subjectName: subject?.name || "",
+      dueDate: assignmentData.dueDate,
+      maxMarks: assignmentData.maxMarks,
+      fileUrl,
+      createdBy: "1",
+    });
+    
+    setIsUploadDialogOpen(false);
+    setAssignmentData({
+      title: "",
+      description: "",
+      subjectId: subjects[0]?.id || "",
+      dueDate: "",
+      maxMarks: 10,
+    });
+    setSelectedFile(null);
+  };
+
+  const handleReviewSubmit = () => {
+    if (!selectedSubmission) return;
+    
+    if (reviewData.marks < 0 || reviewData.marks > selectedSubmission.assignment.maxMarks) {
+      toast.error(`Marks should be between 0 and ${selectedSubmission.assignment.maxMarks}`);
+      return;
+    }
+    
+    gradeSubmission(selectedSubmission.id, reviewData.marks, reviewData.feedback);
+    setIsReviewDialogOpen(false);
+    setSelectedSubmission(null);
+    setReviewData({ marks: 0, feedback: "" });
+  };
+
+  const openReviewDialog = (submission: any) => {
+    const assignment = assignments.find(a => a.id === submission.assignmentId);
+    setSelectedSubmission({ ...submission, assignment });
+    setReviewData({
+      marks: submission.marks || 0,
+      feedback: submission.feedback || "",
+    });
+    setIsReviewDialogOpen(true);
+  };
+
+  const filteredAssignments = filterSubject === "all" 
+    ? assignments 
+    : assignments.filter(a => a.subjectId === filterSubject);
+
+  const submissionsWithAssignments = submissions.map(sub => {
+    const assignment = assignments.find(a => a.id === sub.assignmentId);
+    return { ...sub, assignment };
+  });
+
   return (
-    <DashboardLayout title="Assignments" subtitle="Manage assignments for your students">
-      <Card className="shadow-md">
-        <CardHeader className="bg-navy-50 border-b border-navy-100 rounded-t-lg">
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="text-navy-800">Assignments</CardTitle>
-              <CardDescription className="text-navy-600">
-                Manage and create assignments for your students
-              </CardDescription>
-            </div>
-            <Button onClick={() => setShowModal(true)} className="bg-primary text-white">
-              Add Assignment
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-navy-50/50">
-                <TableHead>Title</TableHead>
-                <TableHead>Subject</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {assignments.map((assignment) => (
-                <TableRow key={assignment.id}>
-                  <TableCell className="font-medium">{assignment.title}</TableCell>
-                  <TableCell>{assignment.subjectName}</TableCell>
-                  <TableCell>{new Date(assignment.dueDate).toLocaleDateString()}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="sm">
-                      View
-                    </Button>
-                  </TableCell>
-                </TableRow>
+    <DashboardLayout title="Assignments" subtitle="Upload and manage student assignments">
+      <div className="mb-6 flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={() => setIsUploadDialogOpen(true)}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Upload New Assignment
+          </Button>
+          
+          <div className="flex items-center gap-2 ml-4">
+            <Filter className="h-4 w-4 text-primary" />
+            <select
+              value={filterSubject}
+              onChange={e => setFilterSubject(e.target.value)}
+              className="border rounded px-2 py-1 text-sm border-primary/20 focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="all">All Subjects</option>
+              {subjects.map(subject => (
+                <option key={subject.id} value={subject.id}>
+                  {subject.name}
+                </option>
               ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      
-      {/* Add Assignment Modal */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <Tabs defaultValue="assignments" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger 
+            value="assignments" 
+            className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+          >
+            All Assignments
+          </TabsTrigger>
+          <TabsTrigger 
+            value="submissions" 
+            className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+          >
+            Student Submissions
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="assignments" className="mt-0">
+          <Card className="shadow-md">
+            <CardHeader className="bg-slate-50 border-b border-slate-100 rounded-t-lg">
+              <CardTitle className="text-slate-800">All Assignments</CardTitle>
+              <CardDescription className="text-slate-600">
+                Assignments created for students
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/50">
+                    <TableHead>Title</TableHead>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Max Marks</TableHead>
+                    <TableHead>Submissions</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAssignments.length > 0 ? (
+                    filteredAssignments.map((assignment) => {
+                      const submissionCount = assignment.submissions?.length || 0;
+                      
+                      return (
+                        <TableRow key={assignment.id}>
+                          <TableCell className="font-medium">{assignment.title}</TableCell>
+                          <TableCell>{assignment.subjectName}</TableCell>
+                          <TableCell>
+                            <Badge variant={
+                              new Date(assignment.dueDate) < new Date() 
+                                ? "destructive" 
+                                : "outline"
+                            }>
+                              {new Date(assignment.dueDate).toLocaleDateString()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{assignment.maxMarks}</TableCell>
+                          <TableCell>
+                            {submissionCount} / {6} students
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="outline" size="sm" className="mr-2">
+                              <Download className="h-4 w-4 mr-1" />
+                              Download
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                        No assignments found. Upload a new assignment to get started.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="submissions" className="mt-0">
+          <Card className="shadow-md">
+            <CardHeader className="bg-slate-50 border-b border-slate-100 rounded-t-lg">
+              <CardTitle className="text-slate-800">Student Submissions</CardTitle>
+              <CardDescription className="text-slate-600">
+                Review and grade assignment submissions
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/50">
+                    <TableHead>Student</TableHead>
+                    <TableHead>Roll Number</TableHead>
+                    <TableHead>Assignment</TableHead>
+                    <TableHead>Submitted Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {submissionsWithAssignments.length > 0 ? (
+                    submissionsWithAssignments.map((submission) => (
+                      <TableRow key={submission.id}>
+                        <TableCell className="font-medium">{submission.studentName}</TableCell>
+                        <TableCell>{submission.rollNumber}</TableCell>
+                        <TableCell>{submission.assignment?.title}</TableCell>
+                        <TableCell>{new Date(submission.submittedAt).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {submission.marks !== undefined ? (
+                            <Badge className="bg-green-100 text-green-700 hover:bg-green-200">
+                              <Check className="h-3 w-3 mr-1" />
+                              Graded: {submission.marks}/{submission.assignment?.maxMarks}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-200">
+                              Pending Review
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="outline" size="sm" className="mr-2">
+                            <Download className="h-4 w-4 mr-1" />
+                            Download
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => openReviewDialog(submission)}
+                          >
+                            <FileText className="h-4 w-4 mr-1" />
+                            Review
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                        No submissions have been received yet.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Upload Assignment Dialog */}
+      <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Assignment</DialogTitle>
+            <DialogTitle>Upload New Assignment</DialogTitle>
             <DialogDescription>
-              Create a new assignment for your students
+              Create and upload a new assignment for students
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="title" className="text-right">
-                Title
-              </Label>
-              <Input 
-                type="text" 
-                id="title" 
-                name="title"
-                value={formValues.title}
-                onChange={handleInputChange}
-                className="col-span-3" 
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="title" className="text-sm font-medium text-gray-700">
+                Assignment Title *
+              </label>
+              <Input
+                id="title"
+                value={assignmentData.title}
+                onChange={(e) => setAssignmentData({ ...assignmentData, title: e.target.value })}
+                placeholder="Enter assignment title"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
+            
+            <div className="space-y-2">
+              <label htmlFor="subject" className="text-sm font-medium text-gray-700">
+                Subject *
+              </label>
+              <select
+                id="subject"
+                value={assignmentData.subjectId}
+                onChange={(e) => setAssignmentData({ ...assignmentData, subjectId: e.target.value })}
+                className="w-full h-10 rounded-md border border-gray-300 bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {subjects.map((subject) => (
+                  <option key={subject.id} value={subject.id}>
+                    {subject.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="description" className="text-sm font-medium text-gray-700">
                 Description
-              </Label>
+              </label>
               <Textarea
                 id="description"
-                name="description"
-                value={formValues.description}
-                onChange={handleInputChange}
-                className="col-span-3"
+                value={assignmentData.description}
+                onChange={(e) => setAssignmentData({ ...assignmentData, description: e.target.value })}
+                placeholder="Enter assignment description"
+                rows={3}
+                className="text-gray-700"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="subject" className="text-right">
-                Subject
-              </Label>
-              <Select onValueChange={handleSelectChange} defaultValue={selectedSubject}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a subject" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="dueDate" className="text-sm font-medium text-gray-700">
+                  Due Date *
+                </label>
+                <Input
+                  id="dueDate"
+                  type="date"
+                  value={assignmentData.dueDate}
+                  onChange={(e) => setAssignmentData({ ...assignmentData, dueDate: e.target.value })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="maxMarks" className="text-sm font-medium text-gray-700">
+                  Maximum Marks *
+                </label>
+                <Input
+                  id="maxMarks"
+                  type="number"
+                  min="1"
+                  value={assignmentData.maxMarks}
+                  onChange={(e) => setAssignmentData({ ...assignmentData, maxMarks: parseInt(e.target.value) })}
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="dueDate" className="text-right">
-                Due Date
-              </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-[240px] justify-start text-left font-normal",
-                      !calendarValue && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {calendarValue ? format(calendarValue, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    captionLayout="dropdown"
-                    selected={calendarValue}
-                    onSelect={setCalendarValue}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="maxMarks" className="text-right">
-                Max Marks
-              </Label>
-              <Input 
-                type="number" 
-                id="maxMarks" 
-                name="maxMarks"
-                value={formValues.maxMarks}
-                onChange={handleInputChange}
-                className="col-span-3" 
+            
+            <div className="space-y-2">
+              <label htmlFor="file" className="text-sm font-medium text-gray-700">
+                Assignment File *
+              </label>
+              <Input
+                id="file"
+                type="file"
+                onChange={handleAssignmentFileChange}
               />
+              {selectedFile && (
+                <p className="text-xs text-primary">
+                  Selected file: {selectedFile.name}
+                </p>
+              )}
             </div>
           </div>
-          <div className="flex justify-end">
-            <Button variant="ghost" onClick={() => setShowModal(false)}>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)} className="text-gray-700">
               Cancel
             </Button>
-            <Button 
-              onClick={() => handleAddAssignment(formValues)}
-              className="bg-primary text-white"
-            >
-              Create Assignment
+            <Button onClick={handleAssignmentSubmit} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              Upload Assignment
             </Button>
-          </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Review Submission Dialog */}
+      <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Review Submission</DialogTitle>
+            <DialogDescription>
+              {selectedSubmission && (
+                <>
+                  Submission from {selectedSubmission.studentName} for {selectedSubmission.assignment?.title}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedSubmission && (
+            <div className="space-y-4 py-4">
+              <div className="bg-slate-50 p-4 rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-700">Student:</span>
+                  <span className="text-gray-700">{selectedSubmission.studentName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-700">Roll Number:</span>
+                  <span className="text-gray-700">{selectedSubmission.rollNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-700">Assignment:</span>
+                  <span className="text-gray-700">{selectedSubmission.assignment?.title}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-700">Submitted On:</span>
+                  <span className="text-gray-700">{new Date(selectedSubmission.submittedAt).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-700">Max Marks:</span>
+                  <span className="text-gray-700">{selectedSubmission.assignment?.maxMarks}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2 border-t pt-4">
+                <Button variant="outline" className="w-full text-gray-700">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Submission
+                </Button>
+              </div>
+
+              <div className="space-y-2 border-t pt-4">
+                <label htmlFor="marks" className="block text-sm font-medium text-gray-700">
+                  Marks (out of {selectedSubmission.assignment?.maxMarks})
+                </label>
+                <Input
+                  id="marks"
+                  type="number"
+                  min="0"
+                  max={selectedSubmission.assignment?.maxMarks}
+                  value={reviewData.marks}
+                  onChange={(e) => setReviewData({ ...reviewData, marks: parseInt(e.target.value) })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="feedback" className="block text-sm font-medium text-gray-700">
+                  Feedback
+                </label>
+                <Textarea
+                  id="feedback"
+                  rows={3}
+                  value={reviewData.feedback}
+                  onChange={(e) => setReviewData({ ...reviewData, feedback: e.target.value })}
+                  placeholder="Provide feedback to the student..."
+                  className="text-gray-700"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsReviewDialogOpen(false)} className="text-gray-700">
+              Cancel
+            </Button>
+            <Button onClick={handleReviewSubmit} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              Submit Review
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>

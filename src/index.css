@@ -14,11 +14,11 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 16%;
 
-    --primary: 209 100% 33%;
+    --primary: 214 75% 28%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 209 30% 94%;
-    --secondary-foreground: 209 55% 24%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 214 75% 28%;
 
     --muted: 209 15% 94%;
     --muted-foreground: 209 25% 40%;
@@ -35,7 +35,7 @@
 
     --radius: 0.5rem;
 
-    --sidebar-background: 209 100% 33%;
+    --sidebar-background: 214 75% 28%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 209 60% 20%;
     --sidebar-primary-foreground: 210 40% 98%;
@@ -55,7 +55,7 @@
     --popover: 222 47% 12%;
     --popover-foreground: 210 40% 96%;
 
-    --primary: 209 100% 33%;
+    --primary: 214 75% 28%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 209 30% 20%;
@@ -112,74 +112,4 @@
   .hover-scale {
     @apply transition-transform duration-200 hover:scale-105;
   }
-}
-
-/* Fix for button colors */
-.btn-primary, 
-.bg-primary {
-  background-color: hsl(209, 100%, 33%);
-  color: hsl(210, 40%, 98%);
-}
-
-.btn-primary:hover {
-  background-color: hsl(209, 100%, 28%);
-}
-
-.text-primary {
-  color: hsl(209, 100%, 33%);
-}
-
-/* Ensure file upload buttons are visible */
-.file-input-button {
-  background-color: hsl(209, 100%, 33%);
-  color: hsl(210, 40%, 98%);
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-}
-
-.file-input-button:hover {
-  background-color: hsl(209, 100%, 28%);
-}
-
-/* Fix for chat message appearance */
-.chat-message {
-  border-radius: 0.75rem;
-  padding: 0.75rem 1rem;
-  max-width: 80%;
-  margin-bottom: 0.5rem;
-}
-
-.chat-message-sender {
-  background-color: hsl(209, 100%, 33%);
-  color: white;
-  border-bottom-right-radius: 0;
-  align-self: flex-end;
-}
-
-.chat-message-receiver {
-  background-color: #f1f5f9;
-  color: #1e293b;
-  border-bottom-left-radius: 0;
-  align-self: flex-start;
-}
-
-/* Fix for progress bars */
-.progress-bar-base {
-  background-color: hsl(209, 15%, 94%);
-  border-radius: 9999px;
-  height: 0.5rem;
-  overflow: hidden;
-}
-
-.progress-bar-fill {
-  background-color: hsl(209, 100%, 33%);
-  height: 100%;
-  border-radius: 9999px;
-  transition: width 0.3s ease-in-out;
 }

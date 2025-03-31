@@ -1,14 +1,12 @@
-import { useState, useEffect } from "react";
-import DashboardLayout from "@/components/shared/DashboardLayout";
-import { useData } from "@/contexts/DataContext";
-import { useAuth } from "@/hooks/useAuth";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -17,251 +15,424 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { format } from "date-fns";
-import { toast } from "sonner";
-import { Submission } from "@/contexts/DataContext";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from "@/components/ui/alert-dialog";
+import { Download, Upload, CheckCircle, Clock, AlertCircle, FileText } from "lucide-react";
+import { useData } from "@/contexts/DataContext";
+import { useAuth } from "@/hooks/useAuth";
+import DashboardLayout from "@/components/shared/DashboardLayout";
 
 export default function StudentAssignments() {
   const { user } = useAuth();
-  const { assignments, submissions, addSubmission, deleteSubmission } = useData();
-  const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
-  const [submissionText, setSubmissionText] = useState("");
-  const [submissionFile, setSubmissionFile] = useState<File | null>(null);
-  const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("pending");
-
-  useEffect(() => {
-    // You can add any initialization logic here
-  }, []);
-
-  const handleOpenSubmitDialog = (assignmentId: string) => {
-    setSelectedAssignmentId(assignmentId);
-    setSubmitDialogOpen(true);
+  const { assignments, submissions, submitAssignment } = useData();
+  const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+    }
   };
-
-  const handleCloseSubmitDialog = () => {
-    setSubmitDialogOpen(false);
-    setSelectedAssignmentId(null);
-    setSubmissionText("");
-    setSubmissionFile(null);
+  
+  const openSubmitDialog = (assignment: any) => {
+    setSelectedAssignment(assignment);
+    setSelectedFile(null);
+    setIsSubmitDialogOpen(true);
   };
-
-  const handleSubmitAssignment = (event: React.MouseEvent<HTMLButtonElement>, assignmentId: string) => {
-    event.preventDefault();
-    
-    if (!submissionFile && !submissionText) {
-      toast({
-        title: "Error",
-        description: "Please upload a file or enter text for your submission.",
-        variant: "destructive"
-      });
+  
+  const handleSubmit = () => {
+    if (!selectedFile || !selectedAssignment || !user) {
+      toast.error("Please select a file to upload");
       return;
     }
-
-    const newSubmission: Submission = {
-      id: `sub-${Date.now()}`,
-      assignmentId: assignmentId,
-      studentId: user?.id || '',
-      submissionDate: new Date().toISOString(),
-      submissionText: submissionText,
-      submissionFile: submissionFile ? submissionFile.name : null,
-      status: 'submitted',
-      marksObtained: 0,
-      feedback: ''
-    };
-
-    addSubmission(newSubmission);
-    handleCloseSubmitDialog();
-
-    toast.success("Assignment submitted successfully");
+    
+    // Create a fake URL for the file
+    const fileUrl = URL.createObjectURL(selectedFile);
+    
+    submitAssignment(selectedAssignment.id, "1", fileUrl);
+    setIsSubmitDialogOpen(false);
+    setSelectedAssignment(null);
+    setSelectedFile(null);
   };
-
-  const handleDeleteSubmission = (submissionId: string | null) => {
-    if (submissionId) {
-      deleteSubmission(submissionId);
-      setDeleteDialogOpen(false);
-      setSelectedSubmissionId(null);
-      toast.success("Submission deleted successfully");
-    }
-  };
-
-  const confirmDeleteSubmission = (submissionId: string) => {
-    setSelectedSubmissionId(submissionId);
-    setDeleteDialogOpen(true);
-  };
-
-  const getAssignmentStatus = (assignmentId: string) => {
-    const submission = submissions.find(
-      (sub) => sub.assignmentId === assignmentId && sub.studentId === user?.id
-    );
-    return submission ? "Submitted" : "Pending";
-  };
-
-  const getSubmission = (assignmentId: string) => {
-    return submissions.find(
-      (sub) => sub.assignmentId === assignmentId && sub.studentId === user?.id
+  
+  const getSubmissionForAssignment = (assignmentId: string) => {
+    return submissions.find(sub => 
+      sub.assignmentId === assignmentId && sub.studentId === "1"
     );
   };
-
-  const filteredAssignments = assignments.filter((assignment) => {
-    const submissionStatus = getAssignmentStatus(assignment.id);
-    if (activeTab === "pending") {
-      return submissionStatus === "Pending";
-    } else if (activeTab === "submitted") {
-      return submissionStatus === "Submitted";
-    }
-    return true;
-  });
-
-  const sortedAssignments = filteredAssignments.sort(
-    (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+  
+  const pendingAssignments = assignments.filter(
+    assignment => !getSubmissionForAssignment(assignment.id)
   );
-
+  
+  const submittedAssignments = assignments.filter(
+    assignment => getSubmissionForAssignment(assignment.id)
+  );
+  
+  const isPastDue = (dueDate: string) => {
+    return new Date(dueDate) < new Date();
+  };
+  
   return (
     <DashboardLayout title="Assignments" subtitle="View and submit your assignments">
-      <Card className="shadow-md">
-        <CardHeader className="bg-navy-50 border-b border-navy-100 rounded-t-lg">
-          <CardTitle className="text-navy-800">Assignments</CardTitle>
-          <CardDescription className="text-navy-600">
-            View and submit your assignments
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Tabs defaultValue="pending" className="w-full">
-            <TabsList>
-              <TabsTrigger value="pending" onClick={() => setActiveTab("pending")}>Pending</TabsTrigger>
-              <TabsTrigger value="submitted" onClick={() => setActiveTab("submitted")}>Submitted</TabsTrigger>
-            </TabsList>
-            <TabsContent value="pending" className="p-4">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-navy-50/50">
-                    <TableHead>Title</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Due Date</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedAssignments.map((assignment) => (
-                    <TableRow key={assignment.id}>
-                      <TableCell className="font-medium">{assignment.title}</TableCell>
-                      <TableCell>{assignment.subjectName}</TableCell>
-                      <TableCell>{new Date(assignment.dueDate).toLocaleDateString()}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="outline" size="sm" onClick={() => handleOpenSubmitDialog(assignment.id)}>
-                          Submit
-                        </Button>
-                      </TableCell>
+      <Tabs defaultValue="pending" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger 
+            value="pending" 
+            className="data-[state=active]:bg-oliveGreen-100 data-[state=active]:text-oliveGreen-900"
+          >
+            Pending
+          </TabsTrigger>
+          <TabsTrigger 
+            value="submitted" 
+            className="data-[state=active]:bg-oliveGreen-100 data-[state=active]:text-oliveGreen-900"
+          >
+            Submitted
+          </TabsTrigger>
+          <TabsTrigger 
+            value="all" 
+            className="data-[state=active]:bg-oliveGreen-100 data-[state=active]:text-oliveGreen-900"
+          >
+            All Assignments
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="pending" className="mt-0">
+          <Card className="shadow-md">
+            <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
+              <CardTitle className="text-oliveGreen-800">Pending Assignments</CardTitle>
+              <CardDescription className="text-oliveGreen-600">
+                Assignments that require your submission
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {pendingAssignments.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-oliveGreen-50/50">
+                      <TableHead>Title</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Due Date</TableHead>
+                      <TableHead>Max Marks</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TabsContent>
-            <TabsContent value="submitted" className="p-4">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-navy-50/50">
-                    <TableHead>Title</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Due Date</TableHead>
-                    <TableHead>Submission Date</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedAssignments.map((assignment) => {
-                    const submission = getSubmission(assignment.id);
-                    return submission ? (
+                  </TableHeader>
+                  <TableBody>
+                    {pendingAssignments.map((assignment) => (
                       <TableRow key={assignment.id}>
                         <TableCell className="font-medium">{assignment.title}</TableCell>
                         <TableCell>{assignment.subjectName}</TableCell>
-                        <TableCell>{new Date(assignment.dueDate).toLocaleDateString()}</TableCell>
-                        <TableCell>{new Date(submission.submissionDate).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <Badge 
+                              variant={isPastDue(assignment.dueDate) ? "destructive" : "outline"}
+                              className="flex items-center gap-1"
+                            >
+                              {isPastDue(assignment.dueDate) ? (
+                                <AlertCircle className="h-3 w-3" />
+                              ) : (
+                                <Clock className="h-3 w-3" />
+                              )}
+                              {new Date(assignment.dueDate).toLocaleDateString()}
+                            </Badge>
+                            
+                            {isPastDue(assignment.dueDate) && (
+                              <span className="text-xs text-danger-500 ml-2">Overdue</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{assignment.maxMarks}</TableCell>
                         <TableCell className="text-right">
-                          <Button variant="destructive" size="sm" onClick={() => confirmDeleteSubmission(submission.id)}>
-                            Delete
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mr-2"
+                            onClick={() => window.open(assignment.fileUrl)}
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            Download
+                          </Button>
+                          <Button 
+                            size="sm"
+                            className="bg-oliveGreen-600 hover:bg-oliveGreen-700"
+                            onClick={() => openSubmitDialog(assignment)}
+                          >
+                            <Upload className="h-4 w-4 mr-1" />
+                            Submit
                           </Button>
                         </TableCell>
                       </TableRow>
-                    ) : null;
-                  })}
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="py-12 text-center">
+                  <CheckCircle className="h-12 w-12 text-success-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-medium text-oliveGreen-800">
+                    All caught up!
+                  </h3>
+                  <p className="text-oliveGreen-600 mt-2">
+                    You've submitted all your assignments.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="submitted" className="mt-0">
+          <Card className="shadow-md">
+            <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
+              <CardTitle className="text-oliveGreen-800">Submitted Assignments</CardTitle>
+              <CardDescription className="text-oliveGreen-600">
+                Assignments you have already submitted
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {submittedAssignments.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-oliveGreen-50/50">
+                      <TableHead>Title</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Submitted On</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {submittedAssignments.map((assignment) => {
+                      const submission = getSubmissionForAssignment(assignment.id);
+                      
+                      return (
+                        <TableRow key={assignment.id}>
+                          <TableCell className="font-medium">{assignment.title}</TableCell>
+                          <TableCell>{assignment.subjectName}</TableCell>
+                          <TableCell>
+                            {submission && new Date(submission.submittedAt).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            {submission?.marks !== undefined ? (
+                              <Badge className="bg-success-100 text-success-700 hover:bg-success-200">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Graded: {submission.marks}/{assignment.maxMarks}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-oliveGreen-50 text-oliveGreen-700">
+                                Submitted
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="mr-2"
+                              onClick={() => window.open(assignment.fileUrl)}
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              Assignment
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(submission?.fileUrl)}
+                              disabled={!submission}
+                            >
+                              <FileText className="h-4 w-4 mr-1" />
+                              My Submission
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="py-12 text-center">
+                  <AlertCircle className="h-12 w-12 text-warning-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-medium text-oliveGreen-800">
+                    No submissions yet
+                  </h3>
+                  <p className="text-oliveGreen-600 mt-2">
+                    You haven't submitted any assignments yet.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="all" className="mt-0">
+          <Card className="shadow-md">
+            <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
+              <CardTitle className="text-oliveGreen-800">All Assignments</CardTitle>
+              <CardDescription className="text-oliveGreen-600">
+                Complete list of all assignments
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-oliveGreen-50/50">
+                    <TableHead>Title</TableHead>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {assignments.length > 0 ? (
+                    assignments.map((assignment) => {
+                      const submission = getSubmissionForAssignment(assignment.id);
+                      const isSubmitted = !!submission;
+                      
+                      return (
+                        <TableRow key={assignment.id}>
+                          <TableCell className="font-medium">{assignment.title}</TableCell>
+                          <TableCell>{assignment.subjectName}</TableCell>
+                          <TableCell>
+                            <Badge variant={
+                              isPastDue(assignment.dueDate) && !isSubmitted 
+                                ? "destructive" 
+                                : "outline"
+                            }>
+                              {new Date(assignment.dueDate).toLocaleDateString()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {isSubmitted ? (
+                              submission.marks !== undefined ? (
+                                <Badge className="bg-success-100 text-success-700 hover:bg-success-200">
+                                  Graded: {submission.marks}/{assignment.maxMarks}
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-oliveGreen-50 text-oliveGreen-700">
+                                  Submitted
+                                </Badge>
+                              )
+                            ) : (
+                              <Badge variant="outline" className="bg-warning-50 text-warning-700">
+                                Pending
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="mr-2"
+                              onClick={() => window.open(assignment.fileUrl)}
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              Download
+                            </Button>
+                            {isSubmitted ? (
+                              <Button 
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(submission.fileUrl)}
+                              >
+                                <FileText className="h-4 w-4 mr-1" />
+                                View Submission
+                              </Button>
+                            ) : (
+                              <Button 
+                                size="sm"
+                                className="bg-oliveGreen-600 hover:bg-oliveGreen-700"
+                                onClick={() => openSubmitDialog(assignment)}
+                              >
+                                <Upload className="h-4 w-4 mr-1" />
+                                Submit
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                        No assignments have been assigned yet.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-
-      {/* Submit Dialog */}
-      <Dialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+      
+      {/* Submit Assignment Dialog */}
+      <Dialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Submit Assignment</DialogTitle>
             <DialogDescription>
-              Upload your completed assignment or enter text below
+              {selectedAssignment && (
+                <>
+                  {selectedAssignment.title} - {selectedAssignment.subjectName}
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="submissionFile">Upload File (Optional)</Label>
-              <Input id="submissionFile" type="file" onChange={(e) => setSubmissionFile(e.target.files?.[0] || null)} />
+          <div className="space-y-4 py-4">
+            {selectedAssignment && (
+              <div className="bg-oliveGreen-50 p-4 rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <span className="font-medium">Due Date:</span>
+                  <span className={`${
+                    isPastDue(selectedAssignment.dueDate) ? "text-danger-600" : ""
+                  }`}>
+                    {new Date(selectedAssignment.dueDate).toLocaleDateString()}
+                    {isPastDue(selectedAssignment.dueDate) && " (Overdue)"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Max Marks:</span>
+                  <span>{selectedAssignment.maxMarks}</span>
+                </div>
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => selectedAssignment && window.open(selectedAssignment.fileUrl)}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download Assignment
+              </Button>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="submissionText">Submission Text (Optional)</Label>
-              <Textarea
-                id="submissionText"
-                placeholder="Enter your submission here..."
-                value={submissionText}
-                onChange={(e) => setSubmissionText(e.target.value)}
+            
+            <div className="space-y-2 border-t pt-4">
+              <label htmlFor="file" className="block text-sm font-medium">
+                Upload Your Submission *
+              </label>
+              <Input
+                id="file"
+                type="file"
+                onChange={handleFileChange}
               />
+              {selectedFile && (
+                <p className="text-xs text-oliveGreen-600">
+                  Selected file: {selectedFile.name}
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSubmitDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsSubmitDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={(e) => handleSubmitAssignment(e, selectedAssignmentId!)}>Submit</Button>
+            <Button onClick={handleSubmit} className="bg-oliveGreen-600 hover:bg-oliveGreen-700">
+              Submit Assignment
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete your submission. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleDeleteSubmission(selectedSubmissionId)}>
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </DashboardLayout>
   );
 }

@@ -1,278 +1,302 @@
-import { useState, useRef, useEffect } from "react";
-import DashboardLayout from "@/components/shared/DashboardLayout";
-import { useData } from "@/contexts/DataContext";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription 
-} from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { 
-  Send, 
-  UserCircle,
-  MoreVertical
-} from "lucide-react";
+import { useData } from "@/contexts/DataContext";
+import { toast } from "sonner";
+import ChatBot from "@/components/student/ChatBot";
+import DashboardLayout from "@/components/shared/DashboardLayout";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Send, Bot, User } from "lucide-react";
 
-export default function StudentChat() {
-  const { user } = useAuth();
-  const { teachers, messages, sendMessage, markMessageAsRead } = useData();
-  const [selectedTeacher, setSelectedTeacher] = useState<string | null>(null);
-  const [messageText, setMessageText] = useState("");
+export default function Chat() {
+  const { user, teacherList } = useAuth();
+  const { messages, sendMessage, markMessageAsRead } = useData();
+  const [message, setMessage] = useState("");
+  const [activeChat, setActiveChat] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showChatBot, setShowChatBot] = useState(false);
 
-  useEffect(() => {
-    if (!selectedTeacher && teachers.length > 0) {
-      const benerjiTeacher = teachers.find(t => t.name === "A Benerji Babu");
-      if (benerjiTeacher) {
-        setSelectedTeacher(benerjiTeacher.id);
-      } else {
-        setSelectedTeacher(teachers[0].id);
-      }
-    }
-  }, [teachers, selectedTeacher]);
-
-  const teacher = teachers.find(t => t.id === selectedTeacher);
-
-  const conversation = selectedTeacher && user
-    ? messages.filter(
-        msg =>
-          (msg.senderId === user.id && msg.receiverId === selectedTeacher) ||
-          (msg.senderId === selectedTeacher && msg.receiverId === user.id)
-      )
-    : [];
-
-  const sortedMessages = [...conversation].sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  // Filter messages that involve the current user
+  const userMessages = messages.filter(
+    (msg) =>
+      (msg.senderId === user?.id || msg.receiverId === user?.id)
   );
 
-  useEffect(() => {
-    if (selectedTeacher && user) {
-      const unreadMessages = sortedMessages.filter(
-        msg => msg.senderId === selectedTeacher && !msg.read
-      );
+  // Get unique contacts from messages
+  const userContacts = [
+    ...new Set([
+      ...userMessages
+        .filter((msg) => msg.senderId !== user?.id)
+        .map((msg) => msg.senderId),
+      ...userMessages
+        .filter((msg) => msg.receiverId !== user?.id)
+        .map((msg) => msg.receiverId),
+    ]),
+  ];
 
-      unreadMessages.forEach(msg => {
+  // Group messages by contact
+  const messagesByContact = userContacts.reduce((acc, contactId) => {
+    const contactMessages = userMessages.filter(
+      (msg) =>
+        (msg.senderId === contactId && msg.receiverId === user?.id) ||
+        (msg.senderId === user?.id && msg.receiverId === contactId)
+    );
+    const contact = teacherList.find((t) => t.id === contactId);
+    
+    if (contact) {
+      acc[contactId] = {
+        contact: {
+          id: contact.id,
+          name: contact.name,
+          email: contact.email,
+          type: "teacher" as const,
+        },
+        messages: contactMessages.sort(
+          (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        ),
+        unread: contactMessages.filter(
+          (msg) => msg.receiverId === user?.id && !msg.read
+        ).length,
+      };
+    }
+    
+    return acc;
+  }, {} as Record<string, { contact: { id: string, name: string, email: string, type: "teacher" }, messages: typeof messages, unread: number }>);
+
+  // Add all teachers as potential contacts even if no messages exist yet
+  teacherList.forEach(teacher => {
+    if (!messagesByContact[teacher.id]) {
+      messagesByContact[teacher.id] = {
+        contact: {
+          id: teacher.id,
+          name: teacher.name,
+          email: teacher.email,
+          type: "teacher",
+        },
+        messages: [],
+        unread: 0,
+      };
+    }
+  });
+
+  // Get active contact details
+  const activeContact = activeChat ? messagesByContact[activeChat]?.contact : null;
+  const activeMessages = activeChat ? messagesByContact[activeChat]?.messages : [];
+
+  // Mark messages as read when viewing a conversation
+  useEffect(() => {
+    if (activeChat) {
+      const unreadMessages = activeMessages.filter(
+        (msg) => msg.receiverId === user?.id && !msg.read
+      );
+      unreadMessages.forEach((msg) => {
         markMessageAsRead(msg.id);
       });
     }
-  }, [selectedTeacher, sortedMessages, user, markMessageAsRead]);
+  }, [activeChat, activeMessages, user?.id, markMessageAsRead]);
 
+  // Scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [sortedMessages]);
+  }, [activeMessages]);
 
   const handleSendMessage = () => {
-    if (!messageText.trim() || !selectedTeacher || !user) return;
+    if (!message.trim() || !activeChat || !activeContact) return;
 
     sendMessage({
-      sender: user.id,
-      senderId: user.id,
+      senderId: user?.id || "",
+      senderName: user?.name || "",
       senderType: "student",
-      senderName: user.name,
-      recipient: selectedTeacher,
-      receiverId: selectedTeacher,
+      receiverId: activeContact.id,
+      receiverName: activeContact.name,
       receiverType: "teacher",
-      receiverName: teacher?.name || "Teacher",
-      content: messageText,
+      content: message,
     });
 
-    setMessageText("");
+    setMessage("");
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handleSendMessage();
-    }
-  };
-
-  const countUnreadMessages = (teacherId: string) => {
-    if (!user) return 0;
-    
-    return messages.filter(
-      msg => msg.senderId === teacherId && msg.receiverId === user.id && !msg.read
-    ).length;
-  };
-
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const getNameInitials = (name: string) => {
+    const nameParts = name.split(' ');
+    return nameParts.length > 1 
+      ? `${nameParts[0][0]}${nameParts[1][0]}` 
+      : name.slice(0, 2).toUpperCase();
   };
 
   return (
-    <DashboardLayout title="Messages" subtitle="Chat with your teachers">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="md:col-span-1 shadow-md">
-          <CardHeader className="bg-primary/5">
-            <CardTitle className="text-lg">Teachers</CardTitle>
-            <CardDescription>Select a teacher to chat</CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y">
-              {teachers.map((teacher) => {
-                const unreadCount = countUnreadMessages(teacher.id);
-                
-                return (
-                  <div 
-                    key={teacher.id}
-                    className={`p-3 cursor-pointer hover:bg-gray-50 transition-colors
-                      ${selectedTeacher === teacher.id ? "bg-primary/5" : ""}
-                    `}
-                    onClick={() => setSelectedTeacher(teacher.id)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-9 w-9">
-                        <AvatarFallback className="bg-primary/20 text-primary-800">
-                          {teacher.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 overflow-hidden">
-                        <p className="font-medium text-sm truncate">{teacher.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{teacher.department}</p>
-                      </div>
-                      {unreadCount > 0 && (
-                        <span className="bg-primary text-white text-xs font-medium px-2 py-0.5 rounded-full">
-                          {unreadCount}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-3 shadow-md flex flex-col h-[70vh]">
-          {selectedTeacher && teacher ? (
-            <>
-              <CardHeader className="bg-primary/5 px-4 py-3 border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9">
-                      <AvatarFallback className="bg-primary/20 text-primary-800">
-                        {teacher.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <CardTitle className="text-base">{teacher.name}</CardTitle>
-                      <CardDescription className="text-xs">
-                        {teacher.department}
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-5 w-5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-white">
-                      <DropdownMenuLabel>Options</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>View Profile</DropdownMenuItem>
-                      <DropdownMenuItem>Clear Chat</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-
-              <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-                {sortedMessages.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
-                    <UserCircle className="h-16 w-16 text-muted-foreground/50 mb-2" />
-                    <p>No messages yet</p>
-                    <p className="text-sm">Send a message to start the conversation</p>
-                  </div>
-                ) : (
-                  sortedMessages.map((msg, index) => {
-                    const isCurrentUser = msg.senderId === user?.id;
-                    const isFirstMessageOfDay = index === 0 || 
-                      new Date(msg.timestamp).toDateString() !== 
-                      new Date(sortedMessages[index - 1].timestamp).toDateString();
-                    
-                    return (
-                      <div key={msg.id}>
-                        {isFirstMessageOfDay && (
-                          <div className="flex justify-center my-4">
-                            <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-md">
-                              {new Date(msg.timestamp).toLocaleDateString()}
-                            </span>
-                          </div>
-                        )}
-                        <div
-                          className={`flex ${
-                            isCurrentUser ? "justify-end" : "justify-start"
-                          }`}
-                        >
-                          <div
-                            className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                              isCurrentUser
-                                ? "bg-primary text-white rounded-br-none"
-                                : "bg-gray-100 text-gray-800 rounded-bl-none"
-                            }`}
-                          >
-                            <p className="text-sm">{msg.content}</p>
-                            <div
-                              className={`text-xs mt-1 ${
-                                isCurrentUser ? "text-primary-100" : "text-gray-500"
-                              }`}
-                            >
-                              {formatTime(msg.timestamp)}
+    <DashboardLayout title="Messages" subtitle="Chat with your teachers and academic advisors">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Contacts list */}
+        <div className="md:col-span-1">
+          <Card className="h-[calc(100vh-200px)] overflow-hidden">
+            <CardHeader className="bg-slate-50">
+              <CardTitle className="text-lg">Contacts</CardTitle>
+              <CardDescription>Your teachers and advisors</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="h-[calc(100%-80px)] overflow-y-auto">
+                {Object.entries(messagesByContact).length > 0 ? (
+                  <div className="divide-y">
+                    {Object.entries(messagesByContact).map(([contactId, { contact, messages, unread }]) => (
+                      <button
+                        key={contactId}
+                        className={`w-full text-left p-3 hover:bg-slate-50 transition-colors ${
+                          activeChat === contactId ? "bg-slate-100" : ""
+                        }`}
+                        onClick={() => setActiveChat(contactId)}
+                      >
+                        <div className="flex items-center">
+                          <Avatar className="h-10 w-10 mr-3 bg-primary">
+                            <AvatarFallback>{getNameInitials(contact.name)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-center">
+                              <p className="font-medium truncate">{contact.name}</p>
+                              {unread > 0 && (
+                                <Badge className="ml-2 bg-primary">{unread}</Badge>
+                              )}
                             </div>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {contact.email}
+                            </p>
+                            {messages.length > 0 && (
+                              <p className="text-sm text-muted-foreground truncate mt-1">
+                                {messages[messages.length - 1].content.substring(0, 30)}
+                                {messages[messages.length - 1].content.length > 30 && "..."}
+                              </p>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    );
-                  })
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-6 text-center text-muted-foreground">
+                    No contacts found.
+                  </div>
                 )}
-                <div ref={messagesEndRef} />
-              </CardContent>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-              <div className="p-3 border-t">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Type a message..."
-                    value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className="flex-1"
+        {/* Chat area */}
+        <div className="md:col-span-2">
+          <Card className="h-[calc(100vh-200px)] flex flex-col">
+            {activeContact ? (
+              <>
+                <CardHeader className="bg-slate-50 pb-3 flex-shrink-0">
+                  <div className="flex items-center">
+                    <Avatar className="h-10 w-10 mr-3 bg-primary">
+                      <AvatarFallback>{getNameInitials(activeContact.name)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <CardTitle className="text-lg">{activeContact.name}</CardTitle>
+                      <CardDescription>{activeContact.email}</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-y-auto p-4 flex flex-col space-y-4">
+                  {activeMessages.length > 0 ? (
+                    activeMessages.map((msg, index) => (
+                      <div
+                        key={msg.id}
+                        className={`flex ${
+                          msg.senderId === user?.id ? "justify-end" : "justify-start"
+                        }`}
+                      >
+                        <div
+                          className={`max-w-[75%] rounded-lg p-3 ${
+                            msg.senderId === user?.id
+                              ? "bg-primary text-white"
+                              : "bg-slate-100 text-slate-900"
+                          }`}
+                        >
+                          <p className="text-sm">{msg.content}</p>
+                          <p
+                            className={`text-xs mt-1 ${
+                              msg.senderId === user?.id
+                                ? "text-primary-foreground/70"
+                                : "text-slate-500"
+                            }`}
+                          >
+                            {new Date(msg.timestamp).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center">
+                      <User className="h-12 w-12 text-muted-foreground mb-2" />
+                      <p className="font-medium">No messages yet</p>
+                      <p className="text-sm text-muted-foreground">
+                        Send a message to start a conversation with {activeContact.name}
+                      </p>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </CardContent>
+                <div className="p-3 border-t bg-slate-50 flex items-end gap-2">
+                  <Textarea
+                    placeholder={`Message ${activeContact.name}...`}
+                    className="min-h-[60px] resize-none bg-white"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
                   />
                   <Button
+                    size="icon"
+                    className="h-10 w-10 rounded-full"
                     onClick={handleSendMessage}
-                    disabled={!messageText.trim()}
-                    className="bg-primary hover:bg-primary/90 text-white"
+                    disabled={!message.trim()}
                   >
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
+              </>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                <Bot className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="font-medium text-lg mb-2">Select a Contact</h3>
+                <p className="text-muted-foreground mb-4">
+                  Choose a teacher from the list to start a conversation
+                </p>
               </div>
-            </>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-4 text-center text-muted-foreground">
-              <UserCircle className="h-20 w-20 text-muted-foreground/30 mb-4" />
-              <h3 className="font-medium text-lg text-primary-900 mb-2">
-                Select a Teacher
-              </h3>
-              <p>
-                Choose a teacher from the list to start a conversation.
-              </p>
-            </div>
-          )}
-        </Card>
+            )}
+          </Card>
+        </div>
+      </div>
+
+      {/* AI Chatbot */}
+      <div className="mt-6">
+        {showChatBot ? (
+          <ChatBot onClose={() => setShowChatBot(false)} />
+        ) : (
+          <Button 
+            onClick={() => setShowChatBot(true)}
+            className="flex items-center gap-2"
+          >
+            <Bot className="h-4 w-4" />
+            Open AI Tutor
+          </Button>
+        )}
       </div>
     </DashboardLayout>
   );
