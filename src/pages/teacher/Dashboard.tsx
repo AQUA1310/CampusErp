@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { ArrowUpRight, Calendar, GraduationCap, Users, CheckCircle, Clock } from "lucide-react";
+import { ArrowUpRight, Calendar as CalendarIcon, GraduationCap, Users, CheckCircle, Clock } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -86,7 +86,6 @@ export default function TeacherDashboard() {
   };
 
   const handleScheduleClass = () => {
-    // Implement schedule class logic here
     setShowScheduleModal(false);
     toast.success("Class scheduled successfully");
   };
@@ -121,7 +120,6 @@ export default function TeacherDashboard() {
     );
   };
 
-  // Safe formatting function for potentially undefined values
   const safeToFixed = (value: number | undefined, digits: number = 2): string => {
     if (value === undefined || value === null) {
       return '0.00';
@@ -198,7 +196,6 @@ export default function TeacherDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4">
-            {/* Updated Select component without className prop */}
             <Select value={performanceSubject} onValueChange={setPerformanceSubject}>
               <SelectTrigger>
                 <SelectValue placeholder="Select subject" />
@@ -274,7 +271,6 @@ export default function TeacherDashboard() {
           </CardContent>
         </Card>
 
-        {/* Add Assignment Modal */}
         <Dialog open={showModal} onOpenChange={setShowModal}>
           <DialogContent>
             <DialogHeader>
@@ -350,6 +346,7 @@ export default function TeacherDashboard() {
                       selected={calendarValue}
                       onSelect={setCalendarValue}
                       initialFocus
+                      className="pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
@@ -382,7 +379,6 @@ export default function TeacherDashboard() {
           </DialogContent>
         </Dialog>
         
-        {/* Schedule Class Modal */}
         <Dialog open={showScheduleModal} onOpenChange={setShowScheduleModal}>
           <DialogContent>
             <DialogHeader>
@@ -396,21 +392,18 @@ export default function TeacherDashboard() {
                 <Label htmlFor="subject" className="text-right">
                   Subject
                 </Label>
-                
-              {/* Updated Select component without className prop */}
-              <Select value={scheduleFormValues.subject} onValueChange={(value) => handleScheduleFormChange('subject', value)}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select subject" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
+                <Select value={scheduleFormValues.subject} onValueChange={(value) => handleScheduleFormChange('subject', value)}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select subject" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subjects.map((subject) => (
+                      <SelectItem key={subject.id} value={subject.id}>
+                        {subject.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="date" className="text-right">
@@ -439,6 +432,7 @@ export default function TeacherDashboard() {
                         handleScheduleFormChange('date', format(date!, "yyyy-MM-dd"));
                       }}
                       initialFocus
+                      className="pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
