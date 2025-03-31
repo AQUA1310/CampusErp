@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -85,7 +86,7 @@ export default function TeacherStudents() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] useState<any>(null);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const form = useForm<z.infer<typeof studentSchema>>({
