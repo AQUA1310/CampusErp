@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import DashboardLayout from "@/components/shared/DashboardLayout";
 import { useData } from "@/contexts/DataContext";
@@ -32,7 +31,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { MinorResult } from "@/contexts/DataContext";
+import { type MinorResult } from "@/contexts/DataContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, BookOpen } from "lucide-react";
 import { 

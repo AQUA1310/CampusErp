@@ -33,6 +33,7 @@ export interface Subject {
   name: string;
   credits: string;
   description?: string;
+  semester: number;
 }
 
 export interface Assignment {
@@ -146,6 +147,20 @@ export interface MinorResult {
   studentId?: string;
   rollNumber?: string;
   studentName?: string;
+  percentage?: number;
+}
+
+export interface SemesterGrade {
+  id: string;
+  studentId: string;
+  studentName: string;
+  rollNumber: string;
+  subjectId: string;
+  subjectName: string;
+  subjectCode: string;
+  grade: string;
+  credit: number;
+  semester: number;
 }
 
 export interface SemesterResult {
@@ -175,6 +190,9 @@ interface DataContextType {
   timetable: TimeTable;
   semesterResults: SemesterResult[];
   minorResults: MinorResult[];
+  semesterGrades: SemesterGrade[];
+  setSemesterGrades: (grades: SemesterGrade[]) => void;
+  setMinorResults: (results: MinorResult[]) => void;
 
   submitAssignment: (assignmentId: string, studentId: string, fileUrl: string) => void;
   sendMessage: (message: Omit<Message, "id" | "timestamp" | "read">) => void;
@@ -199,6 +217,9 @@ const DataContext = createContext<DataContextType>({
   timetable: { slots: [] },
   semesterResults: [],
   minorResults: [],
+  semesterGrades: [],
+  setSemesterGrades: () => {},
+  setMinorResults: () => {},
 
   submitAssignment: () => {},
   sendMessage: () => {},
@@ -321,56 +342,64 @@ const mockSubjects: Subject[] = [
     code: "MA1102",
     name: "Design Thinking",
     credits: "0-1-4 3",
-    description: "Introduction to design thinking process, methods, and tools."
+    description: "Introduction to design thinking process, methods, and tools.",
+    semester: 2
   },
   {
     id: "2",
     code: "MA1104",
     name: "Ordinary Differential Equations",
     credits: "3-0-0 3",
-    description: "Study of equations containing derivatives of one or more unknown functions with respect to a single variable."
+    description: "Study of equations containing derivatives of one or more unknown functions with respect to a single variable.",
+    semester: 2
   },
   {
     id: "3",
     code: "MA1106",
     name: "Data Structures and Algorithms",
     credits: "3-0-2 4",
-    description: "Fundamental data structures and algorithms for organizing, searching, and sorting data."
+    description: "Fundamental data structures and algorithms for organizing, searching, and sorting data.",
+    semester: 2
   },
   {
     id: "4",
     code: "EE1162",
     name: "Basic Electrical and Electronics Engineering",
     credits: "3-0-0 3",
-    description: "Introduction to electrical and electronic components, circuits, and systems."
+    description: "Introduction to electrical and electronic components, circuits, and systems.",
+    semester: 2
   },
   {
     id: "5",
     code: "MA1108",
     name: "Elementary Linear Algebra",
     credits: "3-0-0 3",
-    description: "Study of vectors, vector spaces, linear transformations, and systems of linear equations."
+    description: "Study of vectors, vector spaces, linear transformations, and systems of linear equations.",
+    semester: 2
   },
   {
     id: "6",
     code: "MA1110",
     name: "Discrete Mathematical Structures",
     credits: "3-0-0 3",
-    description: "Mathematical structures that are fundamentally discrete rather than continuous."
+    description: "Mathematical structures that are fundamentally discrete rather than continuous.",
+    semester: 2
   },
   {
     id: "7",
     code: "EE1164",
     name: "Basic Electrical Engineering Lab",
     credits: "0-1-2 2",
-    description: "Practical laboratory work related to basic electrical engineering concepts."
+    description: "Practical laboratory work related to basic electrical engineering concepts.",
+    semester: 2
   },
   {
     id: "8",
     code: "IC1102",
     name: "EAA-II (Games & Sports / Yoga & Wellness)",
     credits: "0-0-0 0",
-    description: "Extra Academic Activity focusing on physical fitness and wellness."
+    description: "Extra Academic Activity focusing on physical fitness and wellness.",
+    semester: 2
   },
 ];
 
@@ -787,7 +816,9 @@ const mockMinorResults: MinorResult[] = [
     examDate: "2023-09-15",
     examType: "Minor1",
     studentId: "1",
-    rollNumber: "24MAB0A41"
+    rollNumber: "24MAB0A41",
+    studentName: "V Dhruv",
+    percentage: 86.67
   },
   {
     id: "m2",
@@ -799,7 +830,9 @@ const mockMinorResults: MinorResult[] = [
     examDate: "2023-09-16",
     examType: "Minor1",
     studentId: "1",
-    rollNumber: "24MAB0A41"
+    rollNumber: "24MAB0A41",
+    studentName: "V Dhruv",
+    percentage: 93.33
   },
   {
     id: "m3",
@@ -811,7 +844,9 @@ const mockMinorResults: MinorResult[] = [
     examDate: "2023-09-17",
     examType: "Minor1",
     studentId: "1",
-    rollNumber: "24MAB0A41"
+    rollNumber: "24MAB0A41",
+    studentName: "V Dhruv",
+    percentage: 83.33
   },
   {
     id: "m4",
@@ -823,7 +858,9 @@ const mockMinorResults: MinorResult[] = [
     examDate: "2023-09-18",
     examType: "Minor1",
     studentId: "1",
-    rollNumber: "24MAB0A41"
+    rollNumber: "24MAB0A41",
+    studentName: "V Dhruv",
+    percentage: 80.00
   },
   {
     id: "m5",
@@ -835,7 +872,9 @@ const mockMinorResults: MinorResult[] = [
     examDate: "2023-10-20",
     examType: "Minor2",
     studentId: "1",
-    rollNumber: "24MAB0A41"
+    rollNumber: "24MAB0A41",
+    studentName: "V Dhruv",
+    percentage: 93.33
   },
   {
     id: "m6",
@@ -847,7 +886,9 @@ const mockMinorResults: MinorResult[] = [
     examDate: "2023-10-21",
     examType: "Minor2",
     studentId: "1",
-    rollNumber: "24MAB0A41"
+    rollNumber: "24MAB0A41",
+    studentName: "V Dhruv",
+    percentage: 96.67
   },
   {
     id: "m7",
@@ -859,7 +900,9 @@ const mockMinorResults: MinorResult[] = [
     examDate: "2023-10-22",
     examType: "Minor2",
     studentId: "1",
-    rollNumber: "24MAB0A41"
+    rollNumber: "24MAB0A41",
+    studentName: "V Dhruv",
+    percentage: 90.00
   },
   {
     id: "m8",
@@ -871,7 +914,48 @@ const mockMinorResults: MinorResult[] = [
     examDate: "2023-10-23",
     examType: "Minor2",
     studentId: "1",
-    rollNumber: "24MAB0A41"
+    rollNumber: "24MAB0A41",
+    studentName: "V Dhruv",
+    percentage: 86.67
+  }
+];
+
+const mockSemesterGrades: SemesterGrade[] = [
+  {
+    id: "sg1",
+    studentId: "1",
+    studentName: "V Dhruv",
+    rollNumber: "24MAB0A41",
+    subjectId: "1",
+    subjectName: "Design Thinking",
+    subjectCode: "MA1102",
+    grade: "A",
+    credit: 4,
+    semester: 2
+  },
+  {
+    id: "sg2",
+    studentId: "1",
+    studentName: "V Dhruv",
+    rollNumber: "24MAB0A41",
+    subjectId: "2",
+    subjectName: "Ordinary Differential Equations",
+    subjectCode: "MA1104",
+    grade: "S",
+    credit: 4,
+    semester: 2
+  },
+  {
+    id: "sg3",
+    studentId: "1",
+    studentName: "V Dhruv",
+    rollNumber: "24MAB0A41",
+    subjectId: "3",
+    subjectName: "Data Structures and Algorithms",
+    subjectCode: "MA1106",
+    grade: "A",
+    credit: 4,
+    semester: 2
   }
 ];
 
@@ -887,7 +971,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [timetable] = useState<TimeTable>(mockTimetable);
   const [semesterResults] = useState<SemesterResult[]>(mockSemesterResults);
-  const [minorResults] = useState<MinorResult[]>(mockMinorResults);
+  const [minorResults, setMinorResults] = useState<MinorResult[]>(mockMinorResults);
+  const [semesterGrades, setSemesterGrades] = useState<SemesterGrade[]>(mockSemesterGrades);
 
   const submitAssignment = (assignmentId: string, studentId: string, fileUrl: string) => {
     const student = students.find((s) => s.id === studentId);
@@ -1102,6 +1187,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         timetable,
         semesterResults,
         minorResults,
+        semesterGrades,
+        setMinorResults,
+        setSemesterGrades,
         submitAssignment,
         sendMessage,
         markMessageAsRead,

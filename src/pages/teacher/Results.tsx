@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,8 +29,8 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { FileEdit, Save, BookOpen } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { type MinorResult, type SemesterGrade } from "@/contexts/DataContext";
 
-// Define types for better type safety
 interface Student {
   id: string;
   rollNumber: string;
