@@ -12,7 +12,8 @@ import {
   Bell,
   Clock,
   BarChart,
-  BrainCircuit
+  BrainCircuit,
+  MapPin
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,37 +23,39 @@ import ChatBot from "@/components/student/ChatBot";
 
 // Subject class mapping
 const subjectSlotMapping = {
-  "DT": { name: "MA1102 Design Thinking", faculty: "Prof. A. Benerji Babu", location: "Computation Lab" },
-  "A": { name: "EE1162 Basic Electrical and Electronics Engineering", faculty: "Prof. B. L Narasimharaju", location: "E104 (NAB)" },
-  "B": { name: "MA1104 Ordinary Differential Equations", faculty: "Prof. Satyanarayana Engu", location: "E104 (NAB)" },
-  "C": { name: "MA1108 Elementary Linear Algebra", faculty: "Prof. Jagannath Roy", location: "A315 (Electrical Dept)" },
-  "D": { name: "EE1164 Basic Electrical Engineering Lab", faculty: "Prof. B. L Narasimharaju", location: "Electrical Dept" },
-  "E": { name: "MA1106 Data Structures and Algorithms", faculty: "Prof. Debashis Dutta", location: "E104 (NAB)" },
-  "F": { name: "IC1102 EAA-II (Games & Sports / Yoga & Wellness)", faculty: "Sports Department", location: "Stadium" },
-  "G": { name: "MA1110 Discrete Mathematical Structures", faculty: "Prof. D. Srinivasacharya", location: "E104 (NAB)" },
-  "H": { name: "Lab Sessions", faculty: "Various", location: "Respective Labs" },
+  "DT": { name: "MA1102 Design Thinking", faculty: "Prof. A. Benerji Babu", location: "Room No. E104", acronym: "DT" },
+  "A": { name: "EE1162 Basic Electrical and Electronics Engineering", faculty: "Prof. B. L Narasimharaju", location: "Room No. E104", acronym: "BEEE" },
+  "B": { name: "MA1104 Ordinary Differential Equations", faculty: "Prof. Satyanarayana Engu", location: "Room No. E104", acronym: "ODE" },
+  "C": { name: "MA1108 Elementary Linear Algebra", faculty: "Prof. Jagannath Roy", location: "Room No. A315 (Electrical Dept)", acronym: "ELA" },
+  "D": { name: "MA1106 Data Structures and Algorithms", faculty: "Prof. Debashis Dutta", location: "Room No. E104", acronym: "DSA" },
+  "E": { name: "MA1106 Data Structures and Algorithms", faculty: "Prof. Debashis Dutta", location: "Room No. E104", acronym: "DSA" },
+  "F": { name: "IC1102 EAA-II (Games & Sports / Yoga & Wellness)", faculty: "Sports Department", location: "Stadium", acronym: "GSYW" },
+  "G": { name: "MA1110 Discrete Mathematical Structures", faculty: "Prof. D. Srinivasacharya", location: "Room No. E104", acronym: "DMS" },
+  "H": { name: "Lab Sessions", faculty: "Various", location: "Respective Labs", acronym: "LAB" },
+  "BEE LAB": { name: "EE1164 Basic Electrical Engineering Lab", faculty: "Prof. B. L Narasimharaju", location: "Electrical Dept", acronym: "BEE LAB" },
+  "DSA LAB": { name: "MA1106 DSA Lab", faculty: "Prof. Debashis Dutta", location: "Computation Lab", acronym: "DSA LAB" },
 };
 
-// Timetable structure
+// Updated timetable according to the provided image
 const timetableData = {
   "Monday": [
     { slot: "G", time: "8:00 - 8:55", subject: subjectSlotMapping["G"] },
-    { slot: "BEE LAB", time: "9:00 - 9:55", subject: { name: "EE1164 Basic Electrical Engineering Lab", faculty: "Prof. B. L Narasimharaju", location: "Electrical Dept" } },
-    { slot: "BEE LAB", time: "10:00 - 10:55", subject: { name: "EE1164 Basic Electrical Engineering Lab", faculty: "Prof. B. L Narasimharaju", location: "Electrical Dept" } },
-    { slot: "BEE LAB", time: "11:05 - 12:00", subject: { name: "EE1164 Basic Electrical Engineering Lab", faculty: "Prof. B. L Narasimharaju", location: "Electrical Dept" } },
-    { slot: "LUNCH", time: "12:05 - 1:00", subject: { name: "Lunch Break", faculty: "", location: "Canteen" } },
-    { slot: "F", time: "1:05 - 2:00", subject: subjectSlotMapping["F"] },
-    { slot: "B", time: "2:05 - 3:00", subject: subjectSlotMapping["B"] },
+    { slot: "BEE LAB", time: "9:00 - 9:55", subject: subjectSlotMapping["BEE LAB"] },
+    { slot: "BEE LAB", time: "10:00 - 10:55", subject: subjectSlotMapping["BEE LAB"] },
+    { slot: "BEE LAB", time: "11:05 - 12:00", subject: subjectSlotMapping["BEE LAB"] },
+    { slot: "LUNCH", time: "12:05 - 1:00", subject: { name: "Lunch Break", faculty: "", location: "Canteen", acronym: "LUNCH" } },
+    { slot: "F", time: "1:00 - 1:55", subject: subjectSlotMapping["F"] },
+    { slot: "B", time: "2:00 - 2:55", subject: subjectSlotMapping["B"] },
     { slot: "C", time: "3:05 - 4:00", subject: subjectSlotMapping["C"] },
   ],
   "Tuesday": [
     { slot: "G", time: "8:00 - 8:55", subject: subjectSlotMapping["G"] },
-    { slot: "FREE", time: "9:00 - 9:55", subject: { name: "Free Period", faculty: "", location: "" } },
-    { slot: "FREE", time: "10:00 - 10:55", subject: { name: "Free Period", faculty: "", location: "" } },
-    { slot: "FREE", time: "11:05 - 12:00", subject: { name: "Free Period", faculty: "", location: "" } },
-    { slot: "FREE", time: "12:05 - 1:00", subject: { name: "Free Period", faculty: "", location: "" } },
-    { slot: "D", time: "1:05 - 2:00", subject: subjectSlotMapping["D"] },
-    { slot: "A", time: "2:05 - 3:00", subject: subjectSlotMapping["A"] },
+    { slot: "FREE", time: "9:00 - 9:55", subject: { name: "Free Period", faculty: "", location: "", acronym: "FREE" } },
+    { slot: "FREE", time: "10:00 - 10:55", subject: { name: "Free Period", faculty: "", location: "", acronym: "FREE" } },
+    { slot: "FREE", time: "11:05 - 12:00", subject: { name: "Free Period", faculty: "", location: "", acronym: "FREE" } },
+    { slot: "LUNCH", time: "12:05 - 1:00", subject: { name: "Lunch Break", faculty: "", location: "Canteen", acronym: "LUNCH" } },
+    { slot: "D", time: "1:00 - 1:55", subject: subjectSlotMapping["D"] },
+    { slot: "A", time: "2:00 - 2:55", subject: subjectSlotMapping["A"] },
     { slot: "B", time: "3:05 - 4:00", subject: subjectSlotMapping["B"] },
     { slot: "C", time: "4:05 - 5:00", subject: subjectSlotMapping["C"] },
   ],
@@ -61,11 +64,10 @@ const timetableData = {
     { slot: "G", time: "9:00 - 9:55", subject: subjectSlotMapping["G"] },
     { slot: "E", time: "10:00 - 10:55", subject: subjectSlotMapping["E"] },
     { slot: "A", time: "11:05 - 12:00", subject: subjectSlotMapping["A"] },
-    { slot: "LUNCH", time: "12:05 - 1:00", subject: { name: "Lunch Break", faculty: "", location: "Canteen" } },
-    { slot: "B", time: "1:05 - 2:00", subject: subjectSlotMapping["B"] },
-    { slot: "FREE", time: "2:05 - 3:00", subject: { name: "Free Period", faculty: "", location: "" } },
-    { slot: "FREE", time: "3:05 - 4:00", subject: { name: "Free Period", faculty: "", location: "" } },
-    { slot: "FREE", time: "4:05 - 5:00", subject: { name: "Free Period", faculty: "", location: "" } },
+    { slot: "B", time: "12:05 - 1:00", subject: subjectSlotMapping["B"] },
+    { slot: "LUNCH", time: "1:00 - 1:55", subject: { name: "Lunch Break", faculty: "", location: "Canteen", acronym: "LUNCH" } },
+    { slot: "FREE", time: "2:00 - 2:55", subject: { name: "Free Period", faculty: "", location: "", acronym: "FREE" } },
+    { slot: "FREE", time: "3:05 - 4:00", subject: { name: "Free Period", faculty: "", location: "", acronym: "FREE" } },
   ],
   "Thursday": [
     { slot: "H", time: "8:00 - 8:55", subject: subjectSlotMapping["H"] },
@@ -73,10 +75,9 @@ const timetableData = {
     { slot: "F", time: "10:00 - 10:55", subject: subjectSlotMapping["F"] },
     { slot: "E", time: "11:05 - 12:00", subject: subjectSlotMapping["E"] },
     { slot: "A", time: "12:05 - 1:00", subject: subjectSlotMapping["A"] },
-    { slot: "FREE", time: "1:05 - 2:00", subject: { name: "Free Period", faculty: "", location: "" } },
-    { slot: "FREE", time: "2:05 - 3:00", subject: { name: "Free Period", faculty: "", location: "" } },
-    { slot: "FREE", time: "3:05 - 4:00", subject: { name: "Free Period", faculty: "", location: "" } },
-    { slot: "FREE", time: "4:05 - 5:00", subject: { name: "Free Period", faculty: "", location: "" } },
+    { slot: "LUNCH", time: "1:00 - 1:55", subject: { name: "Lunch Break", faculty: "", location: "Canteen", acronym: "LUNCH" } },
+    { slot: "DSA LAB", time: "2:00 - 4:00", subject: subjectSlotMapping["DSA LAB"] },
+    { slot: "FREE", time: "4:05 - 5:00", subject: { name: "Free Period", faculty: "", location: "", acronym: "FREE" } },
   ],
   "Friday": [
     { slot: "H", time: "8:00 - 8:55", subject: subjectSlotMapping["H"] },
@@ -84,10 +85,7 @@ const timetableData = {
     { slot: "D", time: "10:00 - 10:55", subject: subjectSlotMapping["D"] },
     { slot: "F", time: "11:05 - 12:00", subject: subjectSlotMapping["F"] },
     { slot: "E", time: "12:05 - 1:00", subject: subjectSlotMapping["E"] },
-    { slot: "DT", time: "1:05 - 2:00", subject: subjectSlotMapping["DT"] },
-    { slot: "DT", time: "2:05 - 3:00", subject: subjectSlotMapping["DT"] },
-    { slot: "DT", time: "3:05 - 4:00", subject: subjectSlotMapping["DT"] },
-    { slot: "DT", time: "4:05 - 5:00", subject: subjectSlotMapping["DT"] },
+    { slot: "DT", time: "2:00 - 6:00", subject: subjectSlotMapping["DT"] },
   ],
   "Saturday": [],
   "Sunday": []
@@ -102,6 +100,7 @@ export default function StudentDashboard() {
   const [currentTime, setCurrentTime] = useState("");
   const [currentClass, setCurrentClass] = useState<any>(null);
   const [nextClass, setNextClass] = useState<any>(null);
+  const [formattedDate, setFormattedDate] = useState("");
 
   const studentName = user?.name || "Student";
   const studentAttendance = attendanceSummary.find(
@@ -123,6 +122,15 @@ export default function StudentDashboard() {
     const hours = now.getHours();
     const minutes = now.getMinutes();
     const currentTimeInMinutes = hours * 60 + minutes;
+    
+    // Format current date
+    const options: Intl.DateTimeFormatOptions = { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    };
+    setFormattedDate(now.toLocaleDateString('en-US', options));
     
     setCurrentDay(day);
     setCurrentTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
@@ -157,7 +165,17 @@ export default function StudentDashboard() {
     // Find next class
     if (foundCurrentClass) {
       const currentIndex = daySchedule.indexOf(foundCurrentClass);
-      setNextClass(currentIndex < daySchedule.length - 1 ? daySchedule[currentIndex + 1] : null);
+      
+      // Find the next non-lunch, non-free class
+      let nextUpcomingClass = null;
+      for (let i = currentIndex + 1; i < daySchedule.length; i++) {
+        if (daySchedule[i].slot !== "LUNCH" && daySchedule[i].slot !== "FREE") {
+          nextUpcomingClass = daySchedule[i];
+          break;
+        }
+      }
+      
+      setNextClass(nextUpcomingClass);
     } else {
       // If no current class, find next upcoming class
       let nextUpcomingClass = null;
@@ -214,24 +232,36 @@ export default function StudentDashboard() {
               <div>
                 <CardTitle className="text-primary-800">Current Schedule</CardTitle>
                 <CardDescription className="text-primary-600">
-                  {currentDay}, {currentTime}
+                  {formattedDate} | {currentTime}
                 </CardDescription>
               </div>
-              <Clock className="h-6 w-6 text-primary-600" />
+              <div className="flex items-center space-x-2">
+                <img 
+                  src="/lovable-uploads/7de97c84-fdc4-4add-a871-6b9b5f6fd8dd.png" 
+                  alt="Timetable" 
+                  className="h-6 w-auto hidden"
+                />
+                <Clock className="h-6 w-6 text-primary-600" />
+              </div>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="space-y-4">
                 {currentClass && currentClass.slot !== "LUNCH" && currentClass.slot !== "FREE" ? (
                   <div className="bg-primary-50 p-4 rounded-lg border border-primary-200 animate-pulse">
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="font-medium text-primary-900">Current Class</h3>
-                        <p className="text-2xl font-bold text-primary-800">{currentClass.subject.name}</p>
-                        <p className="text-primary-600">{currentClass.time}</p>
+                        <div className="flex items-center space-x-2">
+                          <h3 className="font-medium text-primary-900">Current Class</h3>
+                          <Badge className="bg-green-500 text-white">{currentClass.subject.acronym}</Badge>
+                        </div>
+                        <p className="text-xl font-bold text-primary-800 mt-1">{currentClass.subject.name}</p>
+                        <p className="text-primary-600 mt-1">{currentClass.time}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium text-primary-700">Location</p>
-                        <p className="text-primary-800">{currentClass.subject.location}</p>
+                        <div className="flex items-center justify-end mb-1 text-primary-700">
+                          <MapPin className="h-4 w-4 mr-1" />
+                          <p className="text-primary-800">{currentClass.subject.location}</p>
+                        </div>
                         {currentClass.subject.faculty && (
                           <p className="text-primary-600 text-sm">{currentClass.subject.faculty}</p>
                         )}
@@ -239,22 +269,34 @@ export default function StudentDashboard() {
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-secondary p-4 rounded-lg">
-                    <p className="text-center text-muted-foreground">No ongoing class right now</p>
+                  <div className="bg-secondary p-4 rounded-lg border border-secondary-200">
+                    <div className="text-center">
+                      <p className="text-muted-foreground">No ongoing class right now</p>
+                      {currentClass && (currentClass.slot === "LUNCH" || currentClass.slot === "FREE") && (
+                        <p className="font-medium mt-1">
+                          {currentClass.slot === "LUNCH" ? "Lunch Break" : "Free Period"} ({currentClass.time})
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
 
                 {nextClass && nextClass.slot !== "LUNCH" && nextClass.slot !== "FREE" ? (
                   <div className="bg-white p-4 rounded-lg border border-primary-100">
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="font-medium text-primary-900">Next Class</h3>
-                        <p className="text-xl font-bold text-primary-800">{nextClass.subject.name}</p>
-                        <p className="text-primary-600">{nextClass.time}</p>
+                        <div className="flex items-center space-x-2">
+                          <h3 className="font-medium text-primary-900">Next Class</h3>
+                          <Badge variant="outline" className="border-primary-200 text-primary-700">{nextClass.subject.acronym}</Badge>
+                        </div>
+                        <p className="text-lg font-bold text-primary-800 mt-1">{nextClass.subject.name}</p>
+                        <p className="text-primary-600 mt-1">{nextClass.time}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium text-primary-700">Location</p>
-                        <p className="text-primary-800">{nextClass.subject.location}</p>
+                        <div className="flex items-center justify-end mb-1 text-primary-700">
+                          <MapPin className="h-4 w-4 mr-1" />
+                          <p className="text-primary-800">{nextClass.subject.location}</p>
+                        </div>
                         {nextClass.subject.faculty && (
                           <p className="text-primary-600 text-sm">{nextClass.subject.faculty}</p>
                         )}
