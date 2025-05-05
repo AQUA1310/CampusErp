@@ -16,6 +16,7 @@ export interface Student {
     year: number;
     semester: number;
     batch: string;
+    birthDate?: string; // Add birthDate field
   };
 }
 
@@ -247,6 +248,7 @@ const mockStudents: Student[] = [
       year: 1,
       semester: 1,
       batch: "2024-2028",
+      birthDate: "15 May"
     },
   },
   {
@@ -264,6 +266,7 @@ const mockStudents: Student[] = [
       year: 1,
       semester: 1,
       batch: "2024-2028",
+      birthDate: "20 February"
     },
   },
   {
@@ -281,6 +284,7 @@ const mockStudents: Student[] = [
       year: 1,
       semester: 1,
       batch: "2024-2028",
+      birthDate: "10 April"
     },
   },
   {
@@ -298,6 +302,7 @@ const mockStudents: Student[] = [
       year: 1,
       semester: 1,
       batch: "2024-2028",
+      birthDate: "22 November"
     },
   },
   {
@@ -315,6 +320,7 @@ const mockStudents: Student[] = [
       year: 1,
       semester: 1,
       batch: "2024-2028",
+      birthDate: "17 August"
     },
   },
   {
@@ -332,6 +338,26 @@ const mockStudents: Student[] = [
       year: 1,
       semester: 1,
       batch: "2024-2028",
+      birthDate: "5 January"
+    },
+  },
+  // Let's add more students with random birthdates
+  {
+    id: "20",
+    name: "Ishan Nepal", 
+    rollNumber: "24MAB0A20",
+    email: "in24mab0a20@student.nitw.ac.in",
+    cgpa: 8.82,
+    profile: {
+      phoneNumber: "9876543220",
+      address: "Hostel Block B, Room 215, NIT Warangal",
+      dateOfBirth: "2003-05-05",
+      gender: "Male",
+      department: "Mathematics & Computing",
+      year: 1,
+      semester: 1,
+      batch: "2024-2028",
+      birthDate: "5 May" // Specific birthdate for Ishan Nepal
     },
   },
 ];
@@ -959,6 +985,17 @@ const mockSemesterGrades: SemesterGrade[] = [
   }
 ];
 
+// Generate random birthdates for mock student list in useEffect
+const generateRandomBirthdate = () => {
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  const day = Math.floor(Math.random() * 28) + 1; // 1-28 to avoid invalid dates
+  const month = months[Math.floor(Math.random() * 12)];
+  return `${day} ${month}`;
+};
+
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [students, setStudents] = useState<Student[]>(mockStudents);
   const [teachers, setTeachers] = useState<Teacher[]>(mockTeachers);
@@ -1167,9 +1204,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    setStudents((prev) => 
-      [...prev].sort((a, b) => a.rollNumber.localeCompare(b.rollNumber))
-    );
+    setStudents((prev) => {
+      const updatedStudents = [...prev];
+      
+      // Ensure all students have birthdates
+      updatedStudents.forEach(student => {
+        if (!student.profile.birthDate) {
+          student.profile.birthDate = generateRandomBirthdate();
+        }
+      });
+      
+      // Sort by roll number
+      return updatedStudents.sort((a, b) => a.rollNumber.localeCompare(b.rollNumber));
+    });
   }, []);
 
   return (

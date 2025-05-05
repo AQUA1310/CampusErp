@@ -34,7 +34,8 @@ import {
   Mail,
   Calendar,
   GraduationCap,
-  BookOpen
+  BookOpen,
+  Cake
 } from "lucide-react";
 import { useData, Student, Assignment, AssignmentSubmission } from "@/contexts/DataContext";
 import DashboardLayout from "@/components/shared/DashboardLayout";
@@ -304,6 +305,14 @@ export default function TeacherStudents() {
                     <div className="flex items-center gap-2 mt-1">
                       <Calendar className="h-4 w-4 text-navy-500" />
                       <p>{new Date(selectedStudent.profile.dateOfBirth).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-navy-600">Birthday</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Cake className="h-4 w-4 text-navy-500" />
+                      <p>{selectedStudent.profile.birthDate}</p>
                     </div>
                   </div>
                   

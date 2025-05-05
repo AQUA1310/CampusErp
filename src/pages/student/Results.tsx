@@ -86,9 +86,11 @@ export default function Results() {
     };
   };
 
-  const semesterSubjects = subjects.filter(subject => 
-    subject.semester === parseInt(selectedSemester)
-  );
+  const getSubjectsForSemester = (semesterNumber: number) => {
+    return subjects.filter(subject => subject.semester === semesterNumber);
+  };
+
+  const semesterSubjects = getSubjectsForSemester(parseInt(selectedSemester));
 
   const syllabusContent: Record<string, string> = {
     "Design Thinking": "Introduction to Engineering: \"Engineering\" as a vehicle for social and economic development; the impact of science/engineering on our day-to-day lives; the process of engineering a product; various career options. Introduction and identifying the need: Understanding the unique needs of the user - empathize - define - ideate - prototype - test. Case Studies - Develop an appreciation for the design process and its application in specific settings (Guest lectures, Videos, Field visits, Interplay lectures of design-based movies). Problem Formulation: Framing a problem statement neutrally using adequate checks. Case studies. Concept Generation: Generate multiple concepts using various creativity tools and thinking styles. Prototyping: Select from ideas and make quick prototypes (mock-ups) using available material. Evaluation: Iterative process of ideation, prototyping and testing-Take the mock-ups to users for feedback and iterate the process till users feel delighted.",
