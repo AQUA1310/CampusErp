@@ -109,6 +109,10 @@ export default function Index() {
               <Button type="submit" className="w-full bg-primary hover:bg-primary-700" disabled={isSubmitting || authLoading}>
                 {isSubmitting ? "Signing in..." : "Sign In"}
               </Button>
+              <p className="text-sm text-center text-primary-600 mt-4">
+                Don't have an account?{" "}
+                <a href="/signup" className="underline font-medium">Sign up</a>
+              </p>
             </CardContent>
           </form>
           <CardFooter className="bg-primary-50 border-t border-primary-100 rounded-b-lg py-3">

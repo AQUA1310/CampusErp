@@ -56,7 +56,7 @@ export default function SignupForm() {
     }
 
     toast.success("Account created! Please log in.");
-    navigate("/login");
+    navigate("/");
     setIsLoading(false);
   };
 
