@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { toast } from "sonner";
-
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
 export interface Student {
   id: string;
   name: string;
@@ -494,7 +495,9 @@ const mockSemesterGrades: SemesterGrade[] = [
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [students, setStudents] = useState<Student[]>(mockStudents);
   const [teachers, setTeachers] = useState<Teacher[]>(mockTeachers);
-  const [subjects, setSubjects] = useState<Subject[]>(mockSubjects);
+  const { user } = useAuth();
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [semesterResults, setSemesterResults] = useState<SemesterResult[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>(mockAssignments);
   const [submissions, setSubmissions] = useState<AssignmentSubmission[]>(mockSubmissions);
   const [attendance, setAttendance] = useState<Attendance[]>(mockAttendance);
@@ -502,10 +505,69 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [messages, setMessages] = useState<Message[]>(mockMessages);
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [timetable] = useState<TimeTable>(mockTimetable);
-  const [semesterResults] = useState<SemesterResult[]>(mockSemesterResults);
   const [minorResults, setMinorResults] = useState<MinorResult[]>(mockMinorResults);
   const [semesterGrades, setSemesterGrades] = useState<SemesterGrade[]>(mockSemesterGrades);
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      const { data, error } = await supabase.from("subjects").select("*");
+      if (error) {
+        console.error("Failed to fetch subjects:", error);
+        return;
+      }
+      const mapped: Subject[] = data.map((row) => ({
+        id: row.id,
+        code: row.code,
+        name: row.name,
+        credits: row.credits,
+        description: row.description,
+        semester: row.semester,
+      }));
+      setSubjects(mapped);
+    };
+    fetchSubjects();
+  }, []);
 
+  useEffect(() => {
+    const fetchSemesterResults = async () => {
+      if (!user) {
+        setSemesterResults([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("semester_results")
+        .select("*, exam_results(*)")
+        .eq("student_id", user.id);
+
+      if (error) {
+        console.error("Failed to fetch semester results:", error);
+        return;
+      }
+
+      const mapped: SemesterResult[] = data.map((row: any) => ({
+        studentId: user.id,
+        studentName: user.name,
+        rollNumber: user.rollNumber || "",
+        department: user.department || "",
+        specialization: user.department || "",
+        year: 1,
+        semester: row.semester,
+        academicYear: row.academic_year,
+        sgpa: row.sgpa,
+        cgpa: row.cgpa,
+        results: (row.exam_results || []).map((er: any) => ({
+          subjectCode: er.subject_code,
+          subjectName: er.subject_name,
+          credit: er.credit,
+          grade: er.grade,
+        })),
+      }));
+
+      setSemesterResults(mapped);
+    };
+
+    fetchSemesterResults();
+  }, [user]);
   const submitAssignment = (assignmentId: string, studentId: string, fileUrl: string) => {
     const student = students.find((s) => s.id === studentId);
     if (!student) return;
