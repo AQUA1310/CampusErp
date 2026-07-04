@@ -1,69 +1,75 @@
-# Welcome to your Lovable project
+# ARC Portal — Campus ERP System
 
-## Project info
+A full-stack academic portal for managing student and teacher data, built for the Mathematics Department at NIT Warangal. Supports role-based dashboards, real authentication, and academic result tracking.
 
-**URL**: https://lovable.dev/projects/24370562-6d5b-407e-abac-1e323fcdf3d1
+**Live Demo:** https://campus-erp-1ovn.vercel.app/
+**Repository:** [Add your GitHub URL here]
 
-## How can I edit this code?
+## Overview
 
-There are several ways of editing your application.
+ARC Portal is a campus management system where students and teachers each get a dedicated dashboard. Students can view their academic results, and teachers can manage class-related data. The app supports real account creation and role-based access control, so students and teachers only ever see the parts of the system relevant to them.
 
-**Use Lovable**
+## Tech Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/24370562-6d5b-407e-abac-1e323fcdf3d1) and start prompting.
+- **Frontend:** React, TypeScript, Vite
+- **Styling:** Tailwind CSS, shadcn/ui components
+- **Backend:** Supabase (PostgreSQL database, Authentication, Row-Level Security)
+- **Routing:** React Router
+- **Deployment:** Vercel (with continuous deployment from GitHub)
 
-Changes made via Lovable will be committed automatically to this repo.
+## Key Features
 
-**Use your preferred IDE**
+- **Real authentication** — signup and login powered by Supabase Auth, not hardcoded credentials
+- **Role-based access** — separate student and teacher dashboards, enforced both in the UI and at the database level
+- **Relational database design** — normalized PostgreSQL schema linking student profiles, subjects, and exam results
+- **Row-Level Security (RLS)** — database-enforced rules ensure a student can only ever access their own academic data, even if the frontend is bypassed
+- **Academic results tracking** — semester results, minor exam scores, and grade breakdowns
+- **Environment-based configuration** — API keys and secrets managed via environment variables, excluded from version control
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Architecture
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+The app follows a standard client + Backend-as-a-Service pattern rather than a custom Node/Express server:
 
-Follow these steps:
+1. The React frontend calls Supabase directly using the `@supabase/supabase-js` client library.
+2. **Authentication** is handled by Supabase's built-in `auth.users` table (manages password hashing and sessions).
+3. A separate `profiles` table stores app-specific user data (name, role, department, roll number), linked to the auth record via a shared UUID.
+4. **Row-Level Security policies** at the database layer restrict data access by user identity and role, independent of any frontend logic.
+5. Continuous deployment via Vercel means every push to the `main` branch automatically rebuilds and updates the live site.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Database Schema
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- `profiles` — user identity and role (student/teacher), linked to Supabase Auth
+- `subjects` — course catalog
+- `semester_results` — per-student, per-semester summary (SGPA/CGPA)
+- `exam_results` — individual subject grades within a semester result
+- `minor_results` — minor exam scores per subject
 
-# Step 3: Install the necessary dependencies.
-npm i
+## Getting Started (Local Development)
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+# Clone the repo
+git clone [your-repo-url]
+cd [project-folder]
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+# Create a .env file in the root with:
+# VITE_SUPABASE_URL=your_supabase_project_url
+# VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+
+# Run the dev server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Future Improvements
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- Full CRUD for teachers to create/edit results and assignments directly
+- Real assignment submission and attendance tracking (currently placeholder data)
+- Email verification for new accounts
+- Admin dashboard for department-wide oversight
 
-**Use GitHub Codespaces**
+## Notes
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/24370562-6d5b-407e-abac-1e323fcdf3d1) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+This project began as a UI prototype with hardcoded/mock data and was rebuilt to use a real Supabase backend, replacing fake authentication with a production-style auth and database architecture.
