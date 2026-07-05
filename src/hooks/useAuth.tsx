@@ -27,24 +27,32 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
 });
 
-// Fetches the profile row and builds our app's user object
+// Robust profile data loader with built-in error handling
 async function loadUserProfile(session: Session): Promise<UserType> {
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", session.user.id)
-    .single();
+  try {
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", session.user.id)
+      .single();
 
-  if (error || !profile) return null;
+    if (error || !profile) {
+      console.error("Profile load error:", error);
+      return null;
+    }
 
-  return {
-    id: session.user.id,
-    type: profile.role,
-    name: profile.name,
-    email: session.user.email ?? "",
-    rollNumber: profile.roll_number ?? undefined,
-    department: profile.department ?? undefined,
-  };
+    return {
+      id: session.user.id,
+      type: profile.role, // Maps db 'role' string cleanly to client 'type'
+      name: profile.name,
+      email: session.user.email ?? "",
+      rollNumber: profile.roll_number ?? undefined,
+      department: profile.department ?? undefined,
+    };
+  } catch (err) {
+    console.error("Unexpected error fetching profile:", err);
+    return null;
+  }
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -53,16 +61,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if there's already a logged-in session (e.g. page refresh)
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) {
-        const profile = await loadUserProfile(session);
-        setUser(profile);
+    // 1. Resolve active session on mount (covers deep links and page refreshes)
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const profile = await loadUserProfile(session);
+          setUser(profile);
+        }
+      } catch (err) {
+        console.error("Session sync failed:", err);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    });
+    };
 
-    // Listen for login/logout events anywhere in the app
+    initializeAuth();
+
+    // 2. Setup auth stream observer for instant layout adjustments on transitions
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
         const profile = await loadUserProfile(session);
@@ -70,6 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setUser(null);
       }
+      setIsLoading(false);
     });
 
     return () => {
@@ -78,10 +95,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    navigate("/");
-    toast.info("Logged out successfully");
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      navigate("/");
+      toast.info("Logged out successfully");
+    } catch (err) {
+      toast.error("Logout failed cleanly");
+    }
   };
 
   return (

@@ -1,6 +1,5 @@
-
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 interface ProtectedRouteProps {
@@ -13,42 +12,32 @@ export default function ProtectedRoute({
   requiredUserType 
 }: ProtectedRouteProps) {
   const { user, isAuthenticated, isLoading } = useAuth();
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!isLoading) {
-      if (!isAuthenticated) {
-        navigate("/");
-        return;
-      }
-
-      if (requiredUserType && user?.type !== requiredUserType) {
-        if (user?.type === "student") {
-          navigate("/student-dashboard");
-        } else if (user?.type === "teacher") {
-          navigate("/teacher-dashboard");
-        } else {
-          navigate("/");
-        }
-      }
-    }
-  }, [isAuthenticated, isLoading, navigate, requiredUserType, user]);
-
+  // 1. Handle Global Loading State cleanly
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-oliveGreen-600"></div>
+      <div className="flex items-center justify-center min-h-screen bg-blue-50/20">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-700"></div>
       </div>
     );
   }
 
+  // 2. Guard Clause: Force back to login if unauthenticated
   if (!isAuthenticated) {
-    return null;
+    return <Navigate to="/" replace />;
   }
 
+  // 3. Guard Clause: Cross-role protection (Instant declarative redirect)
   if (requiredUserType && user?.type !== requiredUserType) {
-    return null;
+    if (user?.type === "student") {
+      return <Navigate to="/student-dashboard" replace />;
+    } else if (user?.type === "teacher") {
+      return <Navigate to="/teacher-dashboard" replace />;
+    } else {
+      return <Navigate to="/" replace />;
+    }
   }
 
+  // 4. Authorized Access granted
   return <>{children}</>;
 }

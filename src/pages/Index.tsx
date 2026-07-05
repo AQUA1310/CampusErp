@@ -17,12 +17,12 @@ export default function Index() {
 
   // If already authenticated, redirect to appropriate dashboard
   if (isAuthenticated) {
-    if (user?.type === "student") {
-      return <Navigate to="/student-dashboard" />;
-    } else if (user?.type === "teacher") {
-      return <Navigate to="/teacher-dashboard" />;
-    }
+  if (user?.role === "student") {
+    return <Navigate to="/student-dashboard" />;
+  } else if (user?.role === "teacher") {
+    return <Navigate to="/teacher-dashboard" />;
   }
+}
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
