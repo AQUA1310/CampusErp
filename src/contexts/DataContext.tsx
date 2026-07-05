@@ -568,6 +568,43 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     fetchSemesterResults();
   }, [user]);
+  useEffect(() => {
+  const fetchMinorResults = async () => {
+    if (!user) {
+      setMinorResults([]);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("minor_results")
+      .select("*, subjects(code, name)")
+      .eq("student_id", user.id);
+
+    if (error) {
+      console.error("Failed to fetch minor results:", error);
+      return;
+    }
+
+    const mapped: MinorResult[] = data.map((row: any) => ({
+      id: row.id,
+      subjectId: row.subject_id,
+      subjectCode: row.subjects?.code || "",
+      subjectName: row.subjects?.name || "",
+      maxMarks: row.max_marks,
+      obtainedMarks: row.obtained_marks,
+      examDate: row.exam_date,
+      examType: row.exam_type,
+      studentId: user.id,
+      rollNumber: user.rollNumber,
+      studentName: user.name,
+      percentage: (row.obtained_marks / row.max_marks) * 100,
+    }));
+
+    setMinorResults(mapped);
+  };
+
+  fetchMinorResults();
+}, [user]);
   const submitAssignment = (assignmentId: string, studentId: string, fileUrl: string) => {
     const student = students.find((s) => s.id === studentId);
     if (!student) return;
