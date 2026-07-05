@@ -1,25 +1,19 @@
-
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
-  Calendar,
   BookOpen,
   Users,
   Bell,
   Clock,
-  BarChart,
-  BrainCircuit,
   MapPin
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useData } from "@/contexts/DataContext";
 import DashboardLayout from "@/components/shared/DashboardLayout";
-import ChatBot from "@/components/student/ChatBot";
 
 // Subject class mapping
 const subjectSlotMapping = {
@@ -93,9 +87,8 @@ const timetableData = {
 
 export default function StudentDashboard() {
   const { user } = useAuth();
-  const { assignments, attendanceSummary, notifications, timetable } = useData();
+  const { assignments, attendanceSummary, notifications } = useData();
   const navigate = useNavigate();
-  const [showChatbot, setShowChatbot] = useState(false);
   const [currentDay, setCurrentDay] = useState("");
   const [currentTime, setCurrentTime] = useState("");
   const [currentClass, setCurrentClass] = useState<any>(null);
@@ -505,22 +498,8 @@ export default function StudentDashboard() {
               )}
             </CardContent>
           </Card>
-
-          <Button 
-            className="w-full bg-primary hover:bg-primary-700 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 py-6"
-            onClick={() => setShowChatbot(prev => !prev)}
-          >
-            <BrainCircuit className="h-5 w-5" />
-            <span>Ask AI Tutor</span>
-          </Button>
         </div>
       </div>
-
-      {showChatbot && (
-        <div className="fixed bottom-4 right-4 w-96 h-[500px] bg-white shadow-2xl rounded-xl border border-primary-200 overflow-hidden animate-scale-in z-50">
-          <ChatBot onClose={() => setShowChatbot(false)} />
-        </div>
-      )}
     </DashboardLayout>
   );
 }
