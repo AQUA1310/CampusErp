@@ -17,9 +17,9 @@ export default function Index() {
 
   // If already authenticated, redirect to appropriate dashboard
   if (isAuthenticated) {
-  if (user?.role === "student") {
+  if (user?.type === "student") {
     return <Navigate to="/student-dashboard" />;
-  } else if (user?.role === "teacher") {
+  } else if (user?.type === "teacher") {
     return <Navigate to="/teacher-dashboard" />;
   }
 }

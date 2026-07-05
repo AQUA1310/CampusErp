@@ -23,8 +23,14 @@ import {
 import { Input } from "@/components/ui/input";
 
 export default function TeacherChat() {
-  const { user, studentList } = useAuth();
-  const { messages, sendMessage, markMessageAsRead } = useData();
+  const { user } = useAuth();
+
+const {
+  students,
+  messages,
+  sendMessage,
+  markMessageAsRead,
+} = useData();
   const [message, setMessage] = useState("");
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -55,7 +61,7 @@ export default function TeacherChat() {
         (msg.senderId === contactId && msg.receiverId === user?.id) ||
         (msg.senderId === user?.id && msg.receiverId === contactId)
     );
-    const contact = studentList.find((s) => s.id === contactId);
+    const contact = students.find((s) => s.id === contactId);
     
     if (contact) {
       acc[contactId] = {
@@ -83,7 +89,7 @@ export default function TeacherChat() {
   }>);
 
   // Add all students as potential contacts even if no messages exist yet
-  studentList.forEach(student => {
+  students.forEach(student => {
     if (!messagesByContact[student.id]) {
       messagesByContact[student.id] = {
         contact: {

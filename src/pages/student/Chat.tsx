@@ -16,39 +16,43 @@ import { Badge } from "@/components/ui/badge";
 import { Send, User, MessageSquare } from "lucide-react";
 
 export default function Chat() {
-  const { user, teacherList = [] } = useAuth();
-  const { messages = [], sendMessage, markMessageAsRead } = useData();
+  const { user } = useAuth();
+
+const {
+  teachers,
+  messages,
+  sendMessage,
+  markMessageAsRead,
+} = useData();
   const [message, setMessage] = useState("");
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Filter messages that involve the current user (Defensively check if messages exist)
-  const userMessages = (messages || []).filter(
-    (msg) => msg?.senderId === user?.id || msg?.receiverId === user?.id
+  // Filter messages that involve the current user
+  const userMessages = messages.filter(
+    (msg) => msg.senderId === user?.id || msg.receiverId === user?.id
   );
 
   // Get unique contacts from messages
   const userContacts = [
     ...new Set([
       ...userMessages
-        .filter((msg) => msg?.senderId !== user?.id)
-        .map((msg) => msg?.senderId),
+        .filter((msg) => msg.senderId !== user?.id)
+        .map((msg) => msg.senderId),
       ...userMessages
-        .filter((msg) => msg?.receiverId !== user?.id)
-        .map((msg) => msg?.receiverId),
+        .filter((msg) => msg.receiverId !== user?.id)
+        .map((msg) => msg.receiverId),
     ]),
-  ].filter(Boolean); // Clear any undefined/null entries
+  ];
 
   // Group messages by contact
   const messagesByContact = userContacts.reduce((acc, contactId) => {
-    if (!contactId) return acc;
-
     const contactMessages = userMessages.filter(
       (msg) =>
-        (msg?.senderId === contactId && msg?.receiverId === user?.id) ||
-        (msg?.senderId === user?.id && msg?.receiverId === contactId)
+        (msg.senderId === contactId && msg.receiverId === user?.id) ||
+        (msg.senderId === user?.id && msg.receiverId === contactId)
     );
-    const contact = (teacherList || []).find((t) => t?.id === contactId);
+    const contact = teachers.find((t) => t.id === contactId);
     
     if (contact) {
       acc[contactId] = {
@@ -62,7 +66,7 @@ export default function Chat() {
           (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         ),
         unread: contactMessages.filter(
-          (msg) => msg?.receiverId === user?.id && !msg?.read
+          (msg) => msg.receiverId === user?.id && !msg.read
         ).length,
       };
     }
@@ -70,36 +74,34 @@ export default function Chat() {
     return acc;
   }, {} as Record<string, { contact: { id: string, name: string, email: string, type: "teacher" }, messages: typeof messages, unread: number }>);
 
-  // Defensively use safe navigation or loop execution checks to avoid the runtime error
-  if (teacherList && Array.isArray(teacherList)) {
-    teacherList.forEach(teacher => {
-      if (teacher && teacher.id && !messagesByContact[teacher.id]) {
-        messagesByContact[teacher.id] = {
-          contact: {
-            id: teacher.id,
-            name: teacher.name,
-            email: teacher.email,
-            type: "teacher",
-          },
-          messages: [],
-          unread: 0,
-        };
-      }
-    });
-  }
+  // Add all teachers as potential contacts even if no messages exist yet
+  teachers.forEach(teacher => {
+    if (!messagesByContact[teacher.id]) {
+      messagesByContact[teacher.id] = {
+        contact: {
+          id: teacher.id,
+          name: teacher.name,
+          email: teacher.email,
+          type: "teacher",
+        },
+        messages: [],
+        unread: 0,
+      };
+    }
+  });
 
-  // Get active contact details safely
+  // Get active contact details
   const activeContact = activeChat ? messagesByContact[activeChat]?.contact : null;
-  const activeMessages = activeChat ? messagesByContact[activeChat]?.messages || [] : [];
+  const activeMessages = activeChat ? messagesByContact[activeChat]?.messages : [];
 
   // Mark messages as read when viewing a conversation
   useEffect(() => {
-    if (activeChat && activeMessages.length > 0 && typeof markMessageAsRead === "function") {
+    if (activeChat) {
       const unreadMessages = activeMessages.filter(
-        (msg) => msg?.receiverId === user?.id && !msg?.read
+        (msg) => msg.receiverId === user?.id && !msg.read
       );
       unreadMessages.forEach((msg) => {
-        if (msg?.id) markMessageAsRead(msg.id);
+        markMessageAsRead(msg.id);
       });
     }
   }, [activeChat, activeMessages, user?.id, markMessageAsRead]);
@@ -110,7 +112,7 @@ export default function Chat() {
   }, [activeMessages]);
 
   const handleSendMessage = () => {
-    if (!message.trim() || !activeChat || !activeContact || typeof sendMessage !== "function") return;
+    if (!message.trim() || !activeChat || !activeContact) return;
 
     sendMessage({
       senderId: user?.id || "",
@@ -126,8 +128,7 @@ export default function Chat() {
   };
 
   const getNameInitials = (name: string) => {
-    if (!name) return "??";
-    const nameParts = name.trim().split(' ');
+    const nameParts = name.split(' ');
     return nameParts.length > 1 
       ? `${nameParts[0][0]}${nameParts[1][0]}` 
       : name.slice(0, 2).toUpperCase();
@@ -143,11 +144,11 @@ export default function Chat() {
               <CardTitle className="text-lg">Contacts</CardTitle>
               <CardDescription>Your teachers and advisors</CardDescription>
             </CardHeader>
-            <CardContent className="p-0 h-full">
-              <div className="h-[calc(100%-80px)] overflow-y-auto pb-12">
+            <CardContent className="p-0">
+              <div className="h-[calc(100%-80px)] overflow-y-auto">
                 {Object.entries(messagesByContact).length > 0 ? (
                   <div className="divide-y">
-                    {Object.entries(messagesByContact).map(([contactId, { contact, messages: contactMsgs, unread }]) => (
+                    {Object.entries(messagesByContact).map(([contactId, { contact, messages, unread }]) => (
                       <button
                         key={contactId}
                         className={`w-full text-left p-3 hover:bg-slate-50 transition-colors ${
@@ -157,22 +158,22 @@ export default function Chat() {
                       >
                         <div className="flex items-center">
                           <Avatar className="h-10 w-10 mr-3 bg-primary text-white">
-                            <AvatarFallback>{getNameInitials(contact?.name)}</AvatarFallback>
+                            <AvatarFallback>{getNameInitials(contact.name)}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-center">
-                              <p className="font-medium truncate text-slate-900">{contact?.name}</p>
+                              <p className="font-medium truncate text-slate-900">{contact.name}</p>
                               {unread > 0 && (
                                 <Badge className="ml-2 bg-primary">{unread}</Badge>
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground truncate">
-                              {contact?.email}
+                              {contact.email}
                             </p>
-                            {contactMsgs && contactMsgs.length > 0 && (
+                            {messages.length > 0 && (
                               <p className="text-sm text-muted-foreground truncate mt-1">
-                                {contactMsgs[contactMsgs.length - 1]?.content?.substring(0, 30)}
-                                {contactMsgs[contactMsgs.length - 1]?.content?.length > 30 && "..."}
+                                {messages[messages.length - 1].content.substring(0, 30)}
+                                {messages[messages.length - 1].content.length > 30 && "..."}
                               </p>
                             )}
                           </div>
@@ -230,10 +231,10 @@ export default function Chat() {
                                 : "text-slate-400"
                             }`}
                           >
-                            {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], {
+                            {new Date(msg.timestamp).toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
-                            }) : ""}
+                            })}
                           </p>
                         </div>
                       </div>

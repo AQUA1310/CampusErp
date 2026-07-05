@@ -20,8 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/shared/DashboardLayout";
 
 export default function TeacherAttendance() {
-  const { studentList } = useAuth();
-  const { subjects, attendance, markAttendance } = useData();
+  const { students,subjects, attendance, markAttendance } = useData();
   
   const [selectedSubject, setSelectedSubject] = useState(subjects[0]?.id || "");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -30,7 +29,7 @@ export default function TeacherAttendance() {
   const [canResubmit, setCanResubmit] = useState(true);
   
   // Get all students with roll numbers starting with 24MAB0A
-  const classMabStudents = studentList.filter(student => 
+  const classMabStudents = students.filter(student => 
     student.rollNumber.startsWith('24MAB0A')
   ).sort((a, b) => a.rollNumber.localeCompare(b.rollNumber));
   
