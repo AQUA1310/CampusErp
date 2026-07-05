@@ -69,13 +69,19 @@ export default function DashboardLayout({
   ], []);
 
   const navItems = isStudent ? studentNavItems : teacherNavItems;
-  const basePath = isStudent ? "/student-dashboard" : "/teacher-dashboard";
 
+  // Track and update selection matching paths cleanly
   useEffect(() => {
     const currentPath = location.pathname;
-    const matchingItem = navItems.find((item) =>
-      currentPath === item.path || currentPath.startsWith(`${item.path}/`)
-    );
+    
+    // Find item that matches the URL path exactly or handles deep nesting links safely
+    const matchingItem = navItems.find((item) => {
+      if (item.path === "/student-dashboard" || item.path === "/teacher-dashboard") {
+        return currentPath === item.path;
+      }
+      return currentPath === item.path || currentPath.startsWith(`${item.path}/`);
+    });
+
     setActiveItem(matchingItem?.path || null);
   }, [location.pathname, navItems]);
 
@@ -119,7 +125,9 @@ export default function DashboardLayout({
                   to={item.path}
                   className={cn(
                     "flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-all",
-                    activeItem === item.path ? "bg-blue-100 text-blue-700" : "text-slate-800 hover:bg-blue-50"
+                    activeItem === item.path 
+                      ? "bg-blue-100 text-blue-700 font-semibold" 
+                      : "text-slate-800 hover:bg-blue-50"
                   )}
                 >
                   {item.icon}
@@ -159,14 +167,16 @@ export default function DashboardLayout({
                   to={item.path}
                   className={cn(
                     "flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-all",
-                    activeItem === item.path ? "bg-blue-100 text-blue-700" : "text-slate-800 hover:bg-blue-50"
+                    activeItem === item.path 
+                      ? "bg-blue-100 text-blue-700 font-semibold" 
+                      : "text-slate-800 hover:bg-blue-50"
                   )}
                 >
                   {item.icon}
                   {item.name}
                 </Link>
               ))}
-              <Button variant="ghost" className="flex items-center justify-start px-3 mt-4" onClick={handleLogout}>
+              <Button variant="ghost" className="flex items-center justify-start px-3 mt-4 w-full text-slate-800 hover:bg-blue-50" onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" /> Logout
               </Button>
             </nav>
