@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 
+// --- Type Interfaces ---
+
 export interface Student {
   id: string;
   name: string;
@@ -194,48 +196,22 @@ interface DataContextType {
   semesterResults: SemesterResult[];
   minorResults: MinorResult[];
   semesterGrades: SemesterGrade[];
+  isLoadingAssignments: boolean;
   setSemesterGrades: (grades: SemesterGrade[]) => void;
   setMinorResults: (results: MinorResult[]) => void;
-
-  submitAssignment: (assignmentId: string, studentId: string, fileUrl: string) => void;
+  submitAssignment: (assignmentId: string, studentId: string, fileUrl: string) => Promise<void>;
   sendMessage: (message: Omit<Message, "id" | "timestamp" | "read">) => void;
   markMessageAsRead: (messageId: string) => void;
-
-  addAssignment: (assignment: Omit<Assignment, "id" | "createdAt" | "submissions">) => void;
+  addAssignment: (assignment: Omit<Assignment, "id" | "createdAt" | "submissions">) => Promise<void>;
   gradeSubmission: (submissionId: string, marks: number, feedback?: string) => void;
   markAttendance: (subjectId: string, date: string, studentAttendance: { studentId: string; present: boolean }[]) => void;
   addNotification: (notification: Omit<Notification, "id" | "createdAt">) => void;
 }
 
-const DataContext = createContext<DataContextType>({
-  students: [],
-  teachers: [],
-  subjects: [],
-  assignments: [],
-  submissions: [],
-  attendance: [],
-  attendanceSummary: [],
-  messages: [],
-  notifications: [],
-  timetable: { slots: [] },
-  semesterResults: [],
-  minorResults: [],
-  semesterGrades: [],
-  setSemesterGrades: () => {},
-  setMinorResults: () => {},
+const DataContext = createContext<DataContextType | undefined>(undefined);
 
-  submitAssignment: () => {},
-  sendMessage: () => {},
-  markMessageAsRead: () => {},
+// --- Mock Datasets ---
 
-  addAssignment: () => {},
-  gradeSubmission: () => {},
-  markAttendance: () => {},
-  addNotification: () => {},
-});
-
-// Demo/placeholder data — no real personal information.
-// subjects, semesterResults, and minorResults are now fetched live from Supabase (see useEffects below).
 const mockStudents: Student[] = [
   {
     id: "1",
@@ -255,118 +231,10 @@ const mockStudents: Student[] = [
       birthDate: "15 May",
     },
   },
-  {
-    id: "2",
-    name: "Demo Student Two",
-    rollNumber: "24DEMO002",
-    email: "student2@example.edu",
-    cgpa: 9.21,
-    profile: {
-      phoneNumber: "0000000002",
-      address: "Demo Hostel, Room 102",
-      dateOfBirth: "2003-02-20",
-      gender: "Prefer not to say",
-      department: "Mathematics & Computing",
-      year: 1,
-      semester: 2,
-      batch: "2024-2028",
-      birthDate: "20 February",
-    },
-  },
-  {
-    id: "3",
-    name: "Demo Student Three",
-    rollNumber: "24DEMO003",
-    email: "student3@example.edu",
-    cgpa: 8.95,
-    profile: {
-      phoneNumber: "0000000003",
-      address: "Demo Hostel, Room 103",
-      dateOfBirth: "2003-04-10",
-      gender: "Prefer not to say",
-      department: "Mathematics & Computing",
-      year: 1,
-      semester: 2,
-      batch: "2024-2028",
-      birthDate: "10 April",
-    },
-  },
 ];
 
 const mockTeachers: Teacher[] = [
-  { id: "1", name: "Demo Teacher One", email: "teacher1@example.edu", department: "Maths Dept", subjects: [] },
-  { id: "2", name: "Demo Teacher Two", email: "teacher2@example.edu", department: "Maths Dept", subjects: [] },
-  { id: "3", name: "Demo Teacher Three", email: "teacher3@example.edu", department: "Maths Dept", subjects: [] },
-  { id: "4", name: "Demo Teacher Four", email: "teacher4@example.edu", department: "Electrical Dept", subjects: [] },
-];
-
-const mockAssignments: Assignment[] = [
-  {
-    id: "1",
-    title: "Design Thinking Project Proposal",
-    description: "Prepare a project proposal for your Design Thinking course final project.",
-    subjectId: "1",
-    subjectName: "Design Thinking",
-    dueDate: "2024-11-15",
-    maxMarks: 20,
-    fileUrl: "https://example.com/assignments/dt_proposal.pdf",
-    createdAt: "2024-10-25",
-    createdBy: "1",
-    submissions: [],
-  },
-  {
-    id: "2",
-    title: "ODE Assignment 1: First Order Equations",
-    description: "Solve the given set of first-order ordinary differential equations.",
-    subjectId: "2",
-    subjectName: "Ordinary Differential Equations",
-    dueDate: "2024-11-10",
-    maxMarks: 15,
-    fileUrl: "https://example.com/assignments/ode_assignment1.pdf",
-    createdAt: "2024-10-27",
-    createdBy: "2",
-    submissions: [],
-  },
-];
-
-const mockSubmissions: AssignmentSubmission[] = [
-  {
-    id: "1",
-    assignmentId: "1",
-    studentId: "1",
-    studentName: "Demo Student One",
-    rollNumber: "24DEMO001",
-    fileUrl: "https://example.com/submissions/dt_proposal_demo.pdf",
-    submittedAt: "2024-11-14",
-    marks: 18,
-    feedback: "Excellent proposal with a clear problem statement.",
-  },
-];
-
-const mockAttendance: Attendance[] = [
-  {
-    id: "1",
-    subjectId: "1",
-    subjectName: "Design Thinking",
-    date: "2024-10-27",
-    students: [
-      { studentId: "1", rollNumber: "24DEMO001", name: "Demo Student One", present: true },
-      { studentId: "2", rollNumber: "24DEMO002", name: "Demo Student Two", present: true },
-      { studentId: "3", rollNumber: "24DEMO003", name: "Demo Student Three", present: false },
-    ],
-  },
-];
-
-const mockAttendanceSummary: AttendanceSummary[] = [
-  {
-    studentId: "1",
-    rollNumber: "24DEMO001",
-    subjects: [
-      { subjectId: "1", subjectName: "Design Thinking", totalClasses: 8, attended: 7, percentage: 87.5 },
-      { subjectId: "2", subjectName: "Ordinary Differential Equations", totalClasses: 10, attended: 9, percentage: 90 },
-    ],
-    overall: { totalClasses: 18, attended: 16, percentage: 88.89 },
-  },
+  { id: "1", name: "Demo Teacher One", email: "teacher1@example.edu", department: "Maths Dept", subjects: [] }
 ];
 
 const mockMessages: Message[] = [
@@ -399,9 +267,6 @@ const mockNotifications: Notification[] = [
 const mockTimetable: TimeTable = {
   slots: [
     { day: "Monday", time: "8:00 - 8:55", subject: "DMS", location: "E104", faculty: "Demo Teacher One" },
-    { day: "Monday", time: "2:00 - 2:55", subject: "ODE", location: "E104", faculty: "Demo Teacher Two" },
-    { day: "Tuesday", time: "8:00 - 8:55", subject: "DMS", location: "E104", faculty: "Demo Teacher One" },
-    { day: "Wednesday", time: "10:00 - 10:55", subject: "DSA", location: "E104", faculty: "Demo Teacher Three" },
   ],
 };
 
@@ -418,36 +283,28 @@ const mockSemesterGrades: SemesterGrade[] = [
     credit: 4,
     semester: 2,
   },
-  {
-    id: "sg2",
-    studentId: "1",
-    studentName: "Demo Student One",
-    rollNumber: "24DEMO001",
-    subjectId: "2",
-    subjectName: "Ordinary Differential Equations",
-    subjectCode: "MA1104",
-    grade: "S",
-    credit: 4,
-    semester: 2,
-  },
 ];
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [students, setStudents] = useState<Student[]>(mockStudents);
   const [teachers, setTeachers] = useState<Teacher[]>(mockTeachers);
   const { user } = useAuth();
+  
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [semesterResults, setSemesterResults] = useState<SemesterResult[]>([]);
   const [minorResults, setMinorResults] = useState<MinorResult[]>([]);
-  const [assignments, setAssignments] = useState<Assignment[]>(mockAssignments);
-  const [submissions, setSubmissions] = useState<AssignmentSubmission[]>(mockSubmissions);
-  const [attendance, setAttendance] = useState<Attendance[]>(mockAttendance);
-  const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary[]>(mockAttendanceSummary);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [submissions, setSubmissions] = useState<AssignmentSubmission[]>([]);
+  const [isLoadingAssignments, setIsLoadingAssignments] = useState<boolean>(true);
+
+  const [attendance, setAttendance] = useState<Attendance[]>([]);
+  const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary[]>([]);
   const [messages, setMessages] = useState<Message[]>(mockMessages);
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [timetable] = useState<TimeTable>(mockTimetable);
   const [semesterGrades, setSemesterGrades] = useState<SemesterGrade[]>(mockSemesterGrades);
 
+  // 1. Fetch Subjects Safely
   useEffect(() => {
     const fetchSubjects = async () => {
       const { data, error } = await supabase.from("subjects").select("*");
@@ -455,19 +312,60 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         console.error("Failed to fetch subjects:", error);
         return;
       }
-      const mapped: Subject[] = data.map((row) => ({
-        id: row.id,
-        code: row.code,
-        name: row.name,
-        credits: row.credits,
-        description: row.description,
-        semester: row.semester,
-      }));
-      setSubjects(mapped);
+      if (data) {
+        const mapped: Subject[] = data.map((row) => ({
+          id: String(row.id),
+          code: String(row.code || ""),
+          name: String(row.name || ""),
+          credits: String(row.credits || ""),
+          description: row.description || undefined,
+          semester: Number(row.semester || 1),
+        }));
+        setSubjects(mapped);
+      }
     };
     fetchSubjects();
   }, []);
 
+  // 2. Fetch Assignments Safely (Resolving Database snake_case fields)
+  useEffect(() => {
+    const fetchLiveAssignments = async () => {
+      try {
+        setIsLoadingAssignments(true);
+        const { data, error } = await supabase
+          .from("assignments")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        if (data) {
+          const mapped: Assignment[] = data.map((row) => ({
+            id: String(row.id),
+            title: String(row.title || ""),
+            description: String(row.description || ""),
+            subjectId: String(row.subject_id || ""),
+            subjectName: String(row.subject_name || ""),
+            dueDate: String(row.due_date || ""),
+            maxMarks: Number(row.max_marks || 0),
+            fileUrl: row.file_url || undefined,
+            createdAt: String(row.created_at || ""),
+            createdBy: String(row.created_by || ""),
+            submissions: [],
+          }));
+          setAssignments(mapped);
+        }
+      } catch (err) {
+        console.error("Failed parsing database assignment rows:", err);
+      } finally {
+        setIsLoadingAssignments(false);
+      }
+    };
+
+    fetchLiveAssignments();
+  }, []);
+
+  // 3. Fetch Semester Results Safely
   useEffect(() => {
     const fetchSemesterResults = async () => {
       if (!user) {
@@ -485,31 +383,35 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      const mapped: SemesterResult[] = data.map((row: any) => ({
-        studentId: user.id,
-        studentName: user.name,
-        rollNumber: user.rollNumber || "",
-        department: user.department || "",
-        specialization: user.department || "",
-        year: 1,
-        semester: row.semester,
-        academicYear: row.academic_year,
-        sgpa: row.sgpa,
-        cgpa: row.cgpa,
-        results: (row.exam_results || []).map((er: any) => ({
-          subjectCode: er.subject_code,
-          subjectName: er.subject_name,
-          credit: er.credit,
-          grade: er.grade,
-        })),
-      }));
-
-      setSemesterResults(mapped);
+      if (data) {
+        const mapped: SemesterResult[] = data.map((row) => ({
+          studentId: String(user.id),
+          studentName: String(user.name || ""),
+          rollNumber: String(user.rollNumber || ""),
+          department: String(user.department || ""),
+          specialization: String(user.department || ""),
+          year: 1,
+          semester: Number(row.semester || 1),
+          academicYear: String(row.academic_year || ""),
+          sgpa: Number(row.sgpa || 0),
+          cgpa: Number(row.cgpa || 0),
+          results: Array.isArray(row.exam_results) 
+            ? row.exam_results.map((er) => ({
+                subjectCode: String(er.subject_code || ""),
+                subjectName: String(er.subject_name || ""),
+                credit: Number(er.credit || 0),
+                grade: String(er.grade || ""),
+              }))
+            : [],
+        }));
+        setSemesterResults(mapped);
+      }
     };
 
     fetchSemesterResults();
   }, [user]);
 
+  // 4. Fetch Minor Exam Results Safely
   useEffect(() => {
     const fetchMinorResults = async () => {
       if (!user) {
@@ -519,7 +421,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
       const { data, error } = await supabase
         .from("minor_results")
-        .select("*, subjects(code, name)")
+        .select(`
+          id,
+          subject_id,
+          max_marks,
+          obtained_marks,
+          exam_date,
+          exam_type,
+          subjects (code, name)
+        `)
         .eq("student_id", user.id);
 
       if (error) {
@@ -527,28 +437,31 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      const mapped: MinorResult[] = data.map((row: any) => ({
-        id: row.id,
-        subjectId: row.subject_id,
-        subjectCode: row.subjects?.code || "",
-        subjectName: row.subjects?.name || "",
-        maxMarks: row.max_marks,
-        obtainedMarks: row.obtained_marks,
-        examDate: row.exam_date,
-        examType: row.exam_type,
-        studentId: user.id,
-        rollNumber: user.rollNumber,
-        studentName: user.name,
-        percentage: (row.obtained_marks / row.max_marks) * 100,
-      }));
-
-      setMinorResults(mapped);
+      if (data) {
+        const mapped: MinorResult[] = data.map((row: any) => ({
+          id: String(row.id),
+          subjectId: String(row.subject_id || ""),
+          subjectCode: String(row.subjects?.code || ""),
+          subjectName: String(row.subjects?.name || ""),
+          maxMarks: Number(row.max_marks || 0),
+          obtainedMarks: Number(row.obtained_marks || 0),
+          examDate: String(row.exam_date || ""),
+          examType: row.exam_type === "Minor2" ? "Minor2" : "Minor1",
+          studentId: String(user.id),
+          rollNumber: String(user.rollNumber || ""),
+          studentName: String(user.name || ""),
+          percentage: row.max_marks ? (Number(row.obtained_marks) / Number(row.max_marks)) * 100 : 0,
+        }));
+        setMinorResults(mapped);
+      }
     };
 
     fetchMinorResults();
   }, [user]);
 
-  const submitAssignment = (assignmentId: string, studentId: string, fileUrl: string) => {
+  // --- Handlers ---
+
+  const submitAssignment = async (assignmentId: string, studentId: string, fileUrl: string) => {
     const student = students.find((s) => s.id === studentId);
     if (!student) return;
     const assignment = assignments.find((a) => a.id === assignmentId);
@@ -564,41 +477,102 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       submittedAt: new Date().toISOString(),
     };
 
-    setSubmissions([...submissions, newSubmission]);
-    setAssignments(assignments.map((a) =>
-      a.id === assignmentId ? { ...a, submissions: [...(a.submissions || []), newSubmission] } : a
-    ));
-    toast.success("Assignment submitted successfully!");
+    setSubmissions((prev) => [...prev, newSubmission]);
+    setAssignments((prev) =>
+      prev.map((a) =>
+        a.id === assignmentId ? { ...a, submissions: [...(a.submissions || []), newSubmission] } : a
+      )
+    );
+    toast.success("Assignment response uploaded successfully!");
   };
 
   const sendMessage = (message: Omit<Message, "id" | "timestamp" | "read">) => {
-    const newMessage: Message = { ...message, id: `m-${messages.length + 1}`, timestamp: new Date().toISOString(), read: false };
-    setMessages([...messages, newMessage]);
+    const newMessage: Message = {
+      ...message,
+      id: `m-${messages.length + 1}`,
+      timestamp: new Date().toISOString(),
+      read: false,
+    };
+    setMessages((prev) => [...prev, newMessage]);
     toast.success("Message sent successfully!");
   };
 
   const markMessageAsRead = (messageId: string) => {
-    setMessages(messages.map((msg) => (msg.id === messageId ? { ...msg, read: true } : msg)));
+    setMessages((prev) =>
+      prev.map((msg) => (msg.id === messageId ? { ...msg, read: true } : msg))
+    );
   };
 
-  const addAssignment = (assignment: Omit<Assignment, "id" | "createdAt" | "submissions">) => {
-    const newAssignment: Assignment = { ...assignment, id: `a-${assignments.length + 1}`, createdAt: new Date().toISOString(), submissions: [] };
-    setAssignments([...assignments, newAssignment]);
-    toast.success("Assignment created successfully!");
+  const addAssignment = async (assignment: Omit<Assignment, "id" | "createdAt" | "submissions">) => {
+    try {
+      const targetPayload = {
+        title: assignment.title,
+        description: assignment.description,
+        subject_id: assignment.subjectId,
+        subject_name: assignment.subjectName,
+        due_date: assignment.dueDate,
+        max_marks: assignment.maxMarks,
+        file_url: assignment.fileUrl,
+        created_by: user?.id || "Teacher-MVP",
+      };
+
+      const { data, error } = await supabase
+        .from("assignments")
+        .insert([targetPayload])
+        .select();
+
+      if (error) throw error;
+
+      if (data && data[0]) {
+        const createdRow = data[0];
+        const instantiatedObject: Assignment = {
+          id: String(createdRow.id),
+          title: String(createdRow.title || ""),
+          description: String(createdRow.description || ""),
+          subjectId: String(createdRow.subject_id || ""),
+          subjectName: String(createdRow.subject_name || ""),
+          dueDate: String(createdRow.due_date || ""),
+          maxMarks: Number(createdRow.max_marks || 0),
+          fileUrl: createdRow.file_url || undefined,
+          createdAt: String(createdRow.created_at || ""),
+          createdBy: String(createdRow.created_by || ""),
+          submissions: [],
+        };
+
+        setAssignments((prev) => [instantiatedObject, ...prev]);
+        toast.success("Assignment link posted and synced safely with Database!");
+      }
+    } catch (err) {
+      console.error("Failed publishing assignment to server:", err);
+      toast.error("Database connection refused. Could not save post.");
+    }
   };
 
   const gradeSubmission = (submissionId: string, marks: number, feedback?: string) => {
-    setSubmissions(submissions.map((sub) => (sub.id === submissionId ? { ...sub, marks, feedback } : sub)));
-    setAssignments(assignments.map((a) => {
-      if (a.submissions?.some((s) => s.id === submissionId)) {
-        return { ...a, submissions: a.submissions.map((s) => (s.id === submissionId ? { ...s, marks, feedback } : s)) };
-      }
-      return a;
-    }));
+    setSubmissions((prev) =>
+      prev.map((sub) => (sub.id === submissionId ? { ...sub, marks, feedback } : sub))
+    );
+    setAssignments((prev) =>
+      prev.map((a) => {
+        if (a.submissions?.some((s) => s.id === submissionId)) {
+          return {
+            ...a,
+            submissions: a.submissions.map((s) =>
+              s.id === submissionId ? { ...s, marks, feedback } : s
+            ),
+          };
+        }
+        return a;
+      })
+    );
     toast.success("Submission graded successfully!");
   };
 
-  const markAttendance = (subjectId: string, date: string, studentAttendance: { studentId: string; present: boolean }[]) => {
+  const markAttendance = (
+    subjectId: string,
+    date: string,
+    studentAttendance: { studentId: string; present: boolean }[]
+  ) => {
     const subject = subjects.find((s) => s.id === subjectId);
     if (!subject) return;
 
@@ -611,28 +585,54 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     const existingIndex = attendance.findIndex((a) => a.subjectId === subjectId && a.date === date);
     if (existingIndex !== -1) {
-      const updated = [...attendance];
-      updated[existingIndex] = { ...updated[existingIndex], students: attendanceRecords };
-      setAttendance(updated);
+      setAttendance((prev) => {
+        const updated = [...prev];
+        updated[existingIndex] = { ...updated[existingIndex], students: attendanceRecords };
+        return updated;
+      });
     } else {
-      setAttendance([...attendance, { id: `att-${attendance.length + 1}`, subjectId, subjectName: subject.name, date, students: attendanceRecords }]);
+      setAttendance((prev) => [
+        ...prev,
+        { id: `att-${prev.length + 1}`, subjectId, subjectName: subject.name, date, students: attendanceRecords },
+      ]);
     }
     toast.success("Attendance marked successfully!");
   };
 
   const addNotification = (notification: Omit<Notification, "id" | "createdAt">) => {
-    setNotifications([...notifications, { ...notification, id: `n-${notifications.length + 1}`, createdAt: new Date().toISOString() }]);
+    setNotifications((prev) => [
+      ...prev,
+      { ...notification, id: `n-${prev.length + 1}`, createdAt: new Date().toISOString() },
+    ]);
     toast.success("Notification added successfully!");
   };
 
   return (
     <DataContext.Provider
       value={{
-        students, teachers, subjects, assignments, submissions, attendance,
-        attendanceSummary, messages, notifications, timetable, semesterResults,
-        minorResults, semesterGrades, setMinorResults, setSemesterGrades,
-        submitAssignment, sendMessage, markMessageAsRead, addAssignment,
-        gradeSubmission, markAttendance, addNotification,
+        students,
+        teachers,
+        subjects,
+        assignments,
+        submissions,
+        attendance,
+        attendanceSummary,
+        messages,
+        notifications,
+        timetable,
+        semesterResults,
+        minorResults,
+        semesterGrades,
+        isLoadingAssignments,
+        setMinorResults,
+        setSemesterGrades,
+        submitAssignment,
+        sendMessage,
+        markMessageAsRead,
+        addAssignment,
+        gradeSubmission,
+        markAttendance,
+        addNotification,
       }}
     >
       {children}
@@ -640,4 +640,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export const useData = () => useContext(DataContext);
+export const useData = () => {
+  const context = useContext(DataContext);
+  if (!context) throw new Error("useData must be used within a DataProvider");
+  return context;
+};
