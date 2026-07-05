@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
+
 export interface Student {
   id: string;
   name: string;
@@ -233,7 +234,8 @@ const DataContext = createContext<DataContextType>({
   addNotification: () => {},
 });
 
-// Demo/placeholder data — no real personal information
+// Demo/placeholder data — no real personal information.
+// subjects, semesterResults, and minorResults are now fetched live from Supabase (see useEffects below).
 const mockStudents: Student[] = [
   {
     id: "1",
@@ -291,22 +293,11 @@ const mockStudents: Student[] = [
   },
 ];
 
-const mockSubjects: Subject[] = [
-  { id: "1", code: "MA1102", name: "Design Thinking", credits: "0-1-4 3", description: "Introduction to design thinking process, methods, and tools.", semester: 2 },
-  { id: "2", code: "MA1104", name: "Ordinary Differential Equations", credits: "3-0-0 3", description: "Study of equations containing derivatives of unknown functions.", semester: 2 },
-  { id: "3", code: "MA1106", name: "Data Structures and Algorithms", credits: "3-0-2 4", description: "Fundamental data structures and algorithms for organizing, searching, and sorting data.", semester: 2 },
-  { id: "4", code: "EE1162", name: "Basic Electrical and Electronics Engineering", credits: "3-0-0 3", description: "Introduction to electrical and electronic components, circuits, and systems.", semester: 2 },
-  { id: "5", code: "MA1108", name: "Elementary Linear Algebra", credits: "3-0-0 3", description: "Study of vectors, vector spaces, linear transformations, and systems of linear equations.", semester: 2 },
-  { id: "6", code: "MA1110", name: "Discrete Mathematical Structures", credits: "3-0-0 3", description: "Mathematical structures that are fundamentally discrete rather than continuous.", semester: 2 },
-  { id: "7", code: "EE1164", name: "Basic Electrical Engineering Lab", credits: "0-1-2 2", description: "Practical laboratory work related to basic electrical engineering concepts.", semester: 2 },
-  { id: "8", code: "IC1102", name: "EAA-II (Games & Sports / Yoga & Wellness)", credits: "0-0-0 0", description: "Extra Academic Activity focusing on physical fitness and wellness.", semester: 2 },
-];
-
 const mockTeachers: Teacher[] = [
-  { id: "1", name: "Demo Teacher One", email: "teacher1@example.edu", department: "Maths Dept", subjects: mockSubjects },
-  { id: "2", name: "Demo Teacher Two", email: "teacher2@example.edu", department: "Maths Dept", subjects: [mockSubjects[1]] },
-  { id: "3", name: "Demo Teacher Three", email: "teacher3@example.edu", department: "Maths Dept", subjects: [mockSubjects[2]] },
-  { id: "4", name: "Demo Teacher Four", email: "teacher4@example.edu", department: "Electrical Dept", subjects: [mockSubjects[3], mockSubjects[6]] },
+  { id: "1", name: "Demo Teacher One", email: "teacher1@example.edu", department: "Maths Dept", subjects: [] },
+  { id: "2", name: "Demo Teacher Two", email: "teacher2@example.edu", department: "Maths Dept", subjects: [] },
+  { id: "3", name: "Demo Teacher Three", email: "teacher3@example.edu", department: "Maths Dept", subjects: [] },
+  { id: "4", name: "Demo Teacher Four", email: "teacher4@example.edu", department: "Electrical Dept", subjects: [] },
 ];
 
 const mockAssignments: Assignment[] = [
@@ -414,57 +405,6 @@ const mockTimetable: TimeTable = {
   ],
 };
 
-const mockSemesterResults: SemesterResult[] = [
-  {
-    studentId: "1",
-    studentName: "Demo Student One",
-    rollNumber: "24DEMO001",
-    department: "Department of Mathematics",
-    specialization: "Mathematics and Computing",
-    year: 1,
-    semester: 1,
-    academicYear: "2024-2025",
-    results: [
-      { subjectCode: "BT1161", subjectName: "Biology for Engineers", credit: 2, grade: "B" },
-      { subjectCode: "MA1101", subjectName: "Calculus", credit: 3, grade: "A" },
-      { subjectCode: "PH1161", subjectName: "Engineering Physics", credit: 4, grade: "S" },
-    ],
-    sgpa: 9.06,
-    cgpa: 9.06,
-  },
-];
-
-const mockMinorResults: MinorResult[] = [
-  {
-    id: "m1",
-    subjectId: "1",
-    subjectCode: "MA1102",
-    subjectName: "Design Thinking",
-    maxMarks: 30,
-    obtainedMarks: 26,
-    examDate: "2024-09-15",
-    examType: "Minor1",
-    studentId: "1",
-    rollNumber: "24DEMO001",
-    studentName: "Demo Student One",
-    percentage: 86.67,
-  },
-  {
-    id: "m2",
-    subjectId: "2",
-    subjectCode: "MA1104",
-    subjectName: "Ordinary Differential Equations",
-    maxMarks: 30,
-    obtainedMarks: 28,
-    examDate: "2024-09-16",
-    examType: "Minor1",
-    studentId: "1",
-    rollNumber: "24DEMO001",
-    studentName: "Demo Student One",
-    percentage: 93.33,
-  },
-];
-
 const mockSemesterGrades: SemesterGrade[] = [
   {
     id: "sg1",
@@ -498,6 +438,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [semesterResults, setSemesterResults] = useState<SemesterResult[]>([]);
+  const [minorResults, setMinorResults] = useState<MinorResult[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>(mockAssignments);
   const [submissions, setSubmissions] = useState<AssignmentSubmission[]>(mockSubmissions);
   const [attendance, setAttendance] = useState<Attendance[]>(mockAttendance);
@@ -505,8 +446,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [messages, setMessages] = useState<Message[]>(mockMessages);
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [timetable] = useState<TimeTable>(mockTimetable);
-  const [minorResults, setMinorResults] = useState<MinorResult[]>(mockMinorResults);
   const [semesterGrades, setSemesterGrades] = useState<SemesterGrade[]>(mockSemesterGrades);
+
   useEffect(() => {
     const fetchSubjects = async () => {
       const { data, error } = await supabase.from("subjects").select("*");
@@ -568,43 +509,45 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     fetchSemesterResults();
   }, [user]);
+
   useEffect(() => {
-  const fetchMinorResults = async () => {
-    if (!user) {
-      setMinorResults([]);
-      return;
-    }
+    const fetchMinorResults = async () => {
+      if (!user) {
+        setMinorResults([]);
+        return;
+      }
 
-    const { data, error } = await supabase
-      .from("minor_results")
-      .select("*, subjects(code, name)")
-      .eq("student_id", user.id);
+      const { data, error } = await supabase
+        .from("minor_results")
+        .select("*, subjects(code, name)")
+        .eq("student_id", user.id);
 
-    if (error) {
-      console.error("Failed to fetch minor results:", error);
-      return;
-    }
+      if (error) {
+        console.error("Failed to fetch minor results:", error);
+        return;
+      }
 
-    const mapped: MinorResult[] = data.map((row: any) => ({
-      id: row.id,
-      subjectId: row.subject_id,
-      subjectCode: row.subjects?.code || "",
-      subjectName: row.subjects?.name || "",
-      maxMarks: row.max_marks,
-      obtainedMarks: row.obtained_marks,
-      examDate: row.exam_date,
-      examType: row.exam_type,
-      studentId: user.id,
-      rollNumber: user.rollNumber,
-      studentName: user.name,
-      percentage: (row.obtained_marks / row.max_marks) * 100,
-    }));
+      const mapped: MinorResult[] = data.map((row: any) => ({
+        id: row.id,
+        subjectId: row.subject_id,
+        subjectCode: row.subjects?.code || "",
+        subjectName: row.subjects?.name || "",
+        maxMarks: row.max_marks,
+        obtainedMarks: row.obtained_marks,
+        examDate: row.exam_date,
+        examType: row.exam_type,
+        studentId: user.id,
+        rollNumber: user.rollNumber,
+        studentName: user.name,
+        percentage: (row.obtained_marks / row.max_marks) * 100,
+      }));
 
-    setMinorResults(mapped);
-  };
+      setMinorResults(mapped);
+    };
 
-  fetchMinorResults();
-}, [user]);
+    fetchMinorResults();
+  }, [user]);
+
   const submitAssignment = (assignmentId: string, studentId: string, fileUrl: string) => {
     const student = students.find((s) => s.id === studentId);
     if (!student) return;
