@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   Card, 
@@ -131,7 +130,6 @@ export default function StudentTimetable() {
       const hours = now.getHours();
       const minutes = now.getMinutes();
       
-      // Format current date
       const options: Intl.DateTimeFormatOptions = { 
         weekday: 'long', 
         year: 'numeric', 
@@ -145,7 +143,7 @@ export default function StudentTimetable() {
     };
     
     updateCurrentTime();
-    const intervalId = setInterval(updateCurrentTime, 60000); // Update every minute
+    const intervalId = setInterval(updateCurrentTime, 60000);
     
     return () => clearInterval(intervalId);
   }, []);
@@ -166,10 +164,7 @@ export default function StudentTimetable() {
   };
 
   const getClassForTimeSlot = (day: string, timeSlot: string) => {
-    const slot = timetableData.slots.find(
-      (s) => s.day === day && s.time === timeSlot
-    );
-    return slot;
+    return timetableData.slots.find((s) => s.day === day && s.time === timeSlot);
   };
 
   const getDaySchedule = (day: string) => {
@@ -178,25 +173,25 @@ export default function StudentTimetable() {
 
   return (
     <DashboardLayout title="Class Timetable" subtitle="Your weekly schedule">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h2 className="text-lg font-medium text-primary-800">
+          <h2 className="text-lg font-medium text-primary-800 break-words max-w-2xl">
             BTech, MnC, I Year II Semester / (ACADEMIC YEAR 2024-25)
           </h2>
           <p className="text-sm text-primary-600">
             Current time: {formattedDate}, {currentTime}
           </p>
         </div>
-        <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+        <Badge className="bg-green-100 text-green-800 hover:bg-green-200 flex-shrink-0">
           Room No. E104
         </Badge>
       </div>
       
       <Tabs defaultValue="weekly" className="w-full">
-        <TabsList className="mb-6">
+        <TabsList className="mb-6 flex flex-wrap h-auto gap-1 bg-transparent p-0 border-b rounded-none">
           <TabsTrigger 
             value="weekly" 
-            className="data-[state=active]:bg-oliveGreen-100 data-[state=active]:text-oliveGreen-900"
+            className="data-[state=active]:bg-oliveGreen-100 data-[state=active]:text-oliveGreen-900 border-b-2 data-[state=active]:border-oliveGreen-600 rounded-none bg-white shadow-none"
           >
             Weekly View
           </TabsTrigger>
@@ -204,7 +199,7 @@ export default function StudentTimetable() {
             <TabsTrigger 
               key={day} 
               value={day.toLowerCase()}
-              className="data-[state=active]:bg-oliveGreen-100 data-[state=active]:text-oliveGreen-900"
+              className="data-[state=active]:bg-oliveGreen-100 data-[state=active]:text-oliveGreen-900 border-b-2 data-[state=active]:border-oliveGreen-600 rounded-none bg-white shadow-none"
             >
               {day}
             </TabsTrigger>
@@ -213,8 +208,8 @@ export default function StudentTimetable() {
 
         {/* Weekly View */}
         <TabsContent value="weekly" className="mt-0">
-          <Card className="shadow-md">
-            <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100 rounded-t-lg">
+          <Card className="shadow-md overflow-hidden">
+            <CardHeader className="bg-oliveGreen-50 border-b border-oliveGreen-100">
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle className="text-oliveGreen-800">Weekly Schedule</CardTitle>
@@ -225,7 +220,7 @@ export default function StudentTimetable() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="text-xs px-3 py-1 bg-oliveGreen-200 text-oliveGreen-800 rounded-full">
+                      <div className="text-xs px-3 py-1 bg-oliveGreen-200 text-oliveGreen-800 rounded-full cursor-help select-none">
                         Legend
                       </div>
                     </TooltipTrigger>
@@ -253,18 +248,18 @@ export default function StudentTimetable() {
                 </TooltipProvider>
               </div>
             </CardHeader>
-            <CardContent className="pt-6 overflow-x-auto">
-              <div className="min-w-[800px]">
-                <div className="grid grid-cols-[100px_repeat(5,1fr)] gap-2">
+            <CardContent className="p-4 overflow-x-auto">
+              <div className="min-w-[1000px] p-1">
+                <div className="grid grid-cols-[110px_repeat(5,1fr)] gap-3 items-stretch">
                   {/* Header row with days */}
-                  <div className="text-center font-medium text-oliveGreen-800 py-2">Time</div>
+                  <div className="text-center font-semibold text-oliveGreen-800 py-2 self-center">Time</div>
                   {days.map((day) => (
                     <div 
                       key={day} 
-                      className={`text-center font-medium py-2 rounded ${
+                      className={`text-center font-semibold py-2 rounded text-sm ${
                         day === currentDay 
-                          ? "bg-oliveGreen-100 text-oliveGreen-900" 
-                          : "text-oliveGreen-800"
+                          ? "bg-oliveGreen-100 text-oliveGreen-900 border border-oliveGreen-300" 
+                          : "text-oliveGreen-800 bg-slate-50"
                       }`}
                     >
                       {day}
@@ -274,7 +269,7 @@ export default function StudentTimetable() {
                   {/* Time slots and classes */}
                   {timeSlots.map((timeSlot) => (
                     <React.Fragment key={timeSlot}>
-                      <div className="text-center text-sm text-oliveGreen-600 py-2 px-1">
+                      <div className="text-center text-xs font-medium text-oliveGreen-600 py-3 px-1 self-center bg-slate-50 rounded border border-transparent flex items-center justify-center h-full">
                         {timeSlot}
                       </div>
                       
@@ -288,55 +283,59 @@ export default function StudentTimetable() {
                           <div 
                             key={`${day}-${timeSlot}`} 
                             className={`
-                              rounded-lg border p-2 h-20 flex flex-col
+                              rounded-lg border p-2.5 min-h-[5.5rem] h-full flex flex-col justify-between overflow-hidden transition-all shadow-sm
                               ${isCurrentClass 
-                                ? "bg-oliveGreen-200 border-oliveGreen-300 animate-pulse" 
+                                ? "bg-oliveGreen-200 border-oliveGreen-400 ring-2 ring-oliveGreen-500/20 shadow-md animate-pulse" 
                                 : isLabSession
-                                ? "bg-yellow-50 border-yellow-200"
+                                ? "bg-yellow-50 border-yellow-200 text-amber-950"
                                 : isLunchOrFree
-                                ? "bg-gray-100 border-gray-200"
+                                ? "bg-slate-100 border-slate-200 opacity-75"
                                 : classInfo 
-                                ? "bg-oliveGreen-50 border-oliveGreen-200" 
-                                : "bg-gray-100 border-gray-200"}
+                                ? "bg-oliveGreen-50/70 border-oliveGreen-200" 
+                                : "bg-slate-100/50 border-dashed border-slate-200"}
                             `}
                           >
                             {classInfo ? (
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <div className="h-full flex flex-col justify-between">
-                                      <div>
-                                        <div className="font-medium text-oliveGreen-900 text-sm">
-                                          {classInfo.subject.length > 30 
-                                            ? `${classInfo.subject.substring(0, 27)}...` 
-                                            : classInfo.subject
-                                          }
+                                    <div className="h-full flex flex-col justify-between gap-1 text-left w-full cursor-default">
+                                      <div className="w-full">
+                                        <div className="font-semibold text-slate-900 text-xs tracking-tight line-clamp-2 leading-tight break-words">
+                                          {classInfo.subject}
                                         </div>
-                                        <div className="flex items-center justify-center mt-1">
-                                          <MapPin className="h-3 w-3 text-oliveGreen-500 mr-1" />
-                                          <span className="text-xs text-oliveGreen-600">
+                                      </div>
+                                      
+                                      <div className="w-full mt-auto pt-1 border-t border-black/5 flex flex-col gap-0.5">
+                                        <div className="flex items-center text-[11px] text-slate-600 w-full">
+                                          <MapPin className="h-3 w-3 text-slate-400 mr-1 flex-shrink-0" />
+                                          <span className="truncate block w-full" title={classInfo.location}>
                                             {classInfo.location || "N/A"}
                                           </span>
                                         </div>
+                                        {isCurrentClass && (
+                                          <Badge className="bg-oliveGreen-700 text-[9px] h-4 py-0 px-1.5 self-start mt-0.5">
+                                            Active
+                                          </Badge>
+                                        )}
                                       </div>
-                                      {isCurrentClass && (
-                                        <Badge className="bg-oliveGreen-600 self-center">
-                                          Current
-                                        </Badge>
-                                      )}
                                     </div>
                                   </TooltipTrigger>
-                                  <TooltipContent side="bottom">
-                                    <div className="text-sm">
-                                      <div className="font-medium">{classInfo.subject}</div>
-                                      <div className="flex items-center mt-1">
-                                        <MapPin className="h-3 w-3 mr-1" />
+                                  <TooltipContent side="bottom" className="max-w-xs p-3">
+                                    <div className="text-xs space-y-1">
+                                      <div className="font-bold text-sm text-slate-900">{classInfo.subject}</div>
+                                      <div className="flex items-center text-slate-700">
+                                        <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+                                        <span>{timeSlot}</span>
+                                      </div>
+                                      <div className="flex items-center text-slate-700">
+                                        <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
                                         <span>{classInfo.location || "N/A"}</span>
                                       </div>
                                       {classInfo.faculty && (
-                                        <div className="flex items-center mt-1">
-                                          <User className="h-3 w-3 mr-1" />
-                                          <span>{classInfo.faculty}</span>
+                                        <div className="flex items-center text-slate-700 pt-0.5 border-t border-slate-100 mt-1">
+                                          <User className="h-3 w-3 mr-1 flex-shrink-0" />
+                                          <span className="font-medium">{classInfo.faculty}</span>
                                         </div>
                                       )}
                                     </div>
@@ -344,7 +343,7 @@ export default function StudentTimetable() {
                                 </Tooltip>
                               </TooltipProvider>
                             ) : (
-                              <div className="h-full flex items-center justify-center text-sm text-gray-500">
+                              <div className="h-full flex items-center justify-center text-xs text-slate-400 font-medium italic">
                                 No Class
                               </div>
                             )}
@@ -381,55 +380,51 @@ export default function StudentTimetable() {
                         <div 
                           key={index}
                           className={`
-                            p-4 rounded-lg border
+                            p-4 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all
                             ${isCurrentClass 
-                              ? "bg-oliveGreen-200 border-oliveGreen-300 animate-pulse" 
+                              ? "bg-oliveGreen-200 border-oliveGreen-400 ring-2 ring-oliveGreen-500/10 shadow" 
                               : isLabSession
                               ? "bg-yellow-50 border-yellow-200"
                               : isLunchOrFree
-                              ? "bg-gray-100 border-gray-200"
-                              : "bg-oliveGreen-50 border-oliveGreen-200"}
+                              ? "bg-slate-100 border-slate-200 opacity-85"
+                              : "bg-oliveGreen-50/60 border-oliveGreen-200"}
                           `}
                         >
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="font-medium text-oliveGreen-900 text-lg">
-                                {slot.subject}
-                              </h3>
-                              <div className="flex items-center mt-1 text-oliveGreen-600">
-                                <Clock className="h-4 w-4 mr-1" />
-                                <span>{slot.time}</span>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="flex items-center justify-end mb-1 text-oliveGreen-700">
-                                <MapPin className="h-4 w-4 mr-1" />
-                                <span>{slot.location || "N/A"}</span>
-                              </div>
-                              {slot.faculty && (
-                                <div className="flex items-center justify-end text-oliveGreen-600 text-sm">
-                                  <User className="h-4 w-4 mr-1" />
-                                  <span>{slot.faculty}</span>
-                                </div>
-                              )}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-slate-900 text-lg break-words leading-tight">
+                              {slot.subject}
+                            </h3>
+                            <div className="flex items-center mt-1.5 text-sm font-medium text-slate-600">
+                              <Clock className="h-4 w-4 mr-1.5 text-slate-400 flex-shrink-0" />
+                              <span>{slot.time}</span>
                             </div>
                           </div>
                           
-                          {isCurrentClass && (
-                            <div className="mt-3 flex justify-end">
-                              <Badge className="bg-oliveGreen-600">
+                          <div className="flex flex-col items-start sm:items-end justify-center text-sm gap-1 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200/60">
+                            <div className="flex items-center font-medium text-slate-700">
+                              <MapPin className="h-4 w-4 mr-1.5 text-slate-400 flex-shrink-0" />
+                              <span className="break-words max-w-xs">{slot.location || "N/A"}</span>
+                            </div>
+                            {slot.faculty && (
+                              <div className="flex items-center text-slate-600">
+                                <User className="h-4 w-4 mr-1.5 text-slate-400 flex-shrink-0" />
+                                <span className="truncate">{slot.faculty}</span>
+                              </div>
+                            )}
+                            {isCurrentClass && (
+                              <Badge className="bg-oliveGreen-700 mt-1 sm:mt-2">
                                 Current Class
                               </Badge>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       );
                     })
                   ) : (
-                    <div className="text-center py-8">
-                      <Calendar className="mx-auto h-12 w-12 text-oliveGreen-300" />
-                      <h3 className="mt-2 text-lg font-medium text-oliveGreen-900">No Classes</h3>
-                      <p className="mt-1 text-sm text-oliveGreen-500">There are no scheduled classes for {day}.</p>
+                    <div className="text-center py-12">
+                      <Calendar className="mx-auto h-12 w-12 text-oliveGreen-300 mb-2" />
+                      <h3 className="text-lg font-medium text-oliveGreen-900">No Classes</h3>
+                      <p className="text-sm text-oliveGreen-500">There are no scheduled classes for {day}.</p>
                     </div>
                   )}
                 </div>
