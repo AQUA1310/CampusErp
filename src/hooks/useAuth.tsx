@@ -37,7 +37,45 @@ async function loadUserProfile(session: Session): Promise<UserType> {
       .single();
 
     if (error || !profile) {
-      console.error("Profile load error:", error);
+      // If profile is missing but user is logged in via Google Auth, attempt automatic creation
+      const emailLower = session.user.email?.toLowerCase().trim() || "";
+      const studentEmailRegex = /^([a-zA-Z]{2})((21|22|23|24)ma[a-zA-Z0-9]+)@student\.nitw\.ac\.in$/;
+      const match = emailLower.match(studentEmailRegex);
+
+      if (match) {
+        const rollNumber = match[2].toUpperCase(); // e.g. "24MAB0A21"
+        const name = session.user.user_metadata?.full_name || "NITW Student";
+        const department = "Mathematics";
+
+        // Auto-create profile row in database
+        const { data: newProfile, error: insertError } = await supabase
+          .from("profiles")
+          .insert({
+            id: session.user.id,
+            name: name,
+            role: "student",
+            roll_number: rollNumber,
+            department: department
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error("Failed to automatically create student profile:", insertError);
+          return null;
+        }
+
+        return {
+          id: session.user.id,
+          type: "student",
+          name: newProfile.name,
+          email: emailLower,
+          rollNumber: newProfile.roll_number,
+          department: newProfile.department
+        };
+      }
+
+      console.error("Profile not found in database and email is unauthorized.");
       return null;
     }
 
@@ -67,7 +105,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           const profile = await loadUserProfile(session);
-          setUser(profile);
+          if (profile) {
+            setUser(profile);
+          } else {
+            // Sign out invalid account
+            await supabase.auth.signOut();
+            setUser(null);
+            toast.error("Access Denied: Only Mathematics department student emails or whitelisted faculty are allowed.");
+          }
         }
       } catch (err) {
         console.error("Session sync failed:", err);
@@ -79,10 +124,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initializeAuth();
 
     // 2. Setup auth stream observer for instant layout adjustments on transitions
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session) {
         const profile = await loadUserProfile(session);
-        setUser(profile);
+        if (profile) {
+          setUser(profile);
+        } else {
+          // Sign out invalid account
+          await supabase.auth.signOut();
+          setUser(null);
+          toast.error("Access Denied: Only Mathematics department student emails or whitelisted faculty are allowed.");
+        }
       } else {
         setUser(null);
       }
