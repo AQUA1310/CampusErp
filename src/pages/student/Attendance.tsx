@@ -24,39 +24,70 @@ export default function StudentAttendance() {
   const { user } = useAuth();
   const { attendanceSummary, attendance } = useData();
   
-  const studentAttendanceSummary = attendanceSummary.find(summary => 
-    summary.studentId === user?.id || summary.rollNumber === user?.rollNumber
-  );
-  
-  const attendanceRecords = attendance.filter(record => {
-    const studentRecord = record.students.find(s => 
-      s.studentId === user?.id || s.rollNumber === user?.rollNumber
-    );
-    return !!studentRecord;
-  });
-  
-  const attendanceBySubject = attendanceRecords.reduce((acc, record) => {
-    if (!acc[record.subjectId]) {
-      acc[record.subjectId] = {
-        subjectName: record.subjectName,
-        records: []
-      };
+  // Static placeholder data exactly as requested
+  const studentAttendanceSummary = {
+    overall: {
+      totalClasses: 128,
+      attended: 114,
+      percentage: 89.06
+    },
+    subjects: [
+      {
+        subjectName: "Advanced Calculus & Linear Algebra",
+        totalClasses: 28,
+        attended: 24,
+        percentage: 85.71
+      },
+      {
+        subjectName: "Probability and Stochastic Processes",
+        totalClasses: 26,
+        attended: 22,
+        percentage: 84.62
+      },
+      {
+        subjectName: "Discrete Mathematics",
+        totalClasses: 25,
+        attended: 23,
+        percentage: 92.00
+      },
+      {
+        subjectName: "Data Structures & OOP",
+        totalClasses: 27,
+        attended: 25,
+        percentage: 92.59
+      },
+      {
+        subjectName: "Numerical Analysis Lab",
+        totalClasses: 22,
+        attended: 20,
+        percentage: 90.91
+      }
+    ]
+  };
+
+  const attendanceBySubject = {
+    sub_1: {
+      subjectName: "Advanced Calculus & Linear Algebra",
+      records: [
+        { date: "2026-03-02", present: true },
+        { date: "2026-03-04", present: true },
+        { date: "2026-03-06", present: false },
+        { date: "2026-03-09", present: true },
+        { date: "2026-03-11", present: true }
+      ]
+    },
+    sub_2: {
+      subjectName: "Probability and Stochastic Processes",
+      records: [
+        { date: "2026-03-02", present: true },
+        { date: "2026-03-04", present: false },
+        { date: "2026-03-06", present: true },
+        { date: "2026-03-09", present: true },
+        { date: "2026-03-11", present: true }
+      ]
     }
-    
-    const studentRecord = record.students.find(s => 
-      s.studentId === user?.id || s.rollNumber === user?.rollNumber
-    );
-    
-    if (studentRecord) {
-      acc[record.subjectId].records.push({
-        date: record.date,
-        present: studentRecord.present
-      });
-    }
-    
-    return acc;
-  }, {} as Record<string, { subjectName: string; records: { date: string; present: boolean }[] }>);
-  
+  };
+
   return (
     <DashboardLayout title="Attendance" subtitle="View your attendance records and statistics">
       <div className="space-y-6">

@@ -30,18 +30,18 @@ import DashboardLayout from "@/components/shared/DashboardLayout";
 
 // Subject class mapping
 const subjectSlotMapping = {
-  "DT": { name: "MA1102 Design Thinking", faculty: "Prof. A. Benerji Babu", location: "Room No. E104", acronym: "DT" },
-  "A": { name: "EE1162 Basic Electrical and Electronics Engineering", faculty: "Prof. B. L Narasimharaju", location: "Room No. E104", acronym: "BEEE" },
-  "B": { name: "MA1104 Ordinary Differential Equations", faculty: "Prof. Satyanarayana Engu", location: "Room No. E104", acronym: "ODE" },
-  "C": { name: "MA1108 Elementary Linear Algebra", faculty: "Prof. Jagannath Roy", location: "Room No. A315 (Electrical Dept)", acronym: "ELA" },
-  "D": { name: "MA1106 Data Structures and Algorithms", faculty: "Prof. Debashis Dutta", location: "Room No. E104", acronym: "DSA" },
-  "E": { name: "MA1106 Data Structures and Algorithms", faculty: "Prof. Debashis Dutta", location: "Room No. E104", acronym: "DSA" },
-  "F": { name: "IC1102 EAA-II (Games & Sports / Yoga & Wellness)", faculty: "Sports Department", location: "Stadium", acronym: "GSYW" },
-  "G": { name: "MA1110 Discrete Mathematical Structures", faculty: "Prof. D. Srinivasacharya", location: "Room No. E104", acronym: "DMS" },
-  "H": { name: "Lab Sessions", faculty: "Various", location: "Respective Labs", acronym: "LAB" },
-  "BEE LAB": { name: "EE1164 Basic Electrical Engineering Lab", faculty: "Prof. B. L Narasimharaju", location: "Electrical Dept", acronym: "BEE LAB" },
-  "DSA LAB": { name: "MA1106 DSA Lab", faculty: "Prof. Debashis Dutta", location: "Computation Lab", acronym: "DSA LAB" },
-  "LUNCH": { name: "Lunch Break", faculty: "", location: "Canteen", acronym: "LUNCH" },
+  "DT": { name: "DM1102 Demo Subject Alpha", faculty: "Prof. Demo Faculty A", location: "Room No. 101", acronym: "DSA" },
+  "A": { name: "DM1162 Demo Subject Beta", faculty: "Prof. Demo Faculty B", location: "Room No. 101", acronym: "DSB" },
+  "B": { name: "DM1104 Demo Subject Gamma", faculty: "Prof. Demo Faculty C", location: "Room No. 101", acronym: "DSG" },
+  "C": { name: "DM1108 Demo Subject Delta", faculty: "Prof. Demo Faculty D", location: "Room No. 102", acronym: "DSD" },
+  "D": { name: "DM1106 Demo Subject Epsilon", faculty: "Prof. Demo Faculty E", location: "Room No. 101", acronym: "DSE" },
+  "E": { name: "DM1106 Demo Subject Epsilon", faculty: "Prof. Demo Faculty E", location: "Room No. 101", acronym: "DSE" },
+  "F": { name: "DM1102 Demo Extra-Curricular Activity", faculty: "Demo Department", location: "Main Ground", acronym: "DECA" },
+  "G": { name: "DM1110 Demo Subject Zeta", faculty: "Prof. Demo Faculty F", location: "Room No. 101", acronym: "DSZ" },
+  "H": { name: "Demo Lab Sessions", faculty: "Various Assistants", location: "Respective Labs", acronym: "LAB" },
+  "BEE LAB": { name: "DM1164 Demo Lab Session Alpha", faculty: "Prof. Demo Faculty B", location: "Lab Block A", acronym: "DLSA" },
+  "DSA LAB": { name: "DM1106 Demo Lab Session Beta", faculty: "Prof. Demo Faculty E", location: "Lab Block B", acronym: "DLSB" },
+  "LUNCH": { name: "Lunch Break", faculty: "", location: "Cafeteria", acronym: "LUNCH" },
   "FREE": { name: "Free Period", faculty: "", location: "", acronym: "FREE" },
 };
 
@@ -49,56 +49,56 @@ const subjectSlotMapping = {
 const timetableData = {
   slots: [
     // Monday
-    { day: "Monday", time: "8:00 - 8:55", subject: "MA1110 Discrete Mathematical Structures", location: "Room No. E104", faculty: "Prof. D. Srinivasacharya" },
-    { day: "Monday", time: "9:00 - 9:55", subject: "EE1164 Basic Electrical Engineering Lab", location: "Electrical Dept", faculty: "Prof. B. L Narasimharaju" },
-    { day: "Monday", time: "10:00 - 10:55", subject: "EE1164 Basic Electrical Engineering Lab", location: "Electrical Dept", faculty: "Prof. B. L Narasimharaju" },
-    { day: "Monday", time: "11:05 - 12:00", subject: "EE1164 Basic Electrical Engineering Lab", location: "Electrical Dept", faculty: "Prof. B. L Narasimharaju" },
-    { day: "Monday", time: "12:05 - 1:00", subject: "Lunch Break", location: "Canteen", faculty: "" },
-    { day: "Monday", time: "1:00 - 1:55", subject: "IC1102 EAA-II (Games & Sports / Yoga & Wellness)", location: "Stadium", faculty: "Sports Department" },
-    { day: "Monday", time: "2:00 - 2:55", subject: "MA1104 Ordinary Differential Equations", location: "Room No. E104", faculty: "Prof. Satyanarayana Engu" },
-    { day: "Monday", time: "3:05 - 4:00", subject: "MA1108 Elementary Linear Algebra", location: "Room No. A315 (Electrical Dept)", faculty: "Prof. Jagannath Roy" },
+    { day: "Monday", time: "8:00 - 8:55", subject: "DM1110 Demo Subject Zeta", location: "Room No. 101", faculty: "Prof. Demo Faculty F" },
+    { day: "Monday", time: "9:00 - 9:55", subject: "DM1164 Demo Lab Session Alpha", location: "Lab Block A", faculty: "Prof. Demo Faculty B" },
+    { day: "Monday", time: "10:00 - 10:55", subject: "DM1164 Demo Lab Session Alpha", location: "Lab Block A", faculty: "Prof. Demo Faculty B" },
+    { day: "Monday", time: "11:05 - 12:00", subject: "DM1164 Demo Lab Session Alpha", location: "Lab Block A", faculty: "Prof. Demo Faculty B" },
+    { day: "Monday", time: "12:05 - 1:00", subject: "Lunch Break", location: "Cafeteria", faculty: "" },
+    { day: "Monday", time: "1:00 - 1:55", subject: "DM1102 Demo Extra-Curricular Activity", location: "Main Ground", faculty: "Demo Department" },
+    { day: "Monday", time: "2:00 - 2:55", subject: "DM1104 Demo Subject Gamma", location: "Room No. 101", faculty: "Prof. Demo Faculty C" },
+    { day: "Monday", time: "3:05 - 4:00", subject: "DM1108 Demo Subject Delta", location: "Room No. 102", faculty: "Prof. Demo Faculty D" },
     
     // Tuesday
-    { day: "Tuesday", time: "8:00 - 8:55", subject: "MA1110 Discrete Mathematical Structures", location: "Room No. E104", faculty: "Prof. D. Srinivasacharya" },
+    { day: "Tuesday", time: "8:00 - 8:55", subject: "DM1110 Demo Subject Zeta", location: "Room No. 101", faculty: "Prof. Demo Faculty F" },
     { day: "Tuesday", time: "9:00 - 9:55", subject: "Free Period", location: "", faculty: "" },
     { day: "Tuesday", time: "10:00 - 10:55", subject: "Free Period", location: "", faculty: "" },
     { day: "Tuesday", time: "11:05 - 12:00", subject: "Free Period", location: "", faculty: "" },
-    { day: "Tuesday", time: "12:05 - 1:00", subject: "Lunch Break", location: "Canteen", faculty: "" },
-    { day: "Tuesday", time: "1:00 - 1:55", subject: "MA1106 Data Structures and Algorithms", location: "Room No. E104", faculty: "Prof. Debashis Dutta" },
-    { day: "Tuesday", time: "2:00 - 2:55", subject: "EE1162 Basic Electrical and Electronics Engineering", location: "Room No. E104", faculty: "Prof. B. L Narasimharaju" },
-    { day: "Tuesday", time: "3:05 - 4:00", subject: "MA1104 Ordinary Differential Equations", location: "Room No. E104", faculty: "Prof. Satyanarayana Engu" },
-    { day: "Tuesday", time: "4:05 - 5:00", subject: "MA1108 Elementary Linear Algebra", location: "Room No. A315 (Electrical Dept)", faculty: "Prof. Jagannath Roy" },
+    { day: "Tuesday", time: "12:05 - 1:00", subject: "Lunch Break", location: "Cafeteria", faculty: "" },
+    { day: "Tuesday", time: "1:00 - 1:55", subject: "DM1106 Demo Subject Epsilon", location: "Room No. 101", faculty: "Prof. Demo Faculty E" },
+    { day: "Tuesday", time: "2:00 - 2:55", subject: "DM1162 Demo Subject Beta", location: "Room No. 101", faculty: "Prof. Demo Faculty B" },
+    { day: "Tuesday", time: "3:05 - 4:00", subject: "DM1104 Demo Subject Gamma", location: "Room No. 101", faculty: "Prof. Demo Faculty C" },
+    { day: "Tuesday", time: "4:05 - 5:00", subject: "DM1108 Demo Subject Delta", location: "Room No. 102", faculty: "Prof. Demo Faculty D" },
     
     // Wednesday
-    { day: "Wednesday", time: "8:00 - 8:55", subject: "Lab Sessions", location: "Respective Labs", faculty: "Various" },
-    { day: "Wednesday", time: "9:00 - 9:55", subject: "MA1110 Discrete Mathematical Structures", location: "Room No. E104", faculty: "Prof. D. Srinivasacharya" },
-    { day: "Wednesday", time: "10:00 - 10:55", subject: "MA1106 Data Structures and Algorithms", location: "Room No. E104", faculty: "Prof. Debashis Dutta" },
-    { day: "Wednesday", time: "11:05 - 12:00", subject: "EE1162 Basic Electrical and Electronics Engineering", location: "Room No. E104", faculty: "Prof. B. L Narasimharaju" },
-    { day: "Wednesday", time: "12:05 - 1:00", subject: "MA1104 Ordinary Differential Equations", location: "Room No. E104", faculty: "Prof. Satyanarayana Engu" },
-    { day: "Wednesday", time: "1:00 - 1:55", subject: "Lunch Break", location: "Canteen", faculty: "" },
+    { day: "Wednesday", time: "8:00 - 8:55", subject: "Demo Lab Sessions", location: "Respective Labs", faculty: "Various Assistants" },
+    { day: "Wednesday", time: "9:00 - 9:55", subject: "DM1110 Demo Subject Zeta", location: "Room No. 101", faculty: "Prof. Demo Faculty F" },
+    { day: "Wednesday", time: "10:00 - 10:55", subject: "DM1106 Demo Subject Epsilon", location: "Room No. 101", faculty: "Prof. Demo Faculty E" },
+    { day: "Wednesday", time: "11:05 - 12:00", subject: "DM1162 Demo Subject Beta", location: "Room No. 101", faculty: "Prof. Demo Faculty B" },
+    { day: "Wednesday", time: "12:05 - 1:00", subject: "DM1104 Demo Subject Gamma", location: "Room No. 101", faculty: "Prof. Demo Faculty C" },
+    { day: "Wednesday", time: "1:00 - 1:55", subject: "Lunch Break", location: "Cafeteria", faculty: "" },
     { day: "Wednesday", time: "2:00 - 2:55", subject: "Free Period", location: "", faculty: "" },
     { day: "Wednesday", time: "3:05 - 4:00", subject: "Free Period", location: "", faculty: "" },
     
     // Thursday
-    { day: "Thursday", time: "8:00 - 8:55", subject: "Lab Sessions", location: "Respective Labs", faculty: "Various" },
-    { day: "Thursday", time: "9:00 - 9:55", subject: "MA1106 Data Structures and Algorithms", location: "Room No. E104", faculty: "Prof. Debashis Dutta" },
-    { day: "Thursday", time: "10:00 - 10:55", subject: "IC1102 EAA-II (Games & Sports / Yoga & Wellness)", location: "Stadium", faculty: "Sports Department" },
-    { day: "Thursday", time: "11:05 - 12:00", subject: "MA1106 Data Structures and Algorithms", location: "Room No. E104", faculty: "Prof. Debashis Dutta" },
-    { day: "Thursday", time: "12:05 - 1:00", subject: "EE1162 Basic Electrical and Electronics Engineering", location: "Room No. E104", faculty: "Prof. B. L Narasimharaju" },
-    { day: "Thursday", time: "1:00 - 1:55", subject: "Lunch Break", location: "Canteen", faculty: "" },
-    { day: "Thursday", time: "2:00 - 4:00", subject: "MA1106 DSA Lab", location: "Computation Lab", faculty: "Prof. Debashis Dutta" },
+    { day: "Thursday", time: "8:00 - 8:55", subject: "Demo Lab Sessions", location: "Respective Labs", faculty: "Various Assistants" },
+    { day: "Thursday", time: "9:00 - 9:55", subject: "DM1106 Demo Subject Epsilon", location: "Room No. 101", faculty: "Prof. Demo Faculty E" },
+    { day: "Thursday", time: "10:00 - 10:55", subject: "DM1102 Demo Extra-Curricular Activity", location: "Main Ground", faculty: "Demo Department" },
+    { day: "Thursday", time: "11:05 - 12:00", subject: "DM1106 Demo Subject Epsilon", location: "Room No. 101", faculty: "Prof. Demo Faculty E" },
+    { day: "Thursday", time: "12:05 - 1:00", subject: "DM1162 Demo Subject Beta", location: "Room No. 101", faculty: "Prof. Demo Faculty B" },
+    { day: "Thursday", time: "1:00 - 1:55", subject: "Lunch Break", location: "Cafeteria", faculty: "" },
+    { day: "Thursday", time: "2:00 - 4:00", subject: "DM1106 Demo Lab Session Beta", location: "Lab Block B", faculty: "Prof. Demo Faculty E" },
     { day: "Thursday", time: "4:05 - 5:00", subject: "Free Period", location: "", faculty: "" },
     
     // Friday
-    { day: "Friday", time: "8:00 - 8:55", subject: "Lab Sessions", location: "Respective Labs", faculty: "Various" },
-    { day: "Friday", time: "9:00 - 9:55", subject: "MA1108 Elementary Linear Algebra", location: "Room No. A315 (Electrical Dept)", faculty: "Prof. Jagannath Roy" },
-    { day: "Friday", time: "10:00 - 10:55", subject: "MA1106 Data Structures and Algorithms", location: "Room No. E104", faculty: "Prof. Debashis Dutta" },
-    { day: "Friday", time: "11:05 - 12:00", subject: "IC1102 EAA-II (Games & Sports / Yoga & Wellness)", location: "Stadium", faculty: "Sports Department" },
-    { day: "Friday", time: "12:05 - 1:00", subject: "MA1106 Data Structures and Algorithms", location: "Room No. E104", faculty: "Prof. Debashis Dutta" },
-    { day: "Friday", time: "2:00 - 3:00", subject: "MA1102 Design Thinking", location: "Room No. E104", faculty: "Prof. A. Benerji Babu" },
-    { day: "Friday", time: "3:00 - 4:00", subject: "MA1102 Design Thinking", location: "Room No. E104", faculty: "Prof. A. Benerji Babu" },
-    { day: "Friday", time: "4:00 - 5:00", subject: "MA1102 Design Thinking", location: "Room No. E104", faculty: "Prof. A. Benerji Babu" },
-    { day: "Friday", time: "5:00 - 6:00", subject: "MA1102 Design Thinking", location: "Room No. E104", faculty: "Prof. A. Benerji Babu" },
+    { day: "Friday", time: "8:00 - 8:55", subject: "Demo Lab Sessions", location: "Respective Labs", faculty: "Various Assistants" },
+    { day: "Friday", time: "9:00 - 9:55", subject: "DM1108 Demo Subject Delta", location: "Room No. 102", faculty: "Prof. Demo Faculty D" },
+    { day: "Friday", time: "10:00 - 10:55", subject: "DM1106 Demo Subject Epsilon", location: "Room No. 101", faculty: "Prof. Demo Faculty E" },
+    { day: "Friday", time: "11:05 - 12:00", subject: "DM1102 Demo Extra-Curricular Activity", location: "Main Ground", faculty: "Demo Department" },
+    { day: "Friday", time: "12:05 - 1:00", subject: "DM1106 Demo Subject Epsilon", location: "Room No. 101", faculty: "Prof. Demo Faculty E" },
+    { day: "Friday", time: "2:00 - 3:00", subject: "DM1102 Demo Subject Alpha", location: "Room No. 101", faculty: "Prof. Demo Faculty A" },
+    { day: "Friday", time: "3:00 - 4:00", subject: "DM1102 Demo Subject Alpha", location: "Room No. 101", faculty: "Prof. Demo Faculty A" },
+    { day: "Friday", time: "4:00 - 5:00", subject: "DM1102 Demo Subject Alpha", location: "Room No. 101", faculty: "Prof. Demo Faculty A" },
+    { day: "Friday", time: "5:00 - 6:00", subject: "DM1102 Demo Subject Alpha", location: "Room No. 101", faculty: "Prof. Demo Faculty A" },
   ]
 };
 
@@ -176,14 +176,14 @@ export default function StudentTimetable() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h2 className="text-lg font-medium text-primary-800 break-words max-w-2xl">
-            BTech, MnC, I Year II Semester / (ACADEMIC YEAR 2024-25)
+            BDemo Programme, Year I Semester II / (ACADEMIC YEAR 2025-26)
           </h2>
           <p className="text-sm text-primary-600">
             Current time: {formattedDate}, {currentTime}
           </p>
         </div>
         <Badge className="bg-green-100 text-green-800 hover:bg-green-200 flex-shrink-0">
-          Room No. E104
+          Room No. 101
         </Badge>
       </div>
       
@@ -214,7 +214,7 @@ export default function StudentTimetable() {
                 <div>
                   <CardTitle className="text-oliveGreen-800">Weekly Schedule</CardTitle>
                   <CardDescription className="text-oliveGreen-600">
-                    Pattern-A (w.e.f. 16-Dec-2024)
+                    Pattern-Demo (w.e.f. 01-Jan-2026)
                   </CardDescription>
                 </div>
                 <TooltipProvider>
@@ -276,7 +276,7 @@ export default function StudentTimetable() {
                       {days.map((day) => {
                         const classInfo = getClassForTimeSlot(day, timeSlot);
                         const isCurrentClass = isCurrentTimeSlot(day, timeSlot);
-                        const isLabSession = classInfo && (classInfo.subject.includes("Lab") || classInfo.subject === "Lab Sessions");
+                        const isLabSession = classInfo && (classInfo.subject.includes("Lab") || classInfo.subject === "Demo Lab Sessions");
                         const isLunchOrFree = classInfo && (classInfo.subject === "Lunch Break" || classInfo.subject === "Free Period");
                         
                         return (
@@ -373,7 +373,7 @@ export default function StudentTimetable() {
                   {getDaySchedule(day).length > 0 ? (
                     getDaySchedule(day).map((slot, index) => {
                       const isCurrentClass = isCurrentTimeSlot(day, slot.time);
-                      const isLabSession = slot.subject.includes("Lab") || slot.subject === "Lab Sessions";
+                      const isLabSession = slot.subject.includes("Lab") || slot.subject === "Demo Lab Sessions";
                       const isLunchOrFree = slot.subject === "Lunch Break" || slot.subject === "Free Period";
                       
                       return (
