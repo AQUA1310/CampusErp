@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ALLOWED_TEACHERS = [
   "benerji@nitw.ac.in",
@@ -24,6 +25,7 @@ export default function SignupForm() {
     email: "",
     password: "",
     rollNumber: "",
+    branch: "",
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -105,7 +107,7 @@ export default function SignupForm() {
       name: formData.name,
       role: role,
       roll_number: role === "student" ? formData.rollNumber.trim().toUpperCase() : null,
-      department: "Mathematics",
+      department: role === "student" ? formData.branch || "Mathematics" : "Mathematics",
     });
 
     if (profileError) {
@@ -147,10 +149,25 @@ export default function SignupForm() {
                   <Input id="password" name="password" type="password" required minLength={6} value={formData.password} onChange={handleChange} />
                 </div>
                 {role === "student" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="rollNumber">Roll Number</Label>
-                    <Input id="rollNumber" name="rollNumber" required value={formData.rollNumber} onChange={handleChange} />
-                  </div>
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="rollNumber">Roll Number</Label>
+                      <Input id="rollNumber" name="rollNumber" required value={formData.rollNumber} onChange={handleChange} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="branch">Branch</Label>
+                      <Select onValueChange={(value) => setFormData({ ...formData, branch: value })} required>
+                        <SelectTrigger id="branch">
+                          <SelectValue placeholder="Select your branch" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="M.Sc. Mathematics">M.Sc. Mathematics</SelectItem>
+                          <SelectItem value="M.Sc. Mathematics & Computing">M.Sc. Mathematics & Computing</SelectItem>
+                          <SelectItem value="B.Tech Mathematics & Computing">B.Tech Mathematics & Computing</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
                 )}
               </CardContent>
               <CardFooter className="flex flex-col gap-3">
