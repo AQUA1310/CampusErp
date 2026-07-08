@@ -162,8 +162,9 @@ export default function SignupForm() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="M.Sc. Mathematics">M.Sc. Mathematics</SelectItem>
-                          <SelectItem value="M.Sc. Mathematics & Computing">M.Sc. Mathematics & Computing</SelectItem>
+                          <SelectItem value="Mathematics & Scientific Computing">Mathematics & Scientific Computing</SelectItem>
                           <SelectItem value="B.Tech Mathematics & Computing">B.Tech Mathematics & Computing</SelectItem>
+                          <SelectItem value="Int Msc Mathematics">Int Msc Mathematics</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
