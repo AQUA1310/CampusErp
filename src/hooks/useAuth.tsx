@@ -22,7 +22,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  logout: () => {},
+  logout: () => { },
   isAuthenticated: false,
   isLoading: true,
 });
@@ -44,7 +44,10 @@ async function loadUserProfile(session: Session): Promise<UserType> {
 
       if (match) {
         const rollNumber = match[2].toUpperCase(); // e.g. "24MAB0A21"
-        const name = session.user.user_metadata?.full_name || "NITW Student";
+        const name =
+          session.user.user_metadata?.full_name ||
+          session.user.user_metadata?.name ||
+          "Anonymous Student";
         const department = "Mathematics";
 
         // Auto-create profile row in database

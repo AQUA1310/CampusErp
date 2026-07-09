@@ -13,17 +13,16 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Send, User, MessageSquare } from "lucide-react";
+import { Send, User, MessageSquare, Clock, Building } from "lucide-react";
 
 export default function Chat() {
   const { user } = useAuth();
-
-const {
-  teachers,
-  messages,
-  sendMessage,
-  markMessageAsRead,
-} = useData();
+  const {
+    teachers,
+    messages,
+    sendMessage,
+    markMessageAsRead,
+  } = useData();
   const [message, setMessage] = useState("");
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -55,6 +54,7 @@ const {
     const contact = teachers.find((t) => t.id === contactId);
     
     if (contact) {
+      const isCurrentlyViewing = activeChat === contactId;
       acc[contactId] = {
         contact: {
           id: contact.id,
@@ -121,7 +121,7 @@ const {
       receiverId: activeContact.id,
       receiverName: activeContact.name,
       receiverType: "teacher",
-      content: message,
+      content: message.trim(),
     });
 
     setMessage("");
@@ -136,54 +136,51 @@ const {
 
   return (
     <DashboardLayout title="Messages" subtitle="Chat with your teachers and academic advisors">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
         {/* Contacts list */}
         <div className="md:col-span-1">
-          <Card className="h-[calc(100vh-200px)] overflow-hidden">
-            <CardHeader className="bg-slate-50">
-              <CardTitle className="text-lg">Contacts</CardTitle>
-              <CardDescription>Your teachers and advisors</CardDescription>
+          <Card className="h-[calc(100vh-220px)] overflow-hidden shadow-sm border-slate-200">
+            <CardHeader className="bg-slate-50/70 pb-4 border-b">
+              <CardTitle className="text-lg text-slate-800 flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-primary" /> Faculty Directory
+              </CardTitle>
+              <CardDescription>Select a professor to begin chatting</CardDescription>
             </CardHeader>
-            <CardContent className="p-0">
-              <div className="h-[calc(100%-80px)] overflow-y-auto">
+            <CardContent className="p-0 h-full">
+              <div className="h-[calc(100%-85px)] overflow-y-auto divide-y divide-slate-100">
                 {Object.entries(messagesByContact).length > 0 ? (
-                  <div className="divide-y">
-                    {Object.entries(messagesByContact).map(([contactId, { contact, messages, unread }]) => (
-                      <button
-                        key={contactId}
-                        className={`w-full text-left p-3 hover:bg-slate-50 transition-colors ${
-                          activeChat === contactId ? "bg-slate-100" : ""
-                        }`}
-                        onClick={() => setActiveChat(contactId)}
-                      >
-                        <div className="flex items-center">
-                          <Avatar className="h-10 w-10 mr-3 bg-primary text-white">
-                            <AvatarFallback>{getNameInitials(contact.name)}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-center">
-                              <p className="font-medium truncate text-slate-900">{contact.name}</p>
-                              {unread > 0 && (
-                                <Badge className="ml-2 bg-primary">{unread}</Badge>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {contact.email}
-                            </p>
-                            {messages.length > 0 && (
-                              <p className="text-sm text-muted-foreground truncate mt-1">
-                                {messages[messages.length - 1].content.substring(0, 30)}
-                                {messages[messages.length - 1].content.length > 30 && "..."}
-                              </p>
-                            )}
-                          </div>
+                  Object.entries(messagesByContact).map(([contactId, { contact, messages, unread }]) => (
+                    <button
+                      key={contactId}
+                      className={`w-full text-left p-4 hover:bg-slate-50/80 transition-colors flex items-start gap-3 ${
+                        activeChat === contactId ? "bg-slate-100/70 border-r-4 border-primary" : ""
+                      }`}
+                      onClick={() => setActiveChat(contactId)}
+                    >
+                      <Avatar className="h-10 w-10 bg-primary text-white shadow-sm flex-shrink-0">
+                        <AvatarFallback className="text-xs font-bold">{getNameInitials(contact.name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-baseline mb-0.5">
+                          <p className="font-semibold text-sm truncate text-slate-900">{contact.name}</p>
+                          {unread > 0 && (
+                            <Badge className="ml-2 bg-primary px-1.5 py-0.5 text-[11px] font-bold rounded-full">{unread}</Badge>
+                          )}
                         </div>
-                      </button>
-                    ))}
-                  </div>
+                        <p className="text-xs text-slate-400 truncate flex items-center gap-1">
+                          <Building className="h-3 w-3" /> {contact.email}
+                        </p>
+                        {messages.length > 0 && (
+                          <p className="text-xs text-slate-500 truncate mt-1.5 bg-slate-50 p-1.5 rounded border border-dashed border-slate-100">
+                            {messages[messages.length - 1].content}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  ))
                 ) : (
-                  <div className="p-6 text-center text-muted-foreground">
-                    No contacts found.
+                  <div className="p-6 text-center text-muted-foreground text-sm">
+                    No faculty contacts loaded.
                   </div>
                 )}
               </div>
@@ -193,67 +190,60 @@ const {
 
         {/* Chat window pane */}
         <div className="md:col-span-2">
-          <Card className="h-[calc(100vh-200px)] flex flex-col">
+          <Card className="h-[calc(100vh-220px)] flex flex-col shadow-md border-slate-200 overflow-hidden">
             {activeContact ? (
               <>
-                <CardHeader className="bg-slate-50 pb-3 flex-shrink-0">
-                  <div className="flex items-center">
-                    <Avatar className="h-10 w-10 mr-3 bg-primary text-white">
-                      <AvatarFallback>{getNameInitials(activeContact.name)}</AvatarFallback>
+                <div className="p-4 border-b border-slate-200 bg-white flex items-center justify-between shadow-sm flex-shrink-0">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 bg-primary text-white shadow-sm">
+                      <AvatarFallback className="text-xs font-bold">{getNameInitials(activeContact.name)}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <CardTitle className="text-lg">{activeContact.name}</CardTitle>
-                      <CardDescription>{activeContact.email}</CardDescription>
+                      <h4 className="font-bold text-sm text-slate-900 leading-tight">{activeContact.name}</h4>
+                      <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                        <Clock className="h-3 w-3" /> {activeContact.email}
+                      </p>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto p-4 flex flex-col space-y-4">
+                </div>
+
+                <CardContent className="flex-1 overflow-y-auto p-4 flex flex-col space-y-3 bg-slate-50/40">
                   {activeMessages.length > 0 ? (
-                    activeMessages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`flex ${
-                          msg.senderId === user?.id ? "justify-end" : "justify-start"
-                        }`}
-                      >
-                        <div
-                          className={`max-w-[75%] rounded-lg p-3 shadow-sm ${
-                            msg.senderId === user?.id
-                              ? "bg-primary text-white rounded-tr-none"
-                              : "bg-slate-100 text-slate-900 rounded-tl-none"
-                          }`}
-                        >
-                          <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
-                          <p
-                            className={`text-[10px] mt-1 text-right ${
-                              msg.senderId === user?.id
-                                ? "text-primary-foreground/70"
-                                : "text-slate-400"
-                            }`}
-                          >
-                            {new Date(msg.timestamp).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
+                    activeMessages.map((msg) => {
+                      const isMe = msg.senderId === user?.id;
+                      return (
+                        <div key={msg.id} className={`flex w-full ${isMe ? "justify-end" : "justify-start"}`}>
+                          <div className={`flex flex-col max-w-[75%] ${isMe ? "items-end" : "items-start"}`}>
+                            <div className={`rounded-2xl px-4 py-2 text-sm leading-relaxed shadow-sm break-words ${
+                              isMe 
+                                ? "bg-primary text-white rounded-tr-none" 
+                                : "bg-white border border-slate-200 text-slate-800 rounded-tl-none"
+                            }`}>
+                              <p className="whitespace-pre-wrap">{msg.content}</p>
+                            </div>
+                            <span className="text-[10px] text-slate-400 mt-1 px-1">
+                              {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-center">
-                      <User className="h-12 w-12 text-muted-foreground mb-2 opacity-50" />
-                      <p className="font-medium text-slate-700">No messages yet</p>
-                      <p className="text-sm text-muted-foreground max-w-xs">
-                        Send a secure message to initiate a dialogue with {activeContact.name}.
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
+                      <User className="h-12 w-12 text-slate-300 mb-2" />
+                      <p className="font-semibold text-sm text-slate-700">No previous message log</p>
+                      <p className="text-xs text-slate-400 max-w-xs mt-0.5">
+                        Send an initial query to open secure discussions with {activeContact.name}.
                       </p>
                     </div>
                   )}
                   <div ref={messagesEndRef} />
                 </CardContent>
-                <div className="p-3 border-t bg-slate-50 flex items-end gap-2">
+
+                <div className="p-3 border-t bg-white flex items-end gap-2 shadow-inner">
                   <Textarea
                     placeholder={`Message ${activeContact.name}...`}
-                    className="min-h-[60px] resize-none bg-white focus-visible:ring-primary"
+                    className="min-h-[50px] max-h-[120px] resize-none bg-slate-50/50 border-slate-200 focus-visible:ring-primary text-sm rounded-xl py-2.5"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={(e) => {
@@ -265,7 +255,7 @@ const {
                   />
                   <Button
                     size="icon"
-                    className="h-10 w-10 rounded-full bg-primary hover:bg-primary/90 flex-shrink-0"
+                    className="h-10 w-10 rounded-xl bg-primary hover:bg-primary/90 flex-shrink-0 shadow-sm"
                     onClick={handleSendMessage}
                     disabled={!message.trim()}
                   >
@@ -274,10 +264,10 @@ const {
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-                <MessageSquare className="h-16 w-16 text-muted-foreground mb-4 opacity-30 text-primary" />
-                <h3 className="font-medium text-lg text-slate-800 mb-1">Select a Contact</h3>
-                <p className="text-sm text-muted-foreground max-w-sm">
+              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-50/20">
+                <MessageSquare className="h-14 w-14 text-slate-200 mb-3" />
+                <h3 className="font-bold text-base text-slate-700 mb-1">Select a Contact</h3>
+                <p className="text-xs text-slate-400 max-w-xs">
                   Choose a teacher or faculty advisor from your directory side panel to open your communications portal.
                 </p>
               </div>

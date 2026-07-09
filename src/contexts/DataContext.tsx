@@ -21,6 +21,7 @@ export interface Student {
     semester: number;
     batch: string;
     birthDate?: string;
+    branch:string,
   };
 }
 
@@ -229,6 +230,7 @@ const mockStudents: Student[] = [
       semester: 2,
       batch: "2024-2028",
       birthDate: "15 May",
+      branch:"Mathematics and Computing",
     },
   },
 ];
@@ -286,8 +288,8 @@ const mockSemesterGrades: SemesterGrade[] = [
 ];
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
-  const [students, setStudents] = useState<Student[]>(mockStudents);
-  const [teachers, setTeachers] = useState<Teacher[]>(mockTeachers);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const { user } = useAuth();
   
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -299,7 +301,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary[]>([]);
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [timetable] = useState<TimeTable>(mockTimetable);
   const [semesterGrades, setSemesterGrades] = useState<SemesterGrade[]>(mockSemesterGrades);
@@ -320,13 +322,83 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           credits: String(row.credits || ""),
           description: row.description || undefined,
           semester: Number(row.semester || 1),
+          branch: String(row.branch || "Mathematics"),
         }));
         setSubjects(mapped);
       }
     };
     fetchSubjects();
   }, []);
+// 1b. Fetch Unified Profiles and Chat Messages Safely from Supabase
+  useEffect(() => {
+    const fetchProfilesAndMessages = async () => {
+      try {
+        // 1. Fetch profiles table to separate teachers and students dynamically
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("*");
 
+        if (profilesError) throw profilesError;
+
+        if (profilesData) {
+          // Map profiles data safely to match your Teacher[] type interface structure
+          const mappedTeachers: Teacher[] = profilesData
+            .filter((p) => p.role === "teacher")
+            .map((t) => ({
+              id: String(t.id),
+              name: String(t.name || ""),
+              email: String(t.email || ""),
+              department: String(t.department || "Academic Faculty"),
+              role: "teacher",
+              subjects:[],
+            }));
+
+          // Map profiles data safely to match your Student[] type interface structure
+          const mappedStudents: Student[] = profilesData
+            .filter((p) => p.role === "student")
+            .map((s) => ({
+              id: String(s.id),
+              name: String(s.name || ""),
+              rollNumber: String(s.roll_number || s.id.slice(0, 6)),
+              email: String(s.email || ""),
+              department: String(s.department || "General"),
+              semester: Number(s.semester || 1),
+              cgpa:0,
+              profile: {
+      phoneNumber: "",
+      address: "",
+      dateOfBirth: "",
+      gender: "",
+      department: String(s.department || "General"),
+      year: 1,
+      semester: Number(s.semester || 1),
+      batch: "",
+      branch: String(s.branch || "Mathematics"),
+    },
+            }));
+
+          setTeachers(mappedTeachers);
+          setStudents(mappedStudents);
+        }
+
+        // 2. Fetch live messages from your renamed camelCase columns
+        const { data: messagesData, error: messagesError } = await supabase
+          .from("chat_messages")
+          .select("*")
+          .order("timestamp", { ascending: true });
+
+        if (messagesError) throw messagesError;
+
+        if (messagesData) {
+          setMessages(messagesData as Message[]);
+        }
+      } catch (err) {
+        console.error("Failed loading chat ecosystem from Supabase:", err);
+      }
+    };
+
+    fetchProfilesAndMessages();
+  }, []);
   // 2. Fetch Assignments Safely (Resolving Database snake_case fields)
   useEffect(() => {
     const fetchLiveAssignments = async () => {
@@ -486,21 +558,50 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     toast.success("Assignment response uploaded successfully!");
   };
 
-  const sendMessage = (message: Omit<Message, "id" | "timestamp" | "read">) => {
-    const newMessage: Message = {
-      ...message,
-      id: `m-${messages.length + 1}`,
-      timestamp: new Date().toISOString(),
-      read: false,
-    };
-    setMessages((prev) => [...prev, newMessage]);
-    toast.success("Message sent successfully!");
-  };
+  const sendMessage = async (message: Omit<Message, "id" | "timestamp" | "read">) => {
+  try {
+    // 1. Insert the message data directly into your Supabase table
+    const { data, error } = await supabase
+      .from("chat_messages")
+      .insert([
+        {
+          senderId: message.senderId,
+          receiverId: message.receiverId,
+          content: message.content,
+          // Let Supabase handle 'id', 'timestamp', and 'read' defaults automatically
+        }
+      ])
+      .select() // Tells Supabase to return the newly created row data
+      .single();
 
-  const markMessageAsRead = (messageId: string) => {
+    if (error) throw error;
+
+    // 2. Append the official saved record from the database to your local state
+    if (data) {
+      setMessages((prev) => [...prev, data as Message]);
+      toast.success("Message sent successfully!");
+    }
+  } catch (error: any) {
+    console.error("Error sending message:", error);
+    toast.error("Failed to send message. Please try again.");
+  }
+};
+
+  const markMessageAsRead = async (messageId: string) => {
+    // 1. Optimistically update local state immediately for a fast UI feel
     setMessages((prev) =>
       prev.map((msg) => (msg.id === messageId ? { ...msg, read: true } : msg))
     );
+
+    // 2. Update the row permanently inside your Supabase backend
+    try {
+      await supabase
+        .from("chat_messages")
+        .update({ read: true })
+        .eq("id", messageId);
+    } catch (err) {
+      console.error("Failed syncing read status to remote server:", err);
+    }
   };
 
   const addAssignment = async (assignment: Omit<Assignment, "id" | "createdAt" | "submissions">) => {
@@ -645,3 +746,4 @@ export const useData = () => {
   if (!context) throw new Error("useData must be used within a DataProvider");
   return context;
 };
+

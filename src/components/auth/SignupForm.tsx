@@ -107,7 +107,7 @@ export default function SignupForm() {
       name: formData.name,
       role: role,
       roll_number: role === "student" ? formData.rollNumber.trim().toUpperCase() : null,
-      department: role === "student" ? formData.branch || "Mathematics" : "Mathematics",
+      branch: role === "student" ? formData.branch || "Mathematics" : "Mathematics",
     });
 
     if (profileError) {

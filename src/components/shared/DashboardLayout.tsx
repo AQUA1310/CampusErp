@@ -64,7 +64,6 @@ export default function DashboardLayout({
     { name: "Assignments", path: "/teacher-dashboard/assignments", icon: <FileText className="mr-2 h-4 w-4" /> },
     { name: "Attendance", path: "/teacher-dashboard/attendance", icon: <Calendar className="mr-2 h-4 w-4" /> },
     { name: "Results", path: "/teacher-dashboard/results", icon: <FileBarChart2 className="mr-2 h-4 w-4" /> },
-    { name: "Subjects", path: "/teacher-dashboard/subjects", icon: <BookOpen className="mr-2 h-4 w-4" /> },
     { name: "Chat", path: "/teacher-dashboard/chat", icon: <MessageSquare className="mr-2 h-4 w-4" /> },
   ], []);
 
